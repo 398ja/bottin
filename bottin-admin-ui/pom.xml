@@ -144,6 +144,11 @@
                         <goals>
                             <goal>repackage</goal>
                         </goals>
+                        <configuration>
+                            <!-- Use classifier to keep original jar for dependencies.
+                                 Creates: bottin-admin-ui.jar (normal) and bottin-admin-ui-exec.jar (executable) -->
+                            <classifier>exec</classifier>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

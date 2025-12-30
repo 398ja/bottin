@@ -150,6 +150,11 @@
                         <goals>
                             <goal>repackage</goal>
                         </goals>
+                        <configuration>
+                            <!-- Use classifier to keep original jar for dependencies.
+                                 Creates: bottin-web.jar (normal) and bottin-web-exec.jar (executable) -->
+                            <classifier>exec</classifier>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
