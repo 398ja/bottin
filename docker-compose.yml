@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  bottin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bottin
+    ports:
+      - "${BOTTIN_PORT:-8080}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - BOTTIN_DATABASE_URL=jdbc:postgresql://postgres:5432/bottin
+      - BOTTIN_DATABASE_USER=bottin
+      - BOTTIN_DATABASE_PASSWORD=${BOTTIN_DATABASE_PASSWORD:-bottin}
+      - BOTTIN_ADMIN_USER=${BOTTIN_ADMIN_USER:-admin}
+      - BOTTIN_ADMIN_PASSWORD=${BOTTIN_ADMIN_PASSWORD:-changeme}
+      - BOTTIN_DEFAULT_DOMAIN=${BOTTIN_DEFAULT_DOMAIN:-}
+      - BOTTIN_API_DOCS_ENABLED=${BOTTIN_API_DOCS_ENABLED:-false}
+      - BOTTIN_SWAGGER_ENABLED=${BOTTIN_SWAGGER_ENABLED:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - bottin-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: bottin-postgres
+    environment:
+      - POSTGRES_DB=bottin
+      - POSTGRES_USER=bottin
+      - POSTGRES_PASSWORD=${BOTTIN_DATABASE_PASSWORD:-bottin}
+    volumes:
+      - bottin-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bottin -d bottin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - bottin-network
+
+volumes:
+  bottin-postgres-data:
+
+networks:
+  bottin-network:
+    driver: bridge

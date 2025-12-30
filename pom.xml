@@ -42,8 +42,8 @@
         <module>bottin-web</module>
         <module>bottin-verification</module>
         <module>bottin-admin-ui</module>
-        <!-- Future modules:
         <module>bottin-spring-boot-starter</module>
+        <!-- Future modules:
         <module>bottin-tests</module>
         -->
     </modules>
@@ -135,6 +135,11 @@
             <dependency>
                 <groupId>xyz.tcheeric</groupId>
                 <artifactId>bottin-verification</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>bottin-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

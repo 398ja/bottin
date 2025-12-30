@@ -1,0 +1,86 @@
+spring:
+  application:
+    name: bottin
+
+  # PostgreSQL Database for production
+  datasource:
+    url: ${BOTTIN_DATABASE_URL:jdbc:postgresql://localhost:5432/bottin}
+    driver-class-name: org.postgresql.Driver
+    username: ${BOTTIN_DATABASE_USER:bottin}
+    password: ${BOTTIN_DATABASE_PASSWORD:}
+
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  # Flyway
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  # Disable H2 console in production
+  h2:
+    console:
+      enabled: false
+
+# Bottin Configuration
+bottin:
+  default-domain: ${BOTTIN_DEFAULT_DOMAIN:}
+
+  # Admin credentials
+  admin:
+    username: ${BOTTIN_ADMIN_USER:admin}
+    # password set via BOTTIN_ADMIN_PASSWORD environment variable
+
+  # Verification settings
+  verification:
+    dns-timeout-seconds: 5
+    http-timeout-seconds: 10
+    recheck-interval: 24h
+    token-validity: 7d
+
+    # External NIP-05 verification
+    external:
+      timeout-seconds: 10
+      require-https: true
+      max-response-size: 102400
+
+    # Caching
+    cache:
+      ttl-minutes: 5
+      max-size: 1000
+
+  # Rate limiting
+  ratelimit:
+    requests-per-minute: 30
+    cleanup-threshold: 1000
+
+# OpenAPI / Swagger - disabled in production by default
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: ${BOTTIN_API_DOCS_ENABLED:false}
+  swagger-ui:
+    enabled: ${BOTTIN_SWAGGER_ENABLED:false}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    xyz.tcheeric.bottin: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+
+# Server configuration
+server:
+  port: ${BOTTIN_PORT:8080}
+  tomcat:
+    threads:
+      max: 200
+    max-connections: 10000

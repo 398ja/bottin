@@ -1,0 +1,212 @@
+# Bottin - NIP-05 Registry Service
+
+A production-ready NIP-05 registry service for Nostr with persistent storage, REST API, admin dashboard, and domain verification.
+
+## Features
+
+- **NIP-05 Compliant** - Serves `.well-known/nostr.json` per the NIP-05 specification
+- **REST API** - Full CRUD operations for NIP-05 records and domains
+- **Admin Dashboard** - Web-based management UI with Thymeleaf + HTMX + Tailwind CSS
+- **Domain Verification** - DNS TXT and well-known file verification methods
+- **External Verification** - Verify external NIP-05 identifiers with caching
+- **nsecbunker-java Integration** - Spring Boot starter for embedding
+- **Production Ready** - PostgreSQL support, Docker deployment, security
+
+## Quick Start
+
+### Docker Compose (Recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/tcheeric/bottin.git
+cd bottin
+```
+
+2. Create environment file:
+```bash
+cat > .env << EOF
+BOTTIN_DATABASE_PASSWORD=your-secure-password
+BOTTIN_ADMIN_PASSWORD=your-admin-password
+EOF
+```
+
+3. Start the services:
+```bash
+docker-compose up -d
+```
+
+4. Access the services:
+   - Admin Dashboard: http://localhost:8080/admin
+   - API Docs: http://localhost:8080/swagger-ui.html (if enabled)
+   - Well-Known: http://localhost:8080/.well-known/nostr.json
+
+### Development Setup
+
+1. Prerequisites:
+   - Java 21
+   - Maven 3.8+
+
+2. Run with H2 database:
+```bash
+mvn spring-boot:run -pl bottin-web
+```
+
+3. Access H2 Console at http://localhost:8080/h2-console
+
+## API Endpoints
+
+### Public Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/.well-known/nostr.json?name={username}` | NIP-05 lookup |
+| GET | `/api/v1/verify?nip05={identifier}` | External NIP-05 verification |
+
+### REST API (Authenticated)
+
+**NIP-05 Records:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/records` | List records (paginated) |
+| GET | `/api/v1/records/{id}` | Get by ID |
+| POST | `/api/v1/records` | Create record |
+| PUT | `/api/v1/records/{id}` | Update record |
+| DELETE | `/api/v1/records/{id}` | Delete record |
+
+**Domains:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/domains` | List domains |
+| POST | `/api/v1/domains` | Register domain |
+| DELETE | `/api/v1/domains/{id}` | Remove domain |
+| POST | `/api/v1/domains/{id}/verify` | Initiate verification |
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BOTTIN_PORT` | 8080 | Server port |
+| `BOTTIN_DATABASE_URL` | H2 memory | JDBC URL |
+| `BOTTIN_DATABASE_USER` | bottin | Database username |
+| `BOTTIN_DATABASE_PASSWORD` | - | Database password |
+| `BOTTIN_ADMIN_USER` | admin | Admin username |
+| `BOTTIN_ADMIN_PASSWORD` | - | Admin password |
+| `BOTTIN_DEFAULT_DOMAIN` | - | Default domain for records |
+| `BOTTIN_API_DOCS_ENABLED` | false | Enable API docs in production |
+
+### Application Properties
+
+```yaml
+bottin:
+  enabled: true
+  admin:
+    enabled: true
+  verification:
+    dns-timeout-seconds: 5
+    http-timeout-seconds: 10
+    cache:
+      ttl-minutes: 5
+      max-size: 1000
+  ratelimit:
+    requests-per-minute: 30
+```
+
+## Domain Verification
+
+### Method 1: DNS TXT Record
+
+1. Register domain via API or admin dashboard
+2. Add TXT record to `_bottin.yourdomain.com`:
+   ```
+   bottin-verify=<your-verification-token>
+   ```
+3. Trigger verification check
+
+### Method 2: Well-Known File
+
+1. Register domain via API or admin dashboard
+2. Create file at `https://yourdomain.com/.well-known/bottin-verification.txt`
+3. Add the verification token as file contents
+4. Trigger verification check
+
+## Integration with nsecbunker-java
+
+Add the Spring Boot starter to your project:
+
+```xml
+<dependency>
+    <groupId>xyz.tcheeric</groupId>
+    <artifactId>bottin-spring-boot-starter</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
+
+This automatically provides:
+- `Nip05Manager` implementation (database-backed)
+- `AccountManager` implementation
+- All bottin services and endpoints
+
+Example usage:
+
+```java
+@Service
+@RequiredArgsConstructor
+public class UserService {
+    private final Nip05Manager nip05Manager;
+
+    public void createUser(String username, String domain) {
+        nip05Manager.setupNip05(username, domain)
+            .thenAccept(record ->
+                log.info("Created NIP-05: {}", record.getNip05()));
+    }
+}
+```
+
+## Project Structure
+
+```
+bottin/
+├── bottin-core/                 # Domain models, interfaces, exceptions
+├── bottin-persistence/          # JPA entities, repositories
+├── bottin-service/              # Business logic
+├── bottin-web/                  # REST controllers, well-known endpoint
+├── bottin-admin-ui/             # Admin dashboard (Thymeleaf)
+├── bottin-verification/         # Domain & external NIP-05 verification
+└── bottin-spring-boot-starter/  # Auto-configuration for embedding
+```
+
+## Building
+
+```bash
+# Compile
+mvn compile
+
+# Run tests
+mvn test
+
+# Package
+mvn package
+
+# Build Docker image
+docker build -t bottin .
+```
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Run tests: `mvn verify`
+4. Submit a pull request
+
+## Related Projects
+
+- [nsecbunker-java](https://github.com/tcheeric/nsecbunker-java) - Key management
+- [nostr-java](https://github.com/tcheeric/nostr-java) - Nostr protocol library

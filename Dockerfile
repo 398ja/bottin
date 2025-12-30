@@ -1,0 +1,52 @@
+# Multi-stage build for bottin
+FROM eclipse-temurin:21-jdk-alpine AS builder
+
+WORKDIR /app
+
+# Copy Maven files first for better caching
+COPY pom.xml .
+COPY bottin-core/pom.xml bottin-core/
+COPY bottin-persistence/pom.xml bottin-persistence/
+COPY bottin-service/pom.xml bottin-service/
+COPY bottin-verification/pom.xml bottin-verification/
+COPY bottin-web/pom.xml bottin-web/
+COPY bottin-admin-ui/pom.xml bottin-admin-ui/
+COPY bottin-spring-boot-starter/pom.xml bottin-spring-boot-starter/
+
+# Download dependencies (cached if pom.xml hasn't changed)
+RUN apk add --no-cache maven && \
+    mvn dependency:go-offline -B || true
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN mvn package -DskipTests -B
+
+# Runtime image
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1000 bottin && \
+    adduser -u 1000 -G bottin -s /bin/sh -D bottin
+
+# Copy the built JAR
+COPY --from=builder /app/bottin-web/target/bottin-web-*.jar app.jar
+
+# Set ownership
+RUN chown -R bottin:bottin /app
+
+USER bottin
+
+# Expose port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+    CMD wget -q --spider http://localhost:8080/actuator/health || exit 1
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["--spring.profiles.active=prod"]
