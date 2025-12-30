@@ -153,6 +153,16 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Jib - inherited from parent, configured for this module -->
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <configuration>
+                    <container>
+                        <mainClass>xyz.tcheeric.bottin.web.app.BottinWebApplication</mainClass>
+                    </container>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

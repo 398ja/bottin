@@ -101,6 +101,11 @@
         <flatten-maven-plugin.version>1.6.0</flatten-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.11</jacoco-maven-plugin.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
+
+        <!-- Docker/Jib -->
+        <jib-maven-plugin.version>3.4.1</jib-maven-plugin.version>
+        <docker.registry>docker.398ja.xyz</docker.registry>
+        <docker.image.prefix>${docker.registry}</docker.image.prefix>
     </properties>
 
     <dependencyManagement>
@@ -387,6 +392,24 @@
                 </plugins>
             </build>
         </profile>
+
+        <!--
+            Docker Profile: Build and push Docker images
+            Usage:
+              Build to local Docker: mvn -Pdocker jib:dockerBuild -pl bottin-web,bottin-admin-ui
+              Push to registry:      mvn -Pdocker jib:build -pl bottin-web,bottin-admin-ui
+        -->
+        <profile>
+            <id>docker</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.google.cloud.tools</groupId>
+                        <artifactId>jib-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <build>
@@ -563,6 +586,40 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
+                </plugin>
+
+                <!-- Jib - Docker image build and push -->
+                <plugin>
+                    <groupId>com.google.cloud.tools</groupId>
+                    <artifactId>jib-maven-plugin</artifactId>
+                    <version>${jib-maven-plugin.version}</version>
+                    <configuration>
+                        <from>
+                            <image>eclipse-temurin:21-jre-alpine</image>
+                        </from>
+                        <to>
+                            <image>${docker.image.prefix}/${project.artifactId}</image>
+                            <tags>
+                                <tag>${project.version}</tag>
+                                <tag>latest</tag>
+                            </tags>
+                        </to>
+                        <container>
+                            <jvmFlags>
+                                <jvmFlag>-Xms256m</jvmFlag>
+                                <jvmFlag>-Xmx512m</jvmFlag>
+                                <jvmFlag>-XX:+UseG1GC</jvmFlag>
+                                <jvmFlag>-XX:+UseContainerSupport</jvmFlag>
+                            </jvmFlags>
+                            <ports>
+                                <port>8080</port>
+                            </ports>
+                            <environment>
+                                <SPRING_PROFILES_ACTIVE>docker</SPRING_PROFILES_ACTIVE>
+                            </environment>
+                            <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
+                        </container>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
