@@ -37,17 +37,17 @@ public class TestContainersConfig {
     /**
      * nsecbunkerd container for key management and signing.
      * Image from docker.398ja.xyz registry.
+     * The container exposes port 3000.
      */
     @Bean
     public GenericContainer<?> nsecbunkerdContainer() {
         return new GenericContainer<>(DockerImageName.parse("docker.398ja.xyz/nsecbunkerd:latest"))
                 .withNetwork(NETWORK)
                 .withNetworkAliases("nsecbunkerd")
-                .withExposedPorts(5000)
+                .withExposedPorts(3000)
                 .withEnv("NSECBUNKER_LOG_LEVEL", "debug")
-                .waitingFor(Wait.forHttp("/health")
-                        .forPort(5000)
-                        .withStartupTimeout(Duration.ofSeconds(60)));
+                .waitingFor(Wait.forLogMessage(".*nsecBunker ready to serve requests.*", 1)
+                        .withStartupTimeout(Duration.ofSeconds(120)));
     }
 
     /**

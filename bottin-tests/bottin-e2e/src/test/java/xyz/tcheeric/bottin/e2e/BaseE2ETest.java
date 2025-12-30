@@ -44,7 +44,7 @@ public abstract class BaseE2ETest {
      * Returns the nsecbunkerd URL for the running container.
      */
     protected String getNsecbunkerdUrl() {
-        return "http://" + nsecbunkerdContainer.getHost() + ":" + nsecbunkerdContainer.getMappedPort(5000);
+        return "http://" + nsecbunkerdContainer.getHost() + ":" + nsecbunkerdContainer.getMappedPort(3000);
     }
 
     /**
