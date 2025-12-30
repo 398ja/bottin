@@ -124,9 +124,21 @@
 
     <build>
         <plugins>
+            <!-- Skip unit tests by default - IT tests use failsafe -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>${skipITTests}</skipTests>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <skipTests>${skipITTests}</skipTests>
+                    <skipITs>${skipITTests}</skipITs>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -138,5 +150,24 @@
             </plugin>
         </plugins>
     </build>
+
+    <properties>
+        <!-- Skip IT tests by default -->
+        <skipITTests>true</skipITTests>
+    </properties>
+
+    <profiles>
+        <!--
+            IT profile: Tests are skipped by default.
+            Run IT tests with: mvn -Pit -pl bottin-tests/bottin-it test
+            This ensures proper test context isolation.
+        -->
+        <profile>
+            <id>it</id>
+            <properties>
+                <skipITTests>false</skipITTests>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

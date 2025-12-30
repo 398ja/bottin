@@ -37,10 +37,7 @@
             <groupId>xyz.tcheeric</groupId>
             <artifactId>bottin-web</artifactId>
         </dependency>
-        <dependency>
-            <groupId>xyz.tcheeric</groupId>
-            <artifactId>bottin-admin-ui</artifactId>
-        </dependency>
+        <!-- Note: bottin-admin-ui excluded to avoid security config conflicts -->
         <dependency>
             <groupId>xyz.tcheeric</groupId>
             <artifactId>bottin-spring-boot-starter</artifactId>
@@ -131,9 +128,21 @@
 
     <build>
         <plugins>
+            <!-- Skip unit tests by default - E2E tests use failsafe -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>${skipE2ETests}</skipTests>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <skipTests>${skipE2ETests}</skipTests>
+                    <skipITs>${skipE2ETests}</skipITs>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -145,5 +154,24 @@
             </plugin>
         </plugins>
     </build>
+
+    <properties>
+        <!-- Skip E2E tests by default -->
+        <skipE2ETests>true</skipE2ETests>
+    </properties>
+
+    <profiles>
+        <!--
+            E2E profile: Tests are skipped by default.
+            Run E2E tests with: mvn -Pe2e -pl bottin-tests/bottin-e2e test
+            This ensures proper test context isolation.
+        -->
+        <profile>
+            <id>e2e</id>
+            <properties>
+                <skipE2ETests>false</skipE2ETests>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

@@ -3,6 +3,8 @@ package xyz.tcheeric.bottin.e2e;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
@@ -16,7 +18,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "xyz.tcheeric.bottin.service",
         "xyz.tcheeric.bottin.verification",
         "xyz.tcheeric.bottin.web",
-        "xyz.tcheeric.bottin.starter"
+        "xyz.tcheeric.bottin.starter",
+        "xyz.tcheeric.bottin.e2e"
 })
 @EntityScan(basePackages = "xyz.tcheeric.bottin.persistence.entity")
 @EnableJpaRepositories(basePackages = "xyz.tcheeric.bottin.persistence.repository")

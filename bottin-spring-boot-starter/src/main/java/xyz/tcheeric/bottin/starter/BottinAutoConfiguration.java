@@ -91,10 +91,13 @@ public class BottinAutoConfiguration {
 
     /**
      * Creates the ObjectMapper if not already defined.
+     * Configures support for Java 8 date/time types.
      */
     @Bean
     @ConditionalOnMissingBean
     public ObjectMapper objectMapper() {
-        return new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.findAndRegisterModules();
+        return mapper;
     }
 }

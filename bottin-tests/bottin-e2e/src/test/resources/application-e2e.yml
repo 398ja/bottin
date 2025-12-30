@@ -2,6 +2,10 @@ spring:
   application:
     name: bottin-e2e
 
+  # Allow bean definition overriding for test context
+  main:
+    allow-bean-definition-overriding: true
+
   # JPA Configuration for E2E tests
   jpa:
     hibernate:
