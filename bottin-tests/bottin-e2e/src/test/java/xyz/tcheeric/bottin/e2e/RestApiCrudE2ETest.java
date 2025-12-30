@@ -104,8 +104,7 @@ class RestApiCrudE2ETest extends BasicE2ETest {
         // First, create a domain
         String domainJson = """
                 {
-                    "name": "records.example.com",
-                    "verified": true
+                    "name": "records.example.com"
                 }
                 """;
 
@@ -120,15 +119,21 @@ class RestApiCrudE2ETest extends BasicE2ETest {
                 .extract()
                 .jsonPath().getLong("id");
 
+        // Mark domain as verified (simulating verification for E2E tests)
+        domainRepository.findById(domainId).ifPresent(domain -> {
+            domain.setVerified(true);
+            domainRepository.save(domain);
+        });
+
         // CREATE: POST /api/v1/records
         String createRecordJson = """
                 {
                     "username": "testuser",
-                    "domainId": %d,
+                    "domain": "records.example.com",
                     "pubkey": "%s",
                     "relays": ["wss://relay.example.com"]
                 }
-                """.formatted(domainId, TEST_PUBKEY);
+                """.formatted(TEST_PUBKEY);
 
         Long recordId = given()
                 .auth().basic(ADMIN_USER, ADMIN_PASSWORD)
@@ -158,12 +163,10 @@ class RestApiCrudE2ETest extends BasicE2ETest {
         // UPDATE: PUT /api/v1/records/{id}
         String updateJson = """
                 {
-                    "username": "testuser",
-                    "domainId": %d,
                     "pubkey": "%s",
                     "relays": ["wss://updated-relay.example.com", "wss://relay2.example.com"]
                 }
-                """.formatted(domainId, UPDATED_PUBKEY);
+                """.formatted(UPDATED_PUBKEY);
 
         given()
                 .auth().basic(ADMIN_USER, ADMIN_PASSWORD)
@@ -220,8 +223,7 @@ class RestApiCrudE2ETest extends BasicE2ETest {
         // Create domain
         String domainJson = """
                 {
-                    "name": "search.example.com",
-                    "verified": true
+                    "name": "search.example.com"
                 }
                 """;
 
@@ -236,15 +238,21 @@ class RestApiCrudE2ETest extends BasicE2ETest {
                 .extract()
                 .jsonPath().getLong("id");
 
+        // Mark domain as verified (simulating verification for E2E tests)
+        domainRepository.findById(domainId).ifPresent(domain -> {
+            domain.setVerified(true);
+            domainRepository.save(domain);
+        });
+
         // Create multiple records
         for (int i = 1; i <= 3; i++) {
             String recordJson = """
                     {
                         "username": "user%d",
-                        "domainId": %d,
+                        "domain": "search.example.com",
                         "pubkey": "%d9be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179%d"
                     }
-                    """.formatted(i, domainId, i, i);
+                    """.formatted(i, i, i);
 
             given()
                     .auth().basic(ADMIN_USER, ADMIN_PASSWORD)

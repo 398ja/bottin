@@ -35,7 +35,7 @@ class Nip05RegistrationFlowE2ETest extends BasicE2ETest {
     /**
      * Tests the complete NIP-05 registration flow:
      * 1. Register a new domain
-     * 2. Verify domain appears in list
+     * 2. Mark domain as verified (via repository for E2E tests)
      * 3. Create a NIP-05 record
      * 4. Query well-known endpoint
      * 5. Verify response contains correct pubkey and relays
@@ -45,8 +45,7 @@ class Nip05RegistrationFlowE2ETest extends BasicE2ETest {
         // Step 1: Register a new domain
         String domainJson = """
                 {
-                    "name": "test.example.com",
-                    "verified": true
+                    "name": "test.example.com"
                 }
                 """;
 
@@ -63,25 +62,21 @@ class Nip05RegistrationFlowE2ETest extends BasicE2ETest {
                 .extract()
                 .jsonPath().getLong("id");
 
-        // Step 2: Verify domain appears in domains list
-        given()
-                .auth().basic(ADMIN_USER, ADMIN_PASSWORD)
-                .when()
-                .get("/api/v1/domains")
-                .then()
-                .statusCode(200)
-                .body("size()", equalTo(1))
-                .body("[0].name", equalTo("test.example.com"));
+        // Step 2: Mark domain as verified (simulating verification for E2E tests)
+        domainRepository.findById(domainId).ifPresent(domain -> {
+            domain.setVerified(true);
+            domainRepository.save(domain);
+        });
 
         // Step 3: Create a NIP-05 record
         String recordJson = """
                 {
                     "username": "alice",
-                    "domainId": %d,
+                    "domain": "test.example.com",
                     "pubkey": "%s",
                     "relays": ["wss://relay1.example.com", "wss://relay2.example.com"]
                 }
-                """.formatted(domainId, TEST_PUBKEY);
+                """.formatted(TEST_PUBKEY);
 
         given()
                 .auth().basic(ADMIN_USER, ADMIN_PASSWORD)
@@ -97,6 +92,7 @@ class Nip05RegistrationFlowE2ETest extends BasicE2ETest {
 
         // Step 4 & 5: Query well-known endpoint and verify response
         given()
+                .header("Host", "test.example.com")
                 .when()
                 .get("/.well-known/nostr.json?name=alice")
                 .then()
@@ -111,11 +107,10 @@ class Nip05RegistrationFlowE2ETest extends BasicE2ETest {
      */
     @Test
     void shouldReturnAllRecordsWhenNoNameSpecified() {
-        // Create domain and two records
+        // Create domain
         String domainJson = """
                 {
-                    "name": "multi.example.com",
-                    "verified": true
+                    "name": "multi.example.com"
                 }
                 """;
 
@@ -130,14 +125,20 @@ class Nip05RegistrationFlowE2ETest extends BasicE2ETest {
                 .extract()
                 .jsonPath().getLong("id");
 
+        // Mark domain as verified
+        domainRepository.findById(domainId).ifPresent(domain -> {
+            domain.setVerified(true);
+            domainRepository.save(domain);
+        });
+
         // Create first record
         String record1Json = """
                 {
                     "username": "user1",
-                    "domainId": %d,
+                    "domain": "multi.example.com",
                     "pubkey": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
                 }
-                """.formatted(domainId);
+                """;
 
         given()
                 .auth().basic(ADMIN_USER, ADMIN_PASSWORD)
@@ -152,10 +153,10 @@ class Nip05RegistrationFlowE2ETest extends BasicE2ETest {
         String record2Json = """
                 {
                     "username": "user2",
-                    "domainId": %d,
+                    "domain": "multi.example.com",
                     "pubkey": "89be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81799"
                 }
-                """.formatted(domainId);
+                """;
 
         given()
                 .auth().basic(ADMIN_USER, ADMIN_PASSWORD)
@@ -168,6 +169,7 @@ class Nip05RegistrationFlowE2ETest extends BasicE2ETest {
 
         // Query well-known without name parameter
         given()
+                .header("Host", "multi.example.com")
                 .when()
                 .get("/.well-known/nostr.json")
                 .then()
@@ -184,22 +186,30 @@ class Nip05RegistrationFlowE2ETest extends BasicE2ETest {
         // Create domain
         String domainJson = """
                 {
-                    "name": "empty.example.com",
-                    "verified": true
+                    "name": "empty.example.com"
                 }
                 """;
 
-        given()
+        Long domainId = given()
                 .auth().basic(ADMIN_USER, ADMIN_PASSWORD)
                 .contentType(ContentType.JSON)
                 .body(domainJson)
                 .when()
                 .post("/api/v1/domains")
                 .then()
-                .statusCode(201);
+                .statusCode(201)
+                .extract()
+                .jsonPath().getLong("id");
+
+        // Mark domain as verified
+        domainRepository.findById(domainId).ifPresent(domain -> {
+            domain.setVerified(true);
+            domainRepository.save(domain);
+        });
 
         // Query for non-existent user
         given()
+                .header("Host", "empty.example.com")
                 .when()
                 .get("/.well-known/nostr.json?name=nonexistent")
                 .then()

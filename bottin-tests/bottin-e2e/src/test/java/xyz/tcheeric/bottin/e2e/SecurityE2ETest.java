@@ -77,8 +77,9 @@ class SecurityE2ETest extends BasicE2ETest {
      */
     @Test
     void shouldAllowPublicEndpointsWithoutAuth() {
-        // Well-known endpoint should be public
+        // Well-known endpoint should be public (using e2e.example.com as default domain)
         given()
+                .header("Host", "e2e.example.com")
                 .when()
                 .get("/.well-known/nostr.json")
                 .then()
@@ -100,6 +101,7 @@ class SecurityE2ETest extends BasicE2ETest {
     void shouldIncludeCorsHeadersOnWellKnownEndpoint() {
         given()
                 .header("Origin", "https://example.com")
+                .header("Host", "e2e.example.com")
                 .when()
                 .get("/.well-known/nostr.json")
                 .then()
@@ -108,18 +110,17 @@ class SecurityE2ETest extends BasicE2ETest {
     }
 
     /**
-     * Tests that admin UI redirects to login when not authenticated.
+     * Tests that admin endpoints require authentication.
+     * Note: Admin module is excluded from E2E tests, so endpoints return 401.
      */
     @Test
-    void shouldRedirectToLoginForAdminEndpoints() {
-        // Admin dashboard should redirect to login
+    void shouldRequireAuthenticationForAdminEndpoints() {
+        // Admin dashboard should require authentication
         given()
-                .redirects().follow(false)
                 .when()
                 .get("/admin/dashboard")
                 .then()
-                .statusCode(302)
-                .header("Location", containsString("login"));
+                .statusCode(401);
     }
 
     // Helper to match either 200 or 400 status
