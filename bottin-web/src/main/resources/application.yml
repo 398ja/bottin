@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: bottin
+
+  # Database - use H2 by default for development
+  datasource:
+    url: jdbc:h2:mem:bottin;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Flyway
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  # H2 Console (development only)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+# Bottin Configuration
+bottin:
+  default-domain: ""
+
+  # Admin credentials
+  admin:
+    username: admin
+    # password: Set via BOTTIN_ADMIN_PASSWORD environment variable
+
+  # API documentation
+  api:
+    title: Bottin NIP-05 Registry API
+    description: REST API for managing NIP-05 identity records and domains
+    version: 1.0.0
+
+# OpenAPI / Swagger
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+
+# Logging
+logging:
+  level:
+    xyz.tcheeric.bottin: DEBUG
+    org.springframework.security: INFO

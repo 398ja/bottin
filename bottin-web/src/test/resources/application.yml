@@ -4,3 +4,6 @@ spring:
 
 bottin:
   default-domain: example.com
+  admin:
+    username: testadmin
+    password: testpassword
