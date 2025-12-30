@@ -43,9 +43,7 @@
         <module>bottin-verification</module>
         <module>bottin-admin-ui</module>
         <module>bottin-spring-boot-starter</module>
-        <!-- Future modules:
         <module>bottin-tests</module>
-        -->
     </modules>
 
     <properties>
@@ -80,6 +78,7 @@
         <mockito.version>5.11.0</mockito.version>
         <assertj.version>3.25.3</assertj.version>
         <testcontainers.version>1.19.7</testcontainers.version>
+        <wiremock.version>3.4.2</wiremock.version>
 
         <!-- API Documentation -->
         <springdoc-openapi.version>2.4.0</springdoc-openapi.version>
@@ -295,6 +294,14 @@
                 <groupId>org.testcontainers</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${testcontainers.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- WireMock -->
+            <dependency>
+                <groupId>org.wiremock</groupId>
+                <artifactId>wiremock-standalone</artifactId>
+                <version>${wiremock.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

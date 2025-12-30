@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: bottin-it
+
+  # JPA Configuration for tests
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  # Flyway - disabled for tests (use Hibernate auto DDL)
+  flyway:
+    enabled: false
+
+  # Security - test credentials
+  security:
+    user:
+      name: admin
+      password: test-password
+
+# Bottin Configuration
+bottin:
+  enabled: true
+  default-domain: test.example.com
+
+  admin:
+    username: admin
+    password: test-password
+
+  verification:
+    dns-timeout-seconds: 2
+    http-timeout-seconds: 5
+
+    external:
+      timeout-seconds: 5
+      require-https: false
+      max-response-size: 102400
+
+    cache:
+      ttl-minutes: 1
+      max-size: 100
+
+  ratelimit:
+    requests-per-minute: 100
+    cleanup-threshold: 100
+
+# Logging - reduce noise in tests
+logging:
+  level:
+    root: WARN
+    xyz.tcheeric.bottin: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.testcontainers: INFO

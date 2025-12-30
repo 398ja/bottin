@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>xyz.tcheeric</groupId>
+        <artifactId>bottin</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>bottin-tests</artifactId>
+    <packaging>pom</packaging>
+    <name>Bottin Tests</name>
+    <description>Integration and End-to-End tests for Bottin</description>
+
+    <modules>
+        <module>bottin-it</module>
+        <module>bottin-e2e</module>
+    </modules>
+
+</project>

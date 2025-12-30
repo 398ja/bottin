@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: bottin-e2e
+
+  # JPA Configuration for E2E tests
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  # Flyway - disabled for E2E tests
+  flyway:
+    enabled: false
+
+  # Security
+  security:
+    user:
+      name: admin
+      password: e2e-test-password
+
+# Bottin Configuration
+bottin:
+  enabled: true
+  default-domain: e2e.example.com
+
+  admin:
+    username: admin
+    password: e2e-test-password
+
+  verification:
+    dns-timeout-seconds: 2
+    http-timeout-seconds: 5
+
+    external:
+      timeout-seconds: 5
+      require-https: false
+      max-response-size: 102400
+
+    cache:
+      ttl-minutes: 1
+      max-size: 100
+
+  ratelimit:
+    requests-per-minute: 100
+    cleanup-threshold: 100
+
+# Logging
+logging:
+  level:
+    root: WARN
+    xyz.tcheeric.bottin: INFO
+    org.springframework.security: WARN
+    org.testcontainers: INFO
