@@ -41,8 +41,8 @@
         <module>bottin-service</module>
         <module>bottin-web</module>
         <module>bottin-verification</module>
-        <!-- Future modules:
         <module>bottin-admin-ui</module>
+        <!-- Future modules:
         <module>bottin-spring-boot-starter</module>
         <module>bottin-tests</module>
         -->

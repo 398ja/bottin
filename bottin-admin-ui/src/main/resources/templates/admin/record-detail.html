@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Record Details')}"></head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <nav th:replace="~{fragments/layout :: navigation}"></nav>
+
+    <main class="flex-grow">
+        <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+            <div class="px-4 py-6 sm:px-0">
+                <!-- Breadcrumb -->
+                <nav class="flex mb-4" aria-label="Breadcrumb">
+                    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                        <li class="inline-flex items-center">
+                            <a href="/admin/records" class="text-gray-700 hover:text-indigo-600 inline-flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                                </svg>
+                                Records
+                            </a>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="ml-1 text-gray-500" th:text="${record.nip05}">user@example.com</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-semibold text-gray-900" th:text="${record.nip05}">user@example.com</h1>
+                    <div class="flex space-x-3">
+                        <span th:if="${record.enabled}"
+                              class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Enabled
+                        </span>
+                        <span th:unless="${record.enabled}"
+                              class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Disabled
+                        </span>
+                    </div>
+                </div>
+
+                <div th:replace="~{fragments/layout :: alerts}"></div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Record Info Card -->
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Record Information</h3>
+                        </div>
+                        <div class="px-4 py-5 sm:p-6">
+                            <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Username</dt>
+                                    <dd class="mt-1 text-sm text-gray-900" th:text="${record.username}">alice</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Domain</dt>
+                                    <dd class="mt-1 text-sm text-gray-900">
+                                        <a th:href="@{/admin/domains/{id}(id=${record.domainId})}"
+                                           class="text-indigo-600 hover:text-indigo-900"
+                                           th:text="${record.domain}">example.com</a>
+                                    </dd>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <dt class="text-sm font-medium text-gray-500">NIP-05 Identifier</dt>
+                                    <dd class="mt-1 text-sm text-gray-900" th:text="${record.nip05}">alice@example.com</dd>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <dt class="text-sm font-medium text-gray-500">Public Key</dt>
+                                    <dd class="mt-1 text-sm text-gray-900 font-mono break-all" th:text="${record.pubkey}">...</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Status</dt>
+                                    <dd class="mt-1 text-sm text-gray-900" th:text="${record.enabled} ? 'Enabled' : 'Disabled'">Enabled</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Record ID</dt>
+                                    <dd class="mt-1 text-sm text-gray-900" th:text="${record.id}">1</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Created At</dt>
+                                    <dd class="mt-1 text-sm text-gray-900"
+                                        th:text="${#temporals.format(record.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Updated At</dt>
+                                    <dd class="mt-1 text-sm text-gray-900"
+                                        th:text="${#temporals.format(record.updatedAt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Relays Card -->
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Relay URLs</h3>
+                        </div>
+                        <div class="px-4 py-5 sm:p-6">
+                            <div th:if="${record.relays != null and !record.relays.isEmpty()}">
+                                <ul class="divide-y divide-gray-200">
+                                    <li th:each="relay : ${record.relays}" class="py-2">
+                                        <code class="text-sm text-gray-900 font-mono" th:text="${relay}">wss://relay.example.com</code>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div th:if="${record.relays == null or record.relays.isEmpty()}" class="text-sm text-gray-500">
+                                No relays configured for this record.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Form Card -->
+                <div class="mt-6 bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">Edit Record</h3>
+                    </div>
+                    <div class="px-4 py-5 sm:p-6">
+                        <form th:action="@{/admin/records/{id}/update(id=${record.id})}" method="post" th:object="${updateForm}">
+                            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                <div class="sm:col-span-2">
+                                    <label for="pubkey" class="block text-sm font-medium text-gray-700">Public Key</label>
+                                    <input type="text" name="pubkey" id="pubkey" th:value="${updateForm.pubkey}" required
+                                           pattern="[0-9a-f]{64}"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
+                                           placeholder="64 hex characters">
+                                    <p class="mt-1 text-xs text-gray-500">The 64-character hex public key associated with this NIP-05 identifier</p>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label for="relaysText" class="block text-sm font-medium text-gray-700">Relay URLs</label>
+                                    <textarea name="relaysText" id="relaysText" rows="4" th:text="${updateForm.relaysText}"
+                                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
+                                              placeholder="wss://relay.example.com"></textarea>
+                                    <p class="mt-1 text-xs text-gray-500">One relay URL per line (optional)</p>
+                                </div>
+                            </div>
+                            <div class="mt-6">
+                                <button type="submit"
+                                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="mt-6 flex justify-between">
+                    <a href="/admin/records"
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Back to Records
+                    </a>
+                    <div class="flex space-x-3">
+                        <form th:action="@{/admin/records/{id}/toggle(id=${record.id})}" method="post" class="inline">
+                            <button type="submit"
+                                    th:text="${record.enabled} ? 'Disable Record' : 'Enable Record'"
+                                    th:class="${record.enabled} ? 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700' : 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700'">
+                                Toggle
+                            </button>
+                        </form>
+                        <form th:action="@{/admin/records/{id}/delete(id=${record.id})}" method="post" class="inline"
+                              onsubmit="return confirm('Are you sure you want to delete this record?');">
+                            <button type="submit"
+                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700">
+                                Delete Record
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

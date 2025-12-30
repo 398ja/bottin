@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Domain Details')}"></head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <nav th:replace="~{fragments/layout :: navigation}"></nav>
+
+    <main class="flex-grow">
+        <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+            <div class="px-4 py-6 sm:px-0">
+                <!-- Breadcrumb -->
+                <nav class="flex mb-4" aria-label="Breadcrumb">
+                    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                        <li class="inline-flex items-center">
+                            <a href="/admin/domains" class="text-gray-700 hover:text-indigo-600 inline-flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                                </svg>
+                                Domains
+                            </a>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="ml-1 text-gray-500" th:text="${domain.name}">example.com</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-semibold text-gray-900" th:text="${domain.name}">example.com</h1>
+                    <div class="flex space-x-3">
+                        <span th:if="${domain.verified}"
+                              class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Verified
+                        </span>
+                        <span th:unless="${domain.verified}"
+                              class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Pending Verification
+                        </span>
+                    </div>
+                </div>
+
+                <div th:replace="~{fragments/layout :: alerts}"></div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Domain Info Card -->
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Domain Information</h3>
+                        </div>
+                        <div class="px-4 py-5 sm:p-6">
+                            <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Domain Name</dt>
+                                    <dd class="mt-1 text-sm text-gray-900" th:text="${domain.name}">example.com</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Status</dt>
+                                    <dd class="mt-1 text-sm text-gray-900" th:text="${domain.verified} ? 'Verified' : 'Pending'">Pending</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Owner Public Key</dt>
+                                    <dd class="mt-1 text-sm text-gray-900 font-mono break-all"
+                                        th:text="${domain.ownerPubkey != null ? domain.ownerPubkey : 'Not set'}">Not set</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Created At</dt>
+                                    <dd class="mt-1 text-sm text-gray-900"
+                                        th:text="${#temporals.format(domain.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01</dd>
+                                </div>
+                                <div th:if="${domain.verifiedAt}">
+                                    <dt class="text-sm font-medium text-gray-500">Verified At</dt>
+                                    <dd class="mt-1 text-sm text-gray-900"
+                                        th:text="${#temporals.format(domain.verifiedAt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Total Records</dt>
+                                    <dd class="mt-1 text-sm text-gray-900" th:text="${domain.recordCount}">0</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Verification Card -->
+                    <div class="bg-white shadow rounded-lg" th:unless="${domain.verified}">
+                        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Domain Verification</h3>
+                        </div>
+                        <div class="px-4 py-5 sm:p-6">
+                            <div th:if="${domain.verificationToken}">
+                                <p class="text-sm text-gray-600 mb-4">
+                                    To verify ownership of this domain, add one of the following:
+                                </p>
+
+                                <!-- DNS TXT Record -->
+                                <div class="mb-6">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-2">Option 1: DNS TXT Record</h4>
+                                    <p class="text-xs text-gray-500 mb-2">Add a TXT record to your DNS:</p>
+                                    <div class="bg-gray-50 rounded-md p-3">
+                                        <p class="text-xs text-gray-500">Name:</p>
+                                        <code class="text-sm font-mono text-gray-900">_nostr-verification</code>
+                                        <p class="text-xs text-gray-500 mt-2">Value:</p>
+                                        <code class="text-sm font-mono text-gray-900 break-all" th:text="${domain.verificationToken}">token-here</code>
+                                    </div>
+                                </div>
+
+                                <!-- Well-Known File -->
+                                <div class="mb-6">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-2">Option 2: Well-Known File</h4>
+                                    <p class="text-xs text-gray-500 mb-2">Create a file at this URL:</p>
+                                    <div class="bg-gray-50 rounded-md p-3">
+                                        <code class="text-sm font-mono text-gray-900 break-all"
+                                              th:text="'https://' + ${domain.name} + '/.well-known/nostr-verification'">
+                                            https://example.com/.well-known/nostr-verification
+                                        </code>
+                                        <p class="text-xs text-gray-500 mt-2">With content:</p>
+                                        <code class="text-sm font-mono text-gray-900 break-all" th:text="${domain.verificationToken}">token-here</code>
+                                    </div>
+                                </div>
+
+                                <form th:action="@{/admin/domains/{id}/verify/attempt(id=${domain.id})}" method="post">
+                                    <button type="submit"
+                                            class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
+                                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        Verify Domain Now
+                                    </button>
+                                </form>
+                            </div>
+                            <div th:unless="${domain.verificationToken}">
+                                <p class="text-sm text-gray-600 mb-4">
+                                    Choose a verification method to prove ownership of this domain.
+                                </p>
+                                <form th:action="@{/admin/domains/{id}/verify(id=${domain.id})}" method="post" class="space-y-4">
+                                    <div>
+                                        <label for="method" class="block text-sm font-medium text-gray-700">Verification Method</label>
+                                        <select name="method" id="method" required
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                            <option th:each="m : ${verificationMethods}" th:value="${m}" th:text="${m}">DNS_TXT</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit"
+                                            class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                        </svg>
+                                        Start Verification
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Verified Badge Card -->
+                    <div class="bg-white shadow rounded-lg" th:if="${domain.verified}">
+                        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Verification Status</h3>
+                        </div>
+                        <div class="px-4 py-5 sm:p-6">
+                            <div class="text-center">
+                                <svg class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">Domain Verified</h3>
+                                <p class="mt-1 text-sm text-gray-500">
+                                    This domain has been verified and is ready to use.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Domain Records -->
+                <div class="mt-6 bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">NIP-05 Records</h3>
+                    </div>
+                    <div class="px-4 py-5 sm:p-6">
+                        <div th:if="${domain.recordCount > 0}" class="flex items-center justify-between">
+                            <p class="text-sm text-gray-600">
+                                This domain has <span class="font-medium" th:text="${domain.recordCount}">0</span> NIP-05 records.
+                            </p>
+                            <a th:href="@{/admin/records(search=${domain.name})}"
+                               class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200">
+                                View Records
+                            </a>
+                        </div>
+                        <div th:if="${domain.recordCount == 0}" class="text-center py-4">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No records</h3>
+                            <p class="mt-1 text-sm text-gray-500">This domain has no NIP-05 records yet.</p>
+                            <div class="mt-4">
+                                <a href="/admin/records"
+                                   class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200">
+                                    Add Record
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="mt-6 flex justify-end space-x-3">
+                    <a href="/admin/domains"
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Back to Domains
+                    </a>
+                    <form th:action="@{/admin/domains/{id}/delete(id=${domain.id})}" method="post" class="inline"
+                          onsubmit="return confirm('Are you sure you want to delete this domain? All associated records will also be deleted.');">
+                        <button type="submit"
+                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700">
+                            Delete Domain
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
