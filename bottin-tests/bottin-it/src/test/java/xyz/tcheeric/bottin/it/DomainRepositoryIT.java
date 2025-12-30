@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 import xyz.tcheeric.bottin.core.model.VerificationMethod;
 import xyz.tcheeric.bottin.persistence.entity.DomainEntity;
 import xyz.tcheeric.bottin.persistence.entity.Nip05RecordEntity;
@@ -134,40 +135,47 @@ class DomainRepositoryIT extends BaseIntegrationTest {
 
     /**
      * Tests cascade deletion of associated NIP-05 records when domain is deleted.
+     * The relationship is managed through the parent entity to ensure cascade works.
      */
     @Test
+    @Transactional
     void shouldCascadeDeleteAssociatedNip05Records() {
-        // Arrange: Create domain with associated records
-        DomainEntity domain = domainRepository.save(
-                DomainEntity.builder()
-                        .name("cascade.com")
-                        .verified(true)
-                        .build()
-        );
+        // Arrange: Create domain
+        DomainEntity domain = DomainEntity.builder()
+                .name("cascade.com")
+                .verified(true)
+                .build();
 
-        nip05RecordRepository.save(
-                Nip05RecordEntity.builder()
-                        .domain(domain)
-                        .username("user1")
-                        .pubkey(TEST_PUBKEY)
-                        .build()
-        );
-        nip05RecordRepository.save(
-                Nip05RecordEntity.builder()
-                        .domain(domain)
-                        .username("user2")
-                        .pubkey("89be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81799")
-                        .build()
-        );
+        // Add NIP-05 records through the parent entity for proper cascade
+        Nip05RecordEntity record1 = Nip05RecordEntity.builder()
+                .domain(domain)
+                .username("user1")
+                .pubkey(TEST_PUBKEY)
+                .build();
+        Nip05RecordEntity record2 = Nip05RecordEntity.builder()
+                .domain(domain)
+                .username("user2")
+                .pubkey("89be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81799")
+                .build();
+
+        domain.getNip05Records().add(record1);
+        domain.getNip05Records().add(record2);
+
+        // Save the domain with associated records
+        domain = domainRepository.save(domain);
 
         // Verify records exist
-        assertThat(nip05RecordRepository.countByDomain(domain)).isEqualTo(2);
+        assertThat(domain.getNip05Records()).hasSize(2);
+
+        Long domainId = domain.getId();
 
         // Act: Delete the domain
         domainRepository.delete(domain);
         domainRepository.flush();
 
-        // Assert: Associated records should be deleted
+        // Assert: Domain should be deleted
+        assertThat(domainRepository.findById(domainId)).isEmpty();
+        // Associated records should be deleted via cascade
         assertThat(nip05RecordRepository.findByDomainNameAndEnabledTrue("cascade.com")).isEmpty();
     }
 

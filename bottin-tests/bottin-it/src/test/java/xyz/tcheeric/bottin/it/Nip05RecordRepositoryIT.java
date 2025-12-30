@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 import xyz.tcheeric.bottin.persistence.entity.DomainEntity;
 import xyz.tcheeric.bottin.persistence.entity.Nip05RecordEntity;
 import xyz.tcheeric.bottin.persistence.repository.DomainRepository;
@@ -103,6 +104,7 @@ class Nip05RecordRepositoryIT extends BaseIntegrationTest {
      * Tests querying records by username and domain name returns the correct record.
      */
     @Test
+    @Transactional
     void shouldFindRecordByUsernameAndDomainName() {
         // Arrange: Create and save a record
         nip05RecordRepository.save(
