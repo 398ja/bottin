@@ -25,8 +25,9 @@ public interface Nip05RecordRepository extends JpaRepository<Nip05RecordEntity, 
 
     /**
      * Finds a record by username and domain name.
+     * Uses JOIN FETCH to eagerly load the domain for async context access.
      */
-    @Query("SELECT r FROM Nip05RecordEntity r WHERE r.username = :username AND r.domain.name = :domainName")
+    @Query("SELECT r FROM Nip05RecordEntity r JOIN FETCH r.domain WHERE r.username = :username AND r.domain.name = :domainName")
     Optional<Nip05RecordEntity> findByUsernameAndDomainName(
             @Param("username") String username,
             @Param("domainName") String domainName);
@@ -58,8 +59,9 @@ public interface Nip05RecordRepository extends JpaRepository<Nip05RecordEntity, 
 
     /**
      * Finds all enabled records for a domain name.
+     * Uses JOIN FETCH to eagerly load the domain for async context access.
      */
-    @Query("SELECT r FROM Nip05RecordEntity r WHERE r.domain.name = :domainName AND r.enabled = true")
+    @Query("SELECT r FROM Nip05RecordEntity r JOIN FETCH r.domain WHERE r.domain.name = :domainName AND r.enabled = true")
     List<Nip05RecordEntity> findByDomainNameAndEnabledTrue(@Param("domainName") String domainName);
 
     /**
