@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  bottin:
+  bottin-web:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: bottin
+      dockerfile: Dockerfile.web
+    container_name: bottin-web
     ports:
       - "${BOTTIN_PORT:-8080}:8080"
     environment:
@@ -24,6 +24,34 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - bottin-network
+
+  bottin-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+    container_name: bottin-admin
+    ports:
+      - "${BOTTIN_ADMIN_PORT:-8081}:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - BOTTIN_DATABASE_URL=jdbc:postgresql://postgres:5432/bottin
+      - BOTTIN_DATABASE_USER=bottin
+      - BOTTIN_DATABASE_PASSWORD=${BOTTIN_DATABASE_PASSWORD:-bottin}
+      - BOTTIN_ADMIN_USER=${BOTTIN_ADMIN_USER:-admin}
+      - BOTTIN_ADMIN_PASSWORD=${BOTTIN_ADMIN_PASSWORD:-changeme}
+      - BOTTIN_DEFAULT_DOMAIN=${BOTTIN_DEFAULT_DOMAIN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 /**
  * Test configuration for web module tests.
  * Provides a minimal Spring Boot context for testing controllers.
+ * Only scans the web package to avoid loading JPA dependencies.
  */
 @SpringBootApplication(scanBasePackages = "xyz.tcheeric.bottin.web")
 public class TestWebConfiguration {

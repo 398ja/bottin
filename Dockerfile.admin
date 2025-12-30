@@ -1,5 +1,4 @@
-# Multi-stage build for bottin-web (default)
-# For service-specific builds, use Dockerfile.web or Dockerfile.admin
+# Multi-stage build for bottin-admin-ui
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /app
@@ -24,7 +23,7 @@ RUN apk add --no-cache maven && \
 COPY . .
 
 # Build the application
-RUN mvn package -DskipTests -B -pl bottin-web -am
+RUN mvn package -DskipTests -B -pl bottin-admin-ui -am
 
 # Runtime image
 FROM eclipse-temurin:21-jre-alpine
@@ -36,7 +35,7 @@ RUN addgroup -g 1000 bottin && \
     adduser -u 1000 -G bottin -s /bin/sh -D bottin
 
 # Copy the built JAR
-COPY --from=builder /app/bottin-web/target/bottin-web-*.jar app.jar
+COPY --from=builder /app/bottin-admin-ui/target/bottin-admin-ui-*.jar app.jar
 
 # Set ownership
 RUN chown -R bottin:bottin /app
@@ -44,11 +43,11 @@ RUN chown -R bottin:bottin /app
 USER bottin
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8081
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-    CMD wget -q --spider http://localhost:8080/actuator/health || exit 1
+    CMD wget -q --spider http://localhost:8081/actuator/health || exit 1
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

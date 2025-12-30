@@ -1,5 +1,4 @@
-# Multi-stage build for bottin-web (default)
-# For service-specific builds, use Dockerfile.web or Dockerfile.admin
+# Multi-stage build for bottin-web
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /app
