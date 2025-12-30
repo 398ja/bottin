@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import xyz.tcheeric.bottin.core.exception.DomainNotFoundException;
 import xyz.tcheeric.bottin.core.model.DomainData;
 import xyz.tcheeric.bottin.service.DomainService;
+import xyz.tcheeric.bottin.verification.DomainVerificationService;
 import xyz.tcheeric.bottin.web.config.SecurityConfig;
 import xyz.tcheeric.bottin.web.dto.CreateDomainRequest;
 
@@ -53,6 +54,9 @@ class DomainControllerTest {
 
     @MockBean
     private DomainService domainService;
+
+    @MockBean
+    private DomainVerificationService verificationService;
 
     /**
      * Tests that listing domains returns a paginated response.
