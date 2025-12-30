@@ -93,9 +93,54 @@ docker-compose down
 docker-compose down -v
 ```
 
-## Build Images Locally
+## Build Images with Jib
 
-To rebuild Docker images after code changes:
+Bottin uses [Google Jib](https://github.com/GoogleContainerTools/jib) for building optimized Docker images without requiring a Docker daemon.
+
+### Build to Local Docker Daemon
+
+```bash
+# Build both services to local Docker
+mvn -Pdocker jib:dockerBuild -pl bottin-web,bottin-admin-ui
+
+# Build a single service
+mvn -Pdocker jib:dockerBuild -pl bottin-web
+```
+
+### Push to Private Registry
+
+Push images to `docker.398ja.xyz`:
+
+```bash
+# Login to registry first
+docker login docker.398ja.xyz
+
+# Build and push both services
+mvn -Pdocker jib:build -pl bottin-web,bottin-admin-ui
+
+# Build and push a single service
+mvn -Pdocker jib:build -pl bottin-web
+```
+
+### Image Tags
+
+Images are tagged with both the version and `latest`:
+- `docker.398ja.xyz/bottin-web:0.1.0-SNAPSHOT`
+- `docker.398ja.xyz/bottin-web:latest`
+- `docker.398ja.xyz/bottin-admin-ui:0.1.0-SNAPSHOT`
+- `docker.398ja.xyz/bottin-admin-ui:latest`
+
+### Container Configuration
+
+Default container settings:
+- **Base image**: `eclipse-temurin:21-jre-alpine`
+- **JVM**: G1GC with container support, 256MB-512MB heap
+- **Port**: 8080
+- **Spring profile**: `docker`
+
+## Build Images with Docker Compose
+
+Alternatively, rebuild images using Docker Compose:
 
 ```bash
 # Rebuild all images

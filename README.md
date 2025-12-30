@@ -176,7 +176,10 @@ bottin/
 ├── bottin-web/                  # REST controllers, well-known endpoint
 ├── bottin-admin-ui/             # Admin dashboard (Thymeleaf)
 ├── bottin-verification/         # Domain & external NIP-05 verification
-└── bottin-spring-boot-starter/  # Auto-configuration for embedding
+├── bottin-spring-boot-starter/  # Auto-configuration for embedding
+└── bottin-tests/                # Integration and E2E tests
+    ├── bottin-it/               # Integration tests
+    └── bottin-e2e/              # End-to-end tests with Testcontainers
 ```
 
 ## Building
@@ -185,15 +188,43 @@ bottin/
 # Compile
 mvn compile
 
-# Run tests
+# Run unit tests
 mvn test
+
+# Run all tests and build
+mvn verify
 
 # Package
 mvn package
-
-# Build Docker image
-docker build -t bottin .
 ```
+
+### Running Integration Tests
+
+E2E and integration tests are skipped by default and require explicit activation:
+
+```bash
+# Run E2E tests
+mvn -Pe2e -pl bottin-tests/bottin-e2e test
+
+# Run integration tests
+mvn -Pit -pl bottin-tests/bottin-it test
+```
+
+### Building Docker Images
+
+Build Docker images using [Jib](https://github.com/GoogleContainerTools/jib):
+
+```bash
+# Build to local Docker daemon
+mvn -Pdocker jib:dockerBuild -pl bottin-web,bottin-admin-ui
+
+# Push to docker.398ja.xyz registry
+mvn -Pdocker jib:build -pl bottin-web,bottin-admin-ui
+```
+
+Images are published as:
+- `docker.398ja.xyz/bottin-web:latest`
+- `docker.398ja.xyz/bottin-admin-ui:latest`
 
 ## License
 
