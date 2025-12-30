@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * IT-01: NIP-05 Record Repository Integration Tests.
  * Verifies CRUD operations work correctly with PostgreSQL database.
  */
+@Transactional
 class Nip05RecordRepositoryIT extends BaseIntegrationTest {
 
     @Autowired
@@ -104,7 +105,6 @@ class Nip05RecordRepositoryIT extends BaseIntegrationTest {
      * Tests querying records by username and domain name returns the correct record.
      */
     @Test
-    @Transactional
     void shouldFindRecordByUsernameAndDomainName() {
         // Arrange: Create and save a record
         nip05RecordRepository.save(

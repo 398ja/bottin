@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * IT-02: Domain Repository Integration Tests.
  * Verifies domain persistence and cascade operations with PostgreSQL.
  */
+@Transactional
 class DomainRepositoryIT extends BaseIntegrationTest {
 
     @Autowired
@@ -138,7 +139,6 @@ class DomainRepositoryIT extends BaseIntegrationTest {
      * The relationship is managed through the parent entity to ensure cascade works.
      */
     @Test
-    @Transactional
     void shouldCascadeDeleteAssociatedNip05Records() {
         // Arrange: Create domain
         DomainEntity domain = DomainEntity.builder()
