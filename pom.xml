@@ -38,9 +38,9 @@
     <modules>
         <module>bottin-core</module>
         <module>bottin-persistence</module>
-        <!-- Future modules:
         <module>bottin-service</module>
         <module>bottin-web</module>
+        <!-- Future modules:
         <module>bottin-admin-ui</module>
         <module>bottin-verification</module>
         <module>bottin-spring-boot-starter</module>
