@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
  * Test application for E2E tests.
+ * Note: Admin module is excluded as it has conflicting security config.
+ * E2E tests focus on the web API layer.
  */
 @SpringBootApplication(scanBasePackages = {
         "xyz.tcheeric.bottin.core",
@@ -14,7 +16,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "xyz.tcheeric.bottin.service",
         "xyz.tcheeric.bottin.verification",
         "xyz.tcheeric.bottin.web",
-        "xyz.tcheeric.bottin.admin",
         "xyz.tcheeric.bottin.starter"
 })
 @EntityScan(basePackages = "xyz.tcheeric.bottin.persistence.entity")

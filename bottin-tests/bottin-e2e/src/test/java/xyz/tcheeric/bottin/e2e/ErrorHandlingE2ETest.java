@@ -16,7 +16,7 @@ import static org.hamcrest.Matchers.notNullValue;
  * E2E-08: Error Handling and Edge Cases.
  * Tests proper error responses for invalid inputs and edge cases.
  */
-class ErrorHandlingE2ETest extends BaseE2ETest {
+class ErrorHandlingE2ETest extends BasicE2ETest {
 
     @Autowired
     private DomainRepository domainRepository;
@@ -39,7 +39,7 @@ class ErrorHandlingE2ETest extends BaseE2ETest {
                 }
                 """;
 
-        testDomainId = given()
+        Integer id = given()
                 .auth().basic(ADMIN_USER, ADMIN_PASSWORD)
                 .contentType(ContentType.JSON)
                 .body(domainJson)
@@ -49,6 +49,7 @@ class ErrorHandlingE2ETest extends BaseE2ETest {
                 .statusCode(201)
                 .extract()
                 .path("id");
+        testDomainId = id.longValue();
     }
 
     /**

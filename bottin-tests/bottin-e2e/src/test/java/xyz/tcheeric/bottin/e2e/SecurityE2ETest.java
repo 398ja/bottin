@@ -10,7 +10,7 @@ import static org.hamcrest.Matchers.containsString;
  * E2E-06: Security and Authentication Tests.
  * Tests authentication requirements and public endpoint access.
  */
-class SecurityE2ETest extends BaseE2ETest {
+class SecurityE2ETest extends BasicE2ETest {
 
     /**
      * Tests that protected endpoints require authentication.

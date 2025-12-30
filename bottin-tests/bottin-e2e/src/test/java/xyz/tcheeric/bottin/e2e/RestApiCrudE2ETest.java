@@ -17,7 +17,7 @@ import static org.hamcrest.Matchers.notNullValue;
  * E2E-05: REST API CRUD Complete Cycle.
  * Tests full CRUD operations on domains and NIP-05 records.
  */
-class RestApiCrudE2ETest extends BaseE2ETest {
+class RestApiCrudE2ETest extends BasicE2ETest {
 
     @Autowired
     private DomainRepository domainRepository;
@@ -58,7 +58,7 @@ class RestApiCrudE2ETest extends BaseE2ETest {
                 .body("verified", equalTo(false))
                 .body("id", notNullValue())
                 .extract()
-                .path("id");
+                .jsonPath().getLong("id");
 
         // READ: GET /api/v1/domains/{id}
         given()
@@ -118,7 +118,7 @@ class RestApiCrudE2ETest extends BaseE2ETest {
                 .then()
                 .statusCode(201)
                 .extract()
-                .path("id");
+                .jsonPath().getLong("id");
 
         // CREATE: POST /api/v1/records
         String createRecordJson = """
@@ -142,7 +142,7 @@ class RestApiCrudE2ETest extends BaseE2ETest {
                 .body("pubkey", equalTo(TEST_PUBKEY))
                 .body("id", notNullValue())
                 .extract()
-                .path("id");
+                .jsonPath().getLong("id");
 
         // READ: GET /api/v1/records/{id}
         given()
@@ -234,7 +234,7 @@ class RestApiCrudE2ETest extends BaseE2ETest {
                 .then()
                 .statusCode(201)
                 .extract()
-                .path("id");
+                .jsonPath().getLong("id");
 
         // Create multiple records
         for (int i = 1; i <= 3; i++) {

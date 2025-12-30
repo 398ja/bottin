@@ -16,7 +16,7 @@ import static org.hamcrest.Matchers.notNullValue;
  * E2E-01: Complete NIP-05 Registration Flow.
  * Tests the full flow from domain registration to NIP-05 lookup.
  */
-class Nip05RegistrationFlowE2ETest extends BaseE2ETest {
+class Nip05RegistrationFlowE2ETest extends BasicE2ETest {
 
     @Autowired
     private DomainRepository domainRepository;
@@ -61,7 +61,7 @@ class Nip05RegistrationFlowE2ETest extends BaseE2ETest {
                 .body("name", equalTo("test.example.com"))
                 .body("id", notNullValue())
                 .extract()
-                .path("id");
+                .jsonPath().getLong("id");
 
         // Step 2: Verify domain appears in domains list
         given()
@@ -128,7 +128,7 @@ class Nip05RegistrationFlowE2ETest extends BaseE2ETest {
                 .then()
                 .statusCode(201)
                 .extract()
-                .path("id");
+                .jsonPath().getLong("id");
 
         // Create first record
         String record1Json = """
