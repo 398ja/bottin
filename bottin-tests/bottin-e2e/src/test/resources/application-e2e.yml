@@ -11,6 +11,23 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
+    properties:
+      hibernate:
+        # Suppress PostgreSQL createClob() warning
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+  # DataSource/HikariCP configuration for Testcontainers
+  datasource:
+    hikari:
+      # Shorter max-lifetime to avoid stale connection warnings on shutdown
+      max-lifetime: 60000
+      # Faster shutdown
+      connection-timeout: 5000
+      validation-timeout: 3000
+      # Smaller pool for tests
+      maximum-pool-size: 5
 
   # Flyway - disabled for E2E tests
   flyway:
