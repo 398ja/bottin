@@ -6,7 +6,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Builder;
 import lombok.Value;
-import xyz.tcheeric.nsecbunker.account.nip05.Nip05Record;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -88,37 +87,6 @@ public class Nip05RecordData {
         } catch (JsonProcessingException e) {
             return Collections.emptyList();
         }
-    }
-
-    /**
-     * Converts this to the nsecbunker-java Nip05Record model.
-     */
-    public Nip05Record toNip05Record() {
-        return Nip05Record.builder()
-                .nip05(getNip05())
-                .pubkey(pubkey)
-                .relaysJson(relaysJson)
-                .build();
-    }
-
-    /**
-     * Creates a Nip05RecordData from an nsecbunker-java Nip05Record.
-     */
-    public static Nip05RecordData fromNip05Record(Nip05Record record, Long domainId) {
-        String username = record.getUsername();
-        String domain = record.getDomain();
-        Instant now = Instant.now();
-
-        return Nip05RecordData.builder()
-                .domainId(domainId)
-                .username(username)
-                .domain(domain)
-                .pubkey(record.getPubkey())
-                .relaysJson(record.getRelaysJson())
-                .enabled(true)
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
     }
 
     /**
