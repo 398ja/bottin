@@ -15,6 +15,7 @@ Learning-oriented guides that take you through a series of steps to complete a p
 Problem-oriented guides that show you how to achieve a specific goal.
 
 - [Deploy with Docker](how-to/docker-deployment.md) - Deploy Bottin services using Docker Compose
+- [Running E2E Tests](how-to/running-e2e-tests.md) - Run end-to-end tests with Testcontainers
 
 ## Reference
 
