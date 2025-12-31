@@ -34,8 +34,8 @@ WORKDIR /app
 RUN addgroup -g 1000 bottin && \
     adduser -u 1000 -G bottin -s /bin/sh -D bottin
 
-# Copy the built JAR
-COPY --from=builder /app/bottin-web/target/bottin-web-*.jar app.jar
+# Copy the built JAR (use the exec jar which is the repackaged Spring Boot jar)
+COPY --from=builder /app/bottin-web/target/bottin-web-*-exec.jar app.jar
 
 # Set ownership
 RUN chown -R bottin:bottin /app

@@ -1,6 +1,6 @@
 -- Domain verification logs table for tracking verification attempts
 CREATE TABLE domain_verification_logs (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     domain_id BIGINT NOT NULL,
     method VARCHAR(20) NOT NULL,
     success BOOLEAN NOT NULL,
