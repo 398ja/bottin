@@ -15,7 +15,9 @@ bottin/
 ├── bottin-web/            # REST API controllers
 ├── bottin-admin-ui/       # Admin dashboard (Thymeleaf)
 ├── bottin-spring-boot-starter/  # Auto-configuration
-└── bottin-tests/          # Integration tests
+└── bottin-tests/          # Test modules
+    ├── bottin-it/         # Integration tests
+    └── bottin-e2e/        # End-to-end tests with Testcontainers
 ```
 
 ### Module Dependencies
@@ -125,3 +127,47 @@ Both services share common configuration through:
 - Environment variables for deployment customization
 
 See [Docker Compose Configuration](../reference/docker-compose-configuration.md) for deployment options.
+
+## Testing Architecture
+
+Bottin uses a layered testing approach with dedicated test modules.
+
+### Test Module Structure
+
+```
+bottin-tests/
+├── bottin-it/     # Integration tests (mint-specific)
+└── bottin-e2e/    # End-to-end tests
+    ├── BasicE2ETest        # Tests without external containers
+    ├── BaseE2ETest         # Tests with full container infrastructure
+    └── TestContainersConfig # Testcontainers configuration
+```
+
+### E2E Test Infrastructure
+
+The E2E tests use [Testcontainers](https://testcontainers.org/) to spin up real infrastructure:
+
+- **PostgreSQL** - Database for persistent storage
+- **nsecbunkerd** - Key management container for integration testing
+- **strfry** - Nostr relay (optional, for NIP-46 tests)
+
+### Test Profiles
+
+Maven profiles control test execution:
+
+| Profile | Command | Description |
+|---------|---------|-------------|
+| default | `mvn test` | Unit tests only |
+| e2e | `mvn -Pe2e test` | E2E tests with Testcontainers |
+| it | `mvn -Pit test` | Integration tests |
+
+### nsecbunker-java Integration Tests
+
+The `NsecbunkerIntegrationE2ETest` verifies the integration between bottin's `PersistentNip05Manager` and nsecbunker-java:
+
+- NIP-05 record creation with generated keypairs
+- NIP-05 verification and lookup
+- Record management (CRUD operations)
+- Well-known endpoint integration
+
+See [Running E2E Tests](../how-to/running-e2e-tests.md) for detailed instructions.
