@@ -1,6 +1,7 @@
 package xyz.tcheeric.bottin.admin.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -22,6 +23,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class AdminSecurityConfig {
+
+    @Value("${bottin.admin.username:admin}")
+    private String adminUsername;
+
+    @Value("${BOTTIN_ADMIN_PASSWORD:admin}")
+    private String adminPassword;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -57,10 +64,10 @@ public class AdminSecurityConfig {
 
     @Bean
     public UserDetailsService adminUserDetailsService(PasswordEncoder passwordEncoder) {
-        // Default admin user - in production, use database-backed UserDetailsService
+        // Admin user configured via environment variables
         UserDetails admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder.encode("admin"))
+                .username(adminUsername)
+                .password(passwordEncoder.encode(adminPassword))
                 .roles("ADMIN")
                 .build();
 
