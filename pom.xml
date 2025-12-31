@@ -7,7 +7,7 @@
 
     <groupId>xyz.tcheeric</groupId>
     <artifactId>bottin</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <packaging>pom</packaging>
 
     <name>Bottin - NIP-05 Registry Service</name>
@@ -53,10 +53,10 @@
         <java.version>21</java.version>
 
         <!-- Spring Boot -->
-        <spring-boot.version>3.2.4</spring-boot.version>
+        <spring-boot.version>3.4.1</spring-boot.version>
 
         <!-- nsecbunker-java integration -->
-        <nsecbunker-java.version>0.1.0-SNAPSHOT</nsecbunker-java.version>
+        <nsecbunker-java.version>0.1.0</nsecbunker-java.version>
         <nostr-java.version>1.2.0</nostr-java.version>
 
         <!-- Database -->
@@ -88,7 +88,7 @@
         <htmx.version>1.9.10</htmx.version>
 
         <!-- DNS (for domain verification) -->
-        <dnsjava.version>3.5.3</dnsjava.version>
+        <dnsjava.version>3.6.0</dnsjava.version>
 
         <!-- Plugin versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>

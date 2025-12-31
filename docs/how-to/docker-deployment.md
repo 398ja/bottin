@@ -97,37 +97,58 @@ docker-compose down -v
 
 Bottin uses [Google Jib](https://github.com/GoogleContainerTools/jib) for building optimized Docker images without requiring a Docker daemon.
 
+### Deploy with Maven (Recommended)
+
+The `mvn deploy` goal automatically pushes Docker images to the registry along with Maven artifacts:
+
+```bash
+# Deploy everything (JARs to Maven repo + Docker images to registry)
+mvn deploy
+
+# Deploy specific modules only
+mvn deploy -pl bottin-web,bottin-admin-ui -am
+```
+
+This requires registry credentials in `~/.m2/settings.xml`:
+
+```xml
+<server>
+    <id>docker.398ja.xyz</id>
+    <username>your-username</username>
+    <password>your-password</password>
+</server>
+```
+
 ### Build to Local Docker Daemon
+
+For local development, build images to your local Docker daemon:
 
 ```bash
 # Build both services to local Docker
-mvn -Pdocker jib:dockerBuild -pl bottin-web,bottin-admin-ui
+mvn jib:dockerBuild -pl bottin-web,bottin-admin-ui
 
 # Build a single service
-mvn -Pdocker jib:dockerBuild -pl bottin-web
+mvn jib:dockerBuild -pl bottin-web
 ```
 
-### Push to Private Registry
+### Push to Private Registry (Manual)
 
-Push images to `docker.398ja.xyz`:
+Push images manually without deploying Maven artifacts:
 
 ```bash
-# Login to registry first
-docker login docker.398ja.xyz
-
 # Build and push both services
-mvn -Pdocker jib:build -pl bottin-web,bottin-admin-ui
+mvn jib:build -pl bottin-web,bottin-admin-ui
 
 # Build and push a single service
-mvn -Pdocker jib:build -pl bottin-web
+mvn jib:build -pl bottin-web
 ```
 
 ### Image Tags
 
 Images are tagged with both the version and `latest`:
-- `docker.398ja.xyz/bottin-web:0.1.0-SNAPSHOT`
+- `docker.398ja.xyz/bottin-web:0.1.0`
 - `docker.398ja.xyz/bottin-web:latest`
-- `docker.398ja.xyz/bottin-admin-ui:0.1.0-SNAPSHOT`
+- `docker.398ja.xyz/bottin-admin-ui:0.1.0`
 - `docker.398ja.xyz/bottin-admin-ui:latest`
 
 ### Container Configuration

@@ -7,9 +7,9 @@ public enum VerificationMethod {
 
     /**
      * DNS TXT record verification.
-     * User adds a TXT record to _bottin.{domain} with the verification token.
+     * User adds a TXT record to _bottin-verification.{domain} with the verification token.
      */
-    DNS_TXT("DNS TXT Record", "_bottin.{domain}"),
+    DNS_TXT("DNS TXT Record", "_bottin-verification.{domain}"),
 
     /**
      * Well-known file verification.

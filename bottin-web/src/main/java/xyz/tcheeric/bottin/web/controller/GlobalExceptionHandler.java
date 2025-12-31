@@ -100,11 +100,16 @@ public class GlobalExceptionHandler {
 
         log.warn("method_not_allowed path={} method={}", request.getRequestURI(), ex.getMethod());
 
+        String[] supportedMethods = ex.getSupportedMethods();
+        String suggestion = supportedMethods != null && supportedMethods.length > 0
+                ? "Use one of the supported methods: " + String.join(", ", supportedMethods)
+                : "Check the API documentation for supported methods";
+
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(ErrorResponse.withSuggestion(
                         "METHOD_NOT_ALLOWED",
                         "HTTP method " + ex.getMethod() + " is not supported for this endpoint",
-                        "Use one of the supported methods: " + String.join(", ", ex.getSupportedMethods()),
+                        suggestion,
                         request.getRequestURI()
                 ));
     }

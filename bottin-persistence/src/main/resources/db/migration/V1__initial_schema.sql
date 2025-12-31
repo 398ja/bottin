@@ -3,7 +3,7 @@
 
 -- domains: Registered domains with verification status
 CREATE TABLE domains (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     verified BOOLEAN DEFAULT FALSE NOT NULL,
     verification_token VARCHAR(64),
@@ -18,7 +18,7 @@ CREATE INDEX idx_domains_name ON domains(name);
 
 -- nip05_records: NIP-05 identifier mappings
 CREATE TABLE nip05_records (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     domain_id BIGINT NOT NULL,
     username VARCHAR(255) NOT NULL,
     pubkey VARCHAR(64) NOT NULL,
@@ -35,7 +35,7 @@ CREATE INDEX idx_nip05_records_domain_username ON nip05_records(domain_id, usern
 
 -- admin_users: Admin dashboard users
 CREATE TABLE admin_users (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     pubkey VARCHAR(64),
@@ -48,7 +48,7 @@ CREATE INDEX idx_admin_users_username ON admin_users(username);
 
 -- verification_logs: Audit trail for verifications
 CREATE TABLE verification_logs (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     nip05 VARCHAR(511) NOT NULL,
     verification_type VARCHAR(20) NOT NULL,
     result VARCHAR(20) NOT NULL,

@@ -8,7 +8,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>bottin</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1.0</version>
     </parent>
 
     <artifactId>bottin-web</artifactId>
@@ -167,6 +167,15 @@
                         <mainClass>xyz.tcheeric.bottin.web.app.BottinWebApplication</mainClass>
                     </container>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>push-docker-image</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

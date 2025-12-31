@@ -93,44 +93,57 @@
                         <div class="px-4 py-5 sm:p-6">
                             <div th:if="${domain.verificationToken}">
                                 <p class="text-sm text-gray-600 mb-4">
-                                    To verify ownership of this domain, add one of the following:
+                                    Current method: <span class="font-semibold" th:text="${verificationStatus.method}">DNS_TXT</span>
                                 </p>
 
-                                <!-- DNS TXT Record -->
-                                <div class="mb-6">
-                                    <h4 class="text-sm font-medium text-gray-900 mb-2">Option 1: DNS TXT Record</h4>
+                                <!-- DNS TXT Record Instructions -->
+                                <div class="mb-6" th:if="${verificationStatus.method.name() == 'DNS_TXT'}">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-2">DNS TXT Record</h4>
                                     <p class="text-xs text-gray-500 mb-2">Add a TXT record to your DNS:</p>
                                     <div class="bg-gray-50 rounded-md p-3">
                                         <p class="text-xs text-gray-500">Name:</p>
-                                        <code class="text-sm font-mono text-gray-900">_nostr-verification</code>
+                                        <code class="text-sm font-mono text-gray-900" th:text="'_bottin-verification.' + ${domain.name}">_bottin-verification.example.com</code>
                                         <p class="text-xs text-gray-500 mt-2">Value:</p>
-                                        <code class="text-sm font-mono text-gray-900 break-all" th:text="${domain.verificationToken}">token-here</code>
+                                        <code class="text-sm font-mono text-gray-900 break-all" th:text="'bottin-verification=' + ${domain.verificationToken}">bottin-verification=token-here</code>
                                     </div>
                                 </div>
 
-                                <!-- Well-Known File -->
-                                <div class="mb-6">
-                                    <h4 class="text-sm font-medium text-gray-900 mb-2">Option 2: Well-Known File</h4>
+                                <!-- Well-Known File Instructions -->
+                                <div class="mb-6" th:if="${verificationStatus.method.name() == 'WELL_KNOWN_FILE'}">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-2">Well-Known File</h4>
                                     <p class="text-xs text-gray-500 mb-2">Create a file at this URL:</p>
                                     <div class="bg-gray-50 rounded-md p-3">
                                         <code class="text-sm font-mono text-gray-900 break-all"
-                                              th:text="'https://' + ${domain.name} + '/.well-known/nostr-verification'">
-                                            https://example.com/.well-known/nostr-verification
+                                              th:text="'https://' + ${domain.name} + '/.well-known/bottin-verification.txt'">
+                                            https://example.com/.well-known/bottin-verification.txt
                                         </code>
                                         <p class="text-xs text-gray-500 mt-2">With content:</p>
                                         <code class="text-sm font-mono text-gray-900 break-all" th:text="${domain.verificationToken}">token-here</code>
                                     </div>
                                 </div>
 
-                                <form th:action="@{/admin/domains/{id}/verify/attempt(id=${domain.id})}" method="post">
-                                    <button type="submit"
-                                            class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
-                                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                        </svg>
-                                        Verify Domain Now
-                                    </button>
-                                </form>
+                                <div class="space-y-3">
+                                    <form th:action="@{/admin/domains/{id}/verify/attempt(id=${domain.id})}" method="post">
+                                        <button type="submit"
+                                                class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
+                                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                            Verify Domain Now
+                                        </button>
+                                    </form>
+
+                                    <p class="text-xs text-gray-500 text-center">or change verification method:</p>
+                                    <form th:action="@{/admin/domains/{id}/verify(id=${domain.id})}" method="post" class="flex space-x-2">
+                                        <select name="method" class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                            <option th:each="m : ${verificationMethods}" th:value="${m}" th:text="${m}" th:selected="${m == verificationStatus.method}">DNS_TXT</option>
+                                        </select>
+                                        <button type="submit"
+                                                class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                            Change
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                             <div th:unless="${domain.verificationToken}">
                                 <p class="text-sm text-gray-600 mb-4">

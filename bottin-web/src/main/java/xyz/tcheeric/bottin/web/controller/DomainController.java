@@ -199,11 +199,11 @@ public class DomainController {
             @Parameter(description = "Domain ID") @PathVariable Long id,
             @Valid @RequestBody InitiateVerificationRequest request) {
 
-        log.info("verification_initiate domain_id={} method={}", id, request.getMethod());
+        log.info("verification_initiate_via_body domain_id={} method={}", id, request.getMethod());
 
         VerificationChallenge challenge = verificationService.initiateVerification(id, request.getMethod());
 
-        log.info("verification_challenge_created domain_id={} method={} already_verified={}",
+        log.info("verification_challenge_created_via_body domain_id={} method={} already_verified={}",
                 id, request.getMethod(), challenge.isAlreadyVerified());
 
         return ResponseEntity.ok(VerificationChallengeResponse.from(challenge));
@@ -260,19 +260,19 @@ public class DomainController {
             @Parameter(description = "Verification method (DNS_TXT or WELL_KNOWN_FILE)")
             @PathVariable("method") String methodStr) {
 
-        log.info("verification_initiate domain_id={} method={}", id, methodStr);
+        log.info("verification_initiate_via_path domain_id={} method={}", id, methodStr);
 
         VerificationMethod method;
         try {
             method = VerificationMethod.valueOf(methodStr.toUpperCase());
         } catch (IllegalArgumentException e) {
-            log.warn("verification_invalid_method domain_id={} method={}", id, methodStr);
+            log.warn("verification_invalid_method_in_path domain_id={} method={}", id, methodStr);
             return ResponseEntity.badRequest().build();
         }
 
         VerificationChallenge challenge = verificationService.initiateVerification(id, method);
 
-        log.info("verification_challenge_created domain_id={} method={} already_verified={}",
+        log.info("verification_challenge_created_via_path domain_id={} method={} already_verified={}",
                 id, method, challenge.isAlreadyVerified());
 
         return ResponseEntity.ok(VerificationChallengeResponse.from(challenge));

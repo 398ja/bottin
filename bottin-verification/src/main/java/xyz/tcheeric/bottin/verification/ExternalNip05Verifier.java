@@ -90,11 +90,11 @@ public class ExternalNip05Verifier {
             return parseAndValidateResponse(nip05, parsed, response);
         } catch (WebClientResponseException e) {
             String errorMessage = "HTTP error " + e.getStatusCode().value() + " fetching nostr.json";
-            log.debug("external_nip05_verification_http_error nip05={} status={}", nip05, e.getStatusCode());
+            log.debug("external_nip05_cached_http_error nip05={} status={}", nip05, e.getStatusCode());
             return logAndReturnFailure(nip05, errorMessage, null);
         } catch (Exception e) {
             String errorMessage = extractErrorMessage(e);
-            log.error("external_nip05_verification_error nip05={} error={}", nip05, errorMessage, e);
+            log.error("external_nip05_cached_error nip05={} error={}", nip05, errorMessage, e);
             return logAndReturnFailure(nip05, "Failed to verify: " + errorMessage, null);
         }
     }
@@ -106,7 +106,7 @@ public class ExternalNip05Verifier {
      * @return the verification result
      */
     public ExternalNip05VerificationResult verifyNoCache(String nip05) {
-        log.debug("external_nip05_verification_nocache_start nip05={}", nip05);
+        log.debug("external_nip05_nocache_start nip05={}", nip05);
 
         if (nip05 == null || nip05.isBlank()) {
             return logAndReturnFailure(nip05, "NIP-05 identifier is required", null);
@@ -124,11 +124,11 @@ public class ExternalNip05Verifier {
             return parseAndValidateResponse(nip05, parsed, response);
         } catch (WebClientResponseException e) {
             String errorMessage = "HTTP error " + e.getStatusCode().value() + " fetching nostr.json";
-            log.debug("external_nip05_verification_http_error nip05={} status={}", nip05, e.getStatusCode());
+            log.debug("external_nip05_nocache_http_error nip05={} status={}", nip05, e.getStatusCode());
             return logAndReturnFailure(nip05, errorMessage, null);
         } catch (Exception e) {
             String errorMessage = extractErrorMessage(e);
-            log.error("external_nip05_verification_error nip05={} error={}", nip05, errorMessage, e);
+            log.error("external_nip05_nocache_error nip05={} error={}", nip05, errorMessage, e);
             return logAndReturnFailure(nip05, "Failed to verify: " + errorMessage, null);
         }
     }

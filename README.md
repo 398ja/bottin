@@ -53,35 +53,15 @@ mvn spring-boot:run -pl bottin-web
 
 3. Access H2 Console at http://localhost:8080/h2-console
 
-## API Endpoints
+## API
 
-### Public Endpoints
+The REST API provides:
+- **NIP-05 Resolution**: Public `/.well-known/nostr.json` endpoint
+- **Records Management**: CRUD operations for NIP-05 identities
+- **Domain Management**: Register and verify domains
+- **External Verification**: Verify third-party NIP-05 identifiers
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/.well-known/nostr.json?name={username}` | NIP-05 lookup |
-| GET | `/api/v1/verify?nip05={identifier}` | External NIP-05 verification |
-
-### REST API (Authenticated)
-
-**NIP-05 Records:**
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/records` | List records (paginated) |
-| GET | `/api/v1/records/{id}` | Get by ID |
-| POST | `/api/v1/records` | Create record |
-| PUT | `/api/v1/records/{id}` | Update record |
-| DELETE | `/api/v1/records/{id}` | Delete record |
-
-**Domains:**
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/domains` | List domains |
-| POST | `/api/v1/domains` | Register domain |
-| DELETE | `/api/v1/domains/{id}` | Remove domain |
-| POST | `/api/v1/domains/{id}/verify` | Initiate verification |
+See the [REST API Reference](docs/reference/rest-api.md) for complete endpoint documentation.
 
 ## Configuration
 
@@ -120,17 +100,17 @@ bottin:
 ### Method 1: DNS TXT Record
 
 1. Register domain via API or admin dashboard
-2. Add TXT record to `_bottin.yourdomain.com`:
+2. Add TXT record to `_bottin-verification.yourdomain.com`:
    ```
-   bottin-verify=<your-verification-token>
+   bottin-verification=<your-verification-token>
    ```
-3. Trigger verification check
+3. Trigger verification check (DNS propagation may take up to 24 hours)
 
 ### Method 2: Well-Known File
 
 1. Register domain via API or admin dashboard
 2. Create file at `https://yourdomain.com/.well-known/bottin-verification.txt`
-3. Add the verification token as file contents
+3. Add the exact verification token as file contents
 4. Trigger verification check
 
 ## Integration with nsecbunker-java
@@ -141,7 +121,7 @@ Add the Spring Boot starter to your project:
 <dependency>
     <groupId>xyz.tcheeric</groupId>
     <artifactId>bottin-spring-boot-starter</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -203,8 +183,8 @@ mvn package
 E2E and integration tests are skipped by default and require explicit activation:
 
 ```bash
-# Run E2E tests
-mvn -Pe2e -pl bottin-tests/bottin-e2e test
+# Run E2E tests (requires Docker for Testcontainers)
+mvn -Pe2e -DskipE2ETests=false -pl bottin-tests/bottin-e2e test
 
 # Run integration tests
 mvn -Pit -pl bottin-tests/bottin-it test
@@ -216,15 +196,18 @@ Build Docker images using [Jib](https://github.com/GoogleContainerTools/jib):
 
 ```bash
 # Build to local Docker daemon
-mvn -Pdocker jib:dockerBuild -pl bottin-web,bottin-admin-ui
+mvn jib:dockerBuild -pl bottin-web,bottin-admin-ui
 
-# Push to docker.398ja.xyz registry
-mvn -Pdocker jib:build -pl bottin-web,bottin-admin-ui
+# Deploy to Maven repo and push Docker images to registry
+mvn deploy
+
+# Push to registry without deploying Maven artifacts
+mvn jib:build -pl bottin-web,bottin-admin-ui
 ```
 
-Images are published as:
-- `docker.398ja.xyz/bottin-web:latest`
-- `docker.398ja.xyz/bottin-admin-ui:latest`
+Images are published to `docker.398ja.xyz`:
+- `docker.398ja.xyz/bottin-web:0.1.0` / `latest`
+- `docker.398ja.xyz/bottin-admin-ui:0.1.0` / `latest`
 
 ## License
 
