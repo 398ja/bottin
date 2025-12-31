@@ -53,35 +53,15 @@ mvn spring-boot:run -pl bottin-web
 
 3. Access H2 Console at http://localhost:8080/h2-console
 
-## API Endpoints
+## API
 
-### Public Endpoints
+The REST API provides:
+- **NIP-05 Resolution**: Public `/.well-known/nostr.json` endpoint
+- **Records Management**: CRUD operations for NIP-05 identities
+- **Domain Management**: Register and verify domains
+- **External Verification**: Verify third-party NIP-05 identifiers
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/.well-known/nostr.json?name={username}` | NIP-05 lookup |
-| GET | `/api/v1/verify?nip05={identifier}` | External NIP-05 verification |
-
-### REST API (Authenticated)
-
-**NIP-05 Records:**
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/records` | List records (paginated) |
-| GET | `/api/v1/records/{id}` | Get by ID |
-| POST | `/api/v1/records` | Create record |
-| PUT | `/api/v1/records/{id}` | Update record |
-| DELETE | `/api/v1/records/{id}` | Delete record |
-
-**Domains:**
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/domains` | List domains |
-| POST | `/api/v1/domains` | Register domain |
-| DELETE | `/api/v1/domains/{id}` | Remove domain |
-| POST | `/api/v1/domains/{id}/verify` | Initiate verification |
+See the [REST API Reference](docs/reference/rest-api.md) for complete endpoint documentation.
 
 ## Configuration
 
