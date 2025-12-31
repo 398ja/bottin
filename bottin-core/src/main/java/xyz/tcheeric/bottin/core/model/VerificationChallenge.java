@@ -48,7 +48,7 @@ public class VerificationChallenge {
      */
     public static VerificationChallenge forDnsTxt(String domain, String token, Instant expiresAt) {
         String instructions = String.format(
-                "Add a TXT record to _bottin.%s with value: bottin-verify=%s",
+                "Add a TXT record to _bottin-verification.%s with value: bottin-verification=%s",
                 domain, token);
         return VerificationChallenge.builder()
                 .domain(domain)
@@ -88,6 +88,6 @@ public class VerificationChallenge {
      * Returns the full verification value for DNS TXT records.
      */
     public String getDnsTxtValue() {
-        return "bottin-verify=" + token;
+        return "bottin-verification=" + token;
     }
 }
