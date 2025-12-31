@@ -1,10 +1,10 @@
-version: '3.8'
-
 services:
   bottin-web:
-    build:
-      context: .
-      dockerfile: Dockerfile.web
+    image: docker.398ja.xyz/bottin-web:latest
+    # To build locally instead, uncomment:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.web
     container_name: bottin-web
     ports:
       - "${BOTTIN_PORT:-8080}:8080"
@@ -32,9 +32,11 @@ services:
       - bottin-network
 
   bottin-admin:
-    build:
-      context: .
-      dockerfile: Dockerfile.admin
+    image: docker.398ja.xyz/bottin-admin-ui:latest
+    # To build locally instead, uncomment:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.admin
     container_name: bottin-admin
     ports:
       - "${BOTTIN_ADMIN_PORT:-8081}:8081"
