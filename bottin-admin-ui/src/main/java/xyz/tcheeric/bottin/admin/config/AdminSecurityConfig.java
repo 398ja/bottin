@@ -27,7 +27,7 @@ public class AdminSecurityConfig {
     @Value("${bottin.admin.username:admin}")
     private String adminUsername;
 
-    @Value("${BOTTIN_ADMIN_PASSWORD:admin}")
+    @Value("${bottin.admin.password:admin}")
     private String adminPassword;
 
     @Bean
