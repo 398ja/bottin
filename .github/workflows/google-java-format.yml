@@ -19,7 +19,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-      - uses: axel-op/googlejavaformat-action@v5
+      - uses: axel-op/googlejavaformat-action@v4
         with:
           args: "--replace"
           github-token: ${{ secrets.GITHUB_TOKEN }}
