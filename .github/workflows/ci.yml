@@ -44,18 +44,11 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: '**/target/surefire-reports/*.xml'
 
-  # E2E tests run with both autopay modes to verify payment flows
+  # E2E tests using Testcontainers (PostgreSQL, nsecbunkerd)
   e2e-tests:
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    strategy:
-      fail-fast: false
-      matrix:
-        autopay: [true, false]
-    env:
-      PHOENIXD_AUTOPAY_ENABLED: ${{ matrix.autopay }}
-      PHOENIXD_AUTO_SETTLE_DELAY_SECONDS: 1
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -63,21 +56,12 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-      - name: Build gateway-app
-        run: mvn package -pl gateway-plugin/gateway-app -am -DskipTests -q
-      - name: Start infrastructure
-        run: |
-          docker compose -f docker-compose.gateway-e2e.yml up -d --build
-          sleep 30
-      - name: Run E2E Tests (autopay=${{ matrix.autopay }})
-        run: mvn verify -Pe2e-gateway -pl gateway-plugin/gateway-e2e -Dtest.autopay=${{ matrix.autopay }}
-      - name: Stop infrastructure
-        if: always()
-        run: docker compose -f docker-compose.gateway-e2e.yml down -v
+      - name: Run E2E Tests
+        run: mvn -Pe2e -pl bottin-tests/bottin-e2e test
       - name: Upload E2E test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-reports-autopay-${{ matrix.autopay }}
-          path: '**/target/allure-results'
+          name: e2e-reports
+          path: '**/target/surefire-reports'
           if-no-files-found: ignore
