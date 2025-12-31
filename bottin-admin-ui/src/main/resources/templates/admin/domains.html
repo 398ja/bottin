@@ -67,7 +67,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                                    th:text="${domain.records != null ? domain.records.size() : 0}">0</td>
+                                    th:text="${domain.recordCount}">0</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                                     th:text="${#temporals.format(domain.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
