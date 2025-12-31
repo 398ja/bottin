@@ -94,7 +94,7 @@ E2E tests use the `e2e` Spring profile with these settings:
 
 | Property | Value | Description |
 |----------|-------|-------------|
-| Database | H2 in-memory | Fast test execution |
+| Database | PostgreSQL (Testcontainers) | Real database via container |
 | Schema | `create-drop` | Fresh schema per test |
 | Admin user | `admin` | Test admin username |
 | Admin password | `e2e-test-password` | Test admin password |
