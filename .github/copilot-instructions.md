@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions
 
-This repository implements the Cashu protocol. When using GitHub Copilot, keep the following guidelines in mind:
+This repository implements Bottin, a NIP-05 registry service for Nostr. When using GitHub Copilot, keep the following guidelines in mind:
 
 - Use Conventional Commits for titles and commit messages (e.g., `feat(scope): message`).
 - Ensure pull requests include a clear description and test results.
@@ -9,5 +9,7 @@ This repository implements the Cashu protocol. When using GitHub Copilot, keep t
 - Document new features in the README or related docs.
 - Maintain Java 21 compatibility and update `pom.xml` for new dependencies.
 - Remove unused imports.
+- Follow NIP-05 specification for identity verification endpoints.
+- Use Spring Boot conventions for controllers, services, and repositories.
 
-These instructions help Copilot produce code that respects the repository's conventions and protocol requirements.
+These instructions help Copilot produce code that respects the repository's conventions and Nostr protocol requirements.
