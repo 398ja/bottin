@@ -125,9 +125,9 @@ mvn -Pdocker jib:build -pl bottin-web
 ### Image Tags
 
 Images are tagged with both the version and `latest`:
-- `docker.398ja.xyz/bottin-web:0.1.0-SNAPSHOT`
+- `docker.398ja.xyz/bottin-web:0.1.0`
 - `docker.398ja.xyz/bottin-web:latest`
-- `docker.398ja.xyz/bottin-admin-ui:0.1.0-SNAPSHOT`
+- `docker.398ja.xyz/bottin-admin-ui:0.1.0`
 - `docker.398ja.xyz/bottin-admin-ui:latest`
 
 ### Container Configuration

@@ -7,7 +7,7 @@
 
     <groupId>xyz.tcheeric</groupId>
     <artifactId>bottin</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <packaging>pom</packaging>
 
     <name>Bottin - NIP-05 Registry Service</name>
@@ -56,7 +56,7 @@
         <spring-boot.version>3.4.1</spring-boot.version>
 
         <!-- nsecbunker-java integration -->
-        <nsecbunker-java.version>0.1.0-SNAPSHOT</nsecbunker-java.version>
+        <nsecbunker-java.version>0.1.0</nsecbunker-java.version>
         <nostr-java.version>1.2.0</nostr-java.version>
 
         <!-- Database -->
