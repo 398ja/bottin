@@ -17,7 +17,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
       - name: Build with Maven
-        run: ./mvnw -q verify
+        run: mvn -q verify
       - name: Upload surefire reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -64,13 +64,13 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
       - name: Build gateway-app
-        run: ./mvnw package -pl gateway-plugin/gateway-app -am -DskipTests -q
+        run: mvn package -pl gateway-plugin/gateway-app -am -DskipTests -q
       - name: Start infrastructure
         run: |
           docker compose -f docker-compose.gateway-e2e.yml up -d --build
           sleep 30
       - name: Run E2E Tests (autopay=${{ matrix.autopay }})
-        run: ./mvnw verify -Pe2e-gateway -pl gateway-plugin/gateway-e2e -Dtest.autopay=${{ matrix.autopay }}
+        run: mvn verify -Pe2e-gateway -pl gateway-plugin/gateway-e2e -Dtest.autopay=${{ matrix.autopay }}
       - name: Stop infrastructure
         if: always()
         run: docker compose -f docker-compose.gateway-e2e.yml down -v
