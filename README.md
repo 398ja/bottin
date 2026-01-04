@@ -222,5 +222,5 @@ MIT License - see LICENSE file for details.
 
 ## Related Projects
 
-- [nsecbunker-java](https://github.com/tcheeric/nsecbunker-java) - Key management
+- [nsecbunker-java](https://github.com/398ja/nsecbunker-java) - Key management
 - [nostr-java](https://github.com/tcheeric/nostr-java) - Nostr protocol library
