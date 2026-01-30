@@ -99,7 +99,7 @@
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
         <flatten-maven-plugin.version>1.6.0</flatten-maven-plugin.version>
-        <jacoco-maven-plugin.version>0.8.11</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
 
         <!-- Docker/Jib -->
