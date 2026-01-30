@@ -13,14 +13,14 @@ import java.time.Duration;
 /**
  * Service for verifying domain ownership via well-known file.
  *
- * <p>Fetches {@code https://<domain>/.well-known/bottin-verification.txt}
+ * <p>Fetches {@code https://<domain>/.well-known/nostr-verification.txt}
  * and checks that it contains the expected verification token.
  */
 @Service
 @Slf4j
 public class WellKnownVerificationService {
 
-    private static final String WELL_KNOWN_PATH = "/.well-known/bottin-verification.txt";
+    private static final String WELL_KNOWN_PATH = "/.well-known/nostr-verification.txt";
 
     private final WebClient webClient;
 

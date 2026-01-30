@@ -180,36 +180,41 @@ class DomainVerificationServiceTest {
     }
 
     /**
-     * Tests successful well-known verification updates domain state.
+     * Tests successful well-known verification updates domain state when DNS fails.
      */
     @Test
     void shouldMarkDomainAsVerifiedOnWellKnownSuccess() {
-        // Arrange: Domain with pending well-known verification
+        // Arrange: Domain with pending verification, DNS fails but well-known succeeds
         testDomain.setVerificationToken("test-token");
         testDomain.setVerificationMethod(VerificationMethod.WELL_KNOWN_FILE);
         when(domainRepository.findById(1L)).thenReturn(Optional.of(testDomain));
+        when(dnsVerificationService.verify("example.com", "test-token"))
+                .thenReturn(VerificationResult.failure(VerificationMethod.DNS_TXT, "No record found"));
         when(wellKnownVerificationService.verify("example.com", "test-token"))
                 .thenReturn(VerificationResult.success(VerificationMethod.WELL_KNOWN_FILE, "Success"));
 
         // Act: Attempt verification
         VerificationResult result = verificationService.attemptVerification(1L);
 
-        // Assert: Domain is marked as verified
+        // Assert: Domain is marked as verified via well-known
         assertThat(result.isSuccess()).isTrue();
         assertThat(testDomain.isVerified()).isTrue();
+        assertThat(testDomain.getVerificationMethod()).isEqualTo(VerificationMethod.WELL_KNOWN_FILE);
     }
 
     /**
-     * Tests failed verification does not change domain verified status.
+     * Tests failed verification does not change domain verified status when both methods fail.
      */
     @Test
     void shouldNotUpdateDomainOnVerificationFailure() {
-        // Arrange: Domain with pending verification
+        // Arrange: Domain with pending verification, both methods fail
         testDomain.setVerificationToken("test-token");
         testDomain.setVerificationMethod(VerificationMethod.DNS_TXT);
         when(domainRepository.findById(1L)).thenReturn(Optional.of(testDomain));
         when(dnsVerificationService.verify("example.com", "test-token"))
                 .thenReturn(VerificationResult.failure(VerificationMethod.DNS_TXT, "No record found"));
+        when(wellKnownVerificationService.verify("example.com", "test-token"))
+                .thenReturn(VerificationResult.failure(VerificationMethod.WELL_KNOWN_FILE, "File not found"));
 
         // Act: Attempt verification
         VerificationResult result = verificationService.attemptVerification(1L);

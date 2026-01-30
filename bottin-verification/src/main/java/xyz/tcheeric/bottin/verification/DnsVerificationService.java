@@ -16,15 +16,15 @@ import java.util.List;
 /**
  * Service for verifying domain ownership via DNS TXT records.
  *
- * <p>Looks for a TXT record at {@code _bottin-verification.<domain>} containing
+ * <p>Looks for a TXT record at {@code _nostr-verification.<domain>} containing
  * the expected verification token.
  */
 @Service
 @Slf4j
 public class DnsVerificationService {
 
-    private static final String TXT_RECORD_PREFIX = "_bottin-verification.";
-    private static final String TOKEN_PREFIX = "bottin-verification=";
+    private static final String TXT_RECORD_PREFIX = "_nostr-verification.";
+    private static final String TOKEN_PREFIX = "nostr-verification=";
 
     @Value("${bottin.verification.dns.timeout-seconds:10}")
     private int timeoutSeconds;

@@ -7,9 +7,9 @@ public class VerificationFailedException extends BottinException {
 
     private static final String ERROR_CODE = "VERIFICATION_FAILED";
     private static final String DNS_SUGGESTION =
-            "Ensure the DNS TXT record '_bottin-verification.{domain}' contains the verification token. DNS propagation may take up to 24 hours.";
+            "Ensure the DNS TXT record '_nostr-verification.{domain}' contains the verification token. DNS propagation may take up to 24 hours.";
     private static final String WELLKNOWN_SUGGESTION =
-            "Ensure the file at 'https://{domain}/.well-known/bottin-verification.txt' contains the exact verification token.";
+            "Ensure the file at 'https://{domain}/.well-known/nostr-verification.txt' contains the exact verification token.";
 
     public VerificationFailedException(String domain, String method, String reason) {
         super(ERROR_CODE, true,

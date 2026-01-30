@@ -28,10 +28,22 @@ public class DomainVerificationService {
     private final WellKnownVerificationService wellKnownVerificationService;
 
     /**
+     * Initiates verification for a domain, generating a token if needed.
+     * Does not require a specific method since both DNS and Well-Known are supported.
+     *
+     * @param domainId the domain ID
+     * @return the verification challenge with setup instructions
+     */
+    @Transactional
+    public VerificationChallenge initiateVerification(Long domainId) {
+        return initiateVerification(domainId, VerificationMethod.DNS_TXT);
+    }
+
+    /**
      * Initiates verification for a domain using the specified method.
      *
      * @param domainId the domain ID
-     * @param method the verification method to use
+     * @param method the verification method to use (stored for logging purposes)
      * @return the verification challenge with setup instructions
      */
     @Transactional
@@ -70,7 +82,8 @@ public class DomainVerificationService {
     }
 
     /**
-     * Attempts to verify a domain using its configured verification method.
+     * Attempts to verify a domain by trying both DNS and Well-Known methods.
+     * Succeeds if either method validates the token.
      *
      * @param domainId the domain ID
      * @return the verification result
@@ -87,45 +100,60 @@ public class DomainVerificationService {
             );
         }
 
-        if (domain.getVerificationToken() == null || domain.getVerificationMethod() == null) {
+        if (domain.getVerificationToken() == null) {
             return VerificationResult.failure(
                     null,
                     "Verification has not been initiated. Call initiate first."
             );
         }
 
-        log.debug("domain_verification_attempt id={} name={} method={}",
-                domainId, domain.getName(), domain.getVerificationMethod());
+        log.debug("domain_verification_attempt id={} name={}", domainId, domain.getName());
 
-        VerificationResult result = switch (domain.getVerificationMethod()) {
-            case DNS_TXT -> dnsVerificationService.verify(
-                    domain.getName(),
-                    domain.getVerificationToken()
-            );
-            case WELL_KNOWN_FILE -> wellKnownVerificationService.verify(
-                    domain.getName(),
-                    domain.getVerificationToken()
-            );
-        };
+        // Try DNS verification first
+        VerificationResult dnsResult = dnsVerificationService.verify(
+                domain.getName(),
+                domain.getVerificationToken()
+        );
 
-        // Log the verification attempt
-        logVerificationAttempt(domain, result);
-
-        if (result.isSuccess()) {
-            domain.setVerified(true);
-            domain.setVerifiedAt(Instant.now());
-            domain.setVerificationToken(null); // Clear token after successful verification
-            domain.setUpdatedAt(Instant.now());
-            domainRepository.save(domain);
-
-            log.info("domain_verified id={} name={} method={}",
-                    domainId, domain.getName(), domain.getVerificationMethod());
-        } else {
-            log.debug("domain_verification_failed id={} name={} reason={}",
-                    domainId, domain.getName(), result.getMessage());
+        if (dnsResult.isSuccess()) {
+            domain.setVerificationMethod(VerificationMethod.DNS_TXT);
+            logVerificationAttempt(domain, dnsResult);
+            markDomainVerified(domain);
+            log.info("domain_verified id={} name={} method=DNS_TXT", domainId, domain.getName());
+            return dnsResult;
         }
 
-        return result;
+        // Try Well-Known verification if DNS failed
+        VerificationResult wellKnownResult = wellKnownVerificationService.verify(
+                domain.getName(),
+                domain.getVerificationToken()
+        );
+
+        if (wellKnownResult.isSuccess()) {
+            domain.setVerificationMethod(VerificationMethod.WELL_KNOWN_FILE);
+            logVerificationAttempt(domain, wellKnownResult);
+            markDomainVerified(domain);
+            log.info("domain_verified id={} name={} method=WELL_KNOWN_FILE", domainId, domain.getName());
+            return wellKnownResult;
+        }
+
+        // Both methods failed
+        logVerificationAttempt(domain, dnsResult);
+        log.debug("domain_verification_failed id={} name={} dns_error={} wellknown_error={}",
+                domainId, domain.getName(), dnsResult.getMessage(), wellKnownResult.getMessage());
+
+        return VerificationResult.failure(
+                null,
+                "Verification failed. DNS: " + dnsResult.getMessage() + ". Well-Known: " + wellKnownResult.getMessage()
+        );
+    }
+
+    private void markDomainVerified(DomainEntity domain) {
+        domain.setVerified(true);
+        domain.setVerifiedAt(Instant.now());
+        domain.setVerificationToken(null);
+        domain.setUpdatedAt(Instant.now());
+        domainRepository.save(domain);
     }
 
     /**

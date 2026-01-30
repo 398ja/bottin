@@ -47,7 +47,7 @@ class WellKnownVerificationServiceTest {
     void shouldReturnSuccessWhenTokenMatches() {
         // Arrange: Mock server returns expected token
         String token = "test-token-123";
-        wireMockServer.stubFor(get(urlEqualTo("/.well-known/bottin-verification.txt"))
+        wireMockServer.stubFor(get(urlEqualTo("/.well-known/nostr-verification.txt"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withBody(token)));
@@ -69,7 +69,7 @@ class WellKnownVerificationServiceTest {
     void shouldSucceedWhenTokenHasTrailingWhitespace() {
         // Arrange: Mock server returns token with whitespace
         String token = "test-token-123";
-        wireMockServer.stubFor(get(urlEqualTo("/.well-known/bottin-verification.txt"))
+        wireMockServer.stubFor(get(urlEqualTo("/.well-known/nostr-verification.txt"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withBody("  " + token + "  \n")));
@@ -90,7 +90,7 @@ class WellKnownVerificationServiceTest {
         // Arrange: Mock server returns wrong token
         String expectedToken = "expected-token";
         String actualToken = "wrong-token";
-        wireMockServer.stubFor(get(urlEqualTo("/.well-known/bottin-verification.txt"))
+        wireMockServer.stubFor(get(urlEqualTo("/.well-known/nostr-verification.txt"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withBody(actualToken)));
@@ -111,7 +111,7 @@ class WellKnownVerificationServiceTest {
     @Test
     void shouldReturnFailureWhenFileIsEmpty() {
         // Arrange: Mock server returns empty content
-        wireMockServer.stubFor(get(urlEqualTo("/.well-known/bottin-verification.txt"))
+        wireMockServer.stubFor(get(urlEqualTo("/.well-known/nostr-verification.txt"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withBody("")));
@@ -131,7 +131,7 @@ class WellKnownVerificationServiceTest {
     @Test
     void shouldReturnFailureWhenFileNotFound() {
         // Arrange: Mock server returns 404
-        wireMockServer.stubFor(get(urlEqualTo("/.well-known/bottin-verification.txt"))
+        wireMockServer.stubFor(get(urlEqualTo("/.well-known/nostr-verification.txt"))
                 .willReturn(aResponse()
                         .withStatus(404)));
 
@@ -151,7 +151,7 @@ class WellKnownVerificationServiceTest {
     @Test
     void shouldReturnFailureOnServerError() {
         // Arrange: Mock server returns 500
-        wireMockServer.stubFor(get(urlEqualTo("/.well-known/bottin-verification.txt"))
+        wireMockServer.stubFor(get(urlEqualTo("/.well-known/nostr-verification.txt"))
                 .willReturn(aResponse()
                         .withStatus(500)));
 
@@ -179,7 +179,7 @@ class WellKnownVerificationServiceTest {
         String instructions = verificationService.getSetupInstructions(domain, token);
 
         // Assert: Instructions contain the correct URL
-        assertThat(instructions).contains("https://example.com/.well-known/bottin-verification.txt");
+        assertThat(instructions).contains("https://example.com/.well-known/nostr-verification.txt");
     }
 
     /**
@@ -205,7 +205,7 @@ class WellKnownVerificationServiceTest {
     void shouldTruncateLongContentInErrorMessage() {
         // Arrange: Mock server returns very long content
         String longContent = "a".repeat(200);
-        wireMockServer.stubFor(get(urlEqualTo("/.well-known/bottin-verification.txt"))
+        wireMockServer.stubFor(get(urlEqualTo("/.well-known/nostr-verification.txt"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withBody(longContent)));

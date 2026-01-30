@@ -7,15 +7,15 @@ public enum VerificationMethod {
 
     /**
      * DNS TXT record verification.
-     * User adds a TXT record to _bottin-verification.{domain} with the verification token.
+     * User adds a TXT record to _nostr-verification.{domain} with the verification token.
      */
-    DNS_TXT("DNS TXT Record", "_bottin-verification.{domain}"),
+    DNS_TXT("DNS TXT Record", "_nostr-verification.{domain}"),
 
     /**
      * Well-known file verification.
-     * User creates a file at https://{domain}/.well-known/bottin-verification.txt
+     * User creates a file at https://{domain}/.well-known/nostr-verification.txt
      */
-    WELL_KNOWN_FILE("Well-Known File", "/.well-known/bottin-verification.txt");
+    WELL_KNOWN_FILE("Well-Known File", "/.well-known/nostr-verification.txt");
 
     private final String displayName;
     private final String location;
