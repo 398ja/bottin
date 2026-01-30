@@ -68,7 +68,7 @@ class DnsVerificationServiceTest {
     }
 
     /**
-     * Tests that setup instructions include the bottin-verification prefix.
+     * Tests that setup instructions include the nostr-verification prefix.
      */
     @Test
     void shouldGenerateInstructionsWithCorrectPrefix() {
@@ -80,8 +80,8 @@ class DnsVerificationServiceTest {
         String instructions = dnsVerificationService.getSetupInstructions(domain, token);
 
         // Assert: Instructions include the correct prefix for the record name
-        assertThat(instructions).contains("_bottin-verification.example.com");
-        assertThat(instructions).contains("bottin-verification=testtoken123");
+        assertThat(instructions).contains("_nostr-verification.example.com");
+        assertThat(instructions).contains("nostr-verification=testtoken123");
     }
 
     /**

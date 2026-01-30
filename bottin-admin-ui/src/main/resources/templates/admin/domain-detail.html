@@ -91,81 +91,45 @@
                             <h3 class="text-lg font-medium leading-6 text-gray-900">Domain Verification</h3>
                         </div>
                         <div class="px-4 py-5 sm:p-6">
-                            <div th:if="${domain.verificationToken}">
-                                <p class="text-sm text-gray-600 mb-4">
-                                    Current method: <span class="font-semibold" th:text="${verificationStatus.method}">DNS_TXT</span>
-                                </p>
+                            <p class="text-sm text-gray-600 mb-4">
+                                Complete one of the following methods to verify domain ownership:
+                            </p>
 
-                                <!-- DNS TXT Record Instructions -->
-                                <div class="mb-6" th:if="${verificationStatus.method.name() == 'DNS_TXT'}">
-                                    <h4 class="text-sm font-medium text-gray-900 mb-2">DNS TXT Record</h4>
-                                    <p class="text-xs text-gray-500 mb-2">Add a TXT record to your DNS:</p>
-                                    <div class="bg-gray-50 rounded-md p-3">
-                                        <p class="text-xs text-gray-500">Name:</p>
-                                        <code class="text-sm font-mono text-gray-900" th:text="'_bottin-verification.' + ${domain.name}">_bottin-verification.example.com</code>
-                                        <p class="text-xs text-gray-500 mt-2">Value:</p>
-                                        <code class="text-sm font-mono text-gray-900 break-all" th:text="'bottin-verification=' + ${domain.verificationToken}">bottin-verification=token-here</code>
-                                    </div>
-                                </div>
-
-                                <!-- Well-Known File Instructions -->
-                                <div class="mb-6" th:if="${verificationStatus.method.name() == 'WELL_KNOWN_FILE'}">
-                                    <h4 class="text-sm font-medium text-gray-900 mb-2">Well-Known File</h4>
-                                    <p class="text-xs text-gray-500 mb-2">Create a file at this URL:</p>
-                                    <div class="bg-gray-50 rounded-md p-3">
-                                        <code class="text-sm font-mono text-gray-900 break-all"
-                                              th:text="'https://' + ${domain.name} + '/.well-known/bottin-verification.txt'">
-                                            https://example.com/.well-known/bottin-verification.txt
-                                        </code>
-                                        <p class="text-xs text-gray-500 mt-2">With content:</p>
-                                        <code class="text-sm font-mono text-gray-900 break-all" th:text="${domain.verificationToken}">token-here</code>
-                                    </div>
-                                </div>
-
-                                <div class="space-y-3">
-                                    <form th:action="@{/admin/domains/{id}/verify/attempt(id=${domain.id})}" method="post">
-                                        <button type="submit"
-                                                class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
-                                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                            </svg>
-                                            Verify Domain Now
-                                        </button>
-                                    </form>
-
-                                    <p class="text-xs text-gray-500 text-center">or change verification method:</p>
-                                    <form th:action="@{/admin/domains/{id}/verify(id=${domain.id})}" method="post" class="flex space-x-2">
-                                        <select name="method" class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                                            <option th:each="m : ${verificationMethods}" th:value="${m}" th:text="${m}" th:selected="${m == verificationStatus.method}">DNS_TXT</option>
-                                        </select>
-                                        <button type="submit"
-                                                class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                            Change
-                                        </button>
-                                    </form>
+                            <!-- DNS TXT Record Instructions -->
+                            <div class="mb-6">
+                                <h4 class="text-sm font-medium text-gray-900 mb-2">Option 1: DNS TXT Record</h4>
+                                <p class="text-xs text-gray-500 mb-2">Add a TXT record to your DNS:</p>
+                                <div class="bg-gray-50 rounded-md p-3">
+                                    <p class="text-xs text-gray-500">Name:</p>
+                                    <code class="text-sm font-mono text-gray-900" th:text="'_nostr-verification.' + ${domain.name}">_nostr-verification.example.com</code>
+                                    <p class="text-xs text-gray-500 mt-2">Value:</p>
+                                    <code class="text-sm font-mono text-gray-900 break-all" th:text="'nostr-verification=' + ${domain.verificationToken}">nostr-verification=token-here</code>
                                 </div>
                             </div>
-                            <div th:unless="${domain.verificationToken}">
-                                <p class="text-sm text-gray-600 mb-4">
-                                    Choose a verification method to prove ownership of this domain.
-                                </p>
-                                <form th:action="@{/admin/domains/{id}/verify(id=${domain.id})}" method="post" class="space-y-4">
-                                    <div>
-                                        <label for="method" class="block text-sm font-medium text-gray-700">Verification Method</label>
-                                        <select name="method" id="method" required
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                                            <option th:each="m : ${verificationMethods}" th:value="${m}" th:text="${m}">DNS_TXT</option>
-                                        </select>
-                                    </div>
-                                    <button type="submit"
-                                            class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
-                                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                                        </svg>
-                                        Start Verification
-                                    </button>
-                                </form>
+
+                            <!-- Well-Known File Instructions -->
+                            <div class="mb-6">
+                                <h4 class="text-sm font-medium text-gray-900 mb-2">Option 2: Well-Known File</h4>
+                                <p class="text-xs text-gray-500 mb-2">Create a file at this URL:</p>
+                                <div class="bg-gray-50 rounded-md p-3">
+                                    <code class="text-sm font-mono text-gray-900 break-all"
+                                          th:text="'https://' + ${domain.name} + '/.well-known/nostr-verification.txt'">
+                                        https://example.com/.well-known/nostr-verification.txt
+                                    </code>
+                                    <p class="text-xs text-gray-500 mt-2">With content:</p>
+                                    <code class="text-sm font-mono text-gray-900 break-all" th:text="${domain.verificationToken}">token-here</code>
+                                </div>
                             </div>
+
+                            <form th:action="@{/admin/domains/{id}/verify/attempt(id=${domain.id})}" method="post">
+                                <button type="submit"
+                                        class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
+                                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    Verify Domain Now
+                                </button>
+                            </form>
                         </div>
                     </div>
 

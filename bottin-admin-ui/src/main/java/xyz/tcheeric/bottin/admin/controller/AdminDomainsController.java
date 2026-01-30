@@ -55,6 +55,13 @@ public class AdminDomainsController {
     public String viewDomain(@PathVariable Long id, Model model) {
         return domainService.findById(id)
                 .map(domain -> {
+                    // Auto-initiate verification for unverified domains without a token
+                    if (!domain.isVerified() && domain.getVerificationToken() == null) {
+                        verificationService.initiateVerification(id);
+                        // Reload domain to get the new token
+                        domain = domainService.findById(id).orElse(domain);
+                    }
+
                     VerificationStatus status = verificationService.getVerificationStatus(id);
                     model.addAttribute("domain", domain);
                     model.addAttribute("verificationStatus", status);

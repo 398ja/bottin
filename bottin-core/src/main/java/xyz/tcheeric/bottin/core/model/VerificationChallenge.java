@@ -48,7 +48,7 @@ public class VerificationChallenge {
      */
     public static VerificationChallenge forDnsTxt(String domain, String token, Instant expiresAt) {
         String instructions = String.format(
-                "Add a TXT record to _bottin-verification.%s with value: bottin-verification=%s",
+                "Add a TXT record to _nostr-verification.%s with value: nostr-verification=%s",
                 domain, token);
         return VerificationChallenge.builder()
                 .domain(domain)
@@ -65,7 +65,7 @@ public class VerificationChallenge {
      */
     public static VerificationChallenge forWellKnown(String domain, String token, Instant expiresAt) {
         String instructions = String.format(
-                "Create a file at https://%s/.well-known/bottin-verification.txt with content: %s",
+                "Create a file at https://%s/.well-known/nostr-verification.txt with content: %s",
                 domain, token);
         return VerificationChallenge.builder()
                 .domain(domain)
@@ -88,6 +88,6 @@ public class VerificationChallenge {
      * Returns the full verification value for DNS TXT records.
      */
     public String getDnsTxtValue() {
-        return "bottin-verification=" + token;
+        return "nostr-verification=" + token;
     }
 }

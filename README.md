@@ -100,16 +100,16 @@ bottin:
 ### Method 1: DNS TXT Record
 
 1. Register domain via API or admin dashboard
-2. Add TXT record to `_bottin-verification.yourdomain.com`:
+2. Add TXT record to `_nostr-verification.yourdomain.com`:
    ```
-   bottin-verification=<your-verification-token>
+   nostr-verification=<your-verification-token>
    ```
 3. Trigger verification check (DNS propagation may take up to 24 hours)
 
 ### Method 2: Well-Known File
 
 1. Register domain via API or admin dashboard
-2. Create file at `https://yourdomain.com/.well-known/bottin-verification.txt`
+2. Create file at `https://yourdomain.com/.well-known/nostr-verification.txt`
 3. Add the exact verification token as file contents
 4. Trigger verification check
 
@@ -222,5 +222,5 @@ MIT License - see LICENSE file for details.
 
 ## Related Projects
 
-- [nsecbunker-java](https://github.com/tcheeric/nsecbunker-java) - Key management
+- [nsecbunker-java](https://github.com/398ja/nsecbunker-java) - Key management
 - [nostr-java](https://github.com/tcheeric/nostr-java) - Nostr protocol library
