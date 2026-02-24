@@ -21,7 +21,7 @@
         <!-- nostr-java for key handling -->
         <dependency>
             <groupId>xyz.tcheeric</groupId>
-            <artifactId>nostr-java-id</artifactId>
+            <artifactId>nostr-java-identity</artifactId>
         </dependency>
 
         <!-- Jackson for JSON -->

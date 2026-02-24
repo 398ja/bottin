@@ -48,7 +48,7 @@
         <!-- nostr-java for key generation -->
         <dependency>
             <groupId>xyz.tcheeric</groupId>
-            <artifactId>nostr-java-id</artifactId>
+            <artifactId>nostr-java-identity</artifactId>
         </dependency>
 
         <!-- Spring Boot -->

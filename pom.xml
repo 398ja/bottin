@@ -57,7 +57,7 @@
 
         <!-- nsecbunker-java integration -->
         <nsecbunker-java.version>0.1.0</nsecbunker-java.version>
-        <nostr-java.version>1.3.0</nostr-java.version>
+        <nostr-java.version>2.0.0</nostr-java.version>
 
         <!-- Database -->
         <flyway.version>10.10.0</flyway.version>
@@ -171,17 +171,12 @@
             <!-- nostr-java -->
             <dependency>
                 <groupId>xyz.tcheeric</groupId>
-                <artifactId>nostr-java-api</artifactId>
+                <artifactId>nostr-java-identity</artifactId>
                 <version>${nostr-java.version}</version>
             </dependency>
             <dependency>
                 <groupId>xyz.tcheeric</groupId>
-                <artifactId>nostr-java-id</artifactId>
-                <version>${nostr-java.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>xyz.tcheeric</groupId>
-                <artifactId>nostr-java-crypto</artifactId>
+                <artifactId>nostr-java-core</artifactId>
                 <version>${nostr-java.version}</version>
             </dependency>
 
