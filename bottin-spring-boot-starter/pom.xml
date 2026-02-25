@@ -45,12 +45,6 @@
             <version>${nsecbunker-java.version}</version>
         </dependency>
 
-        <!-- nostr-java for key generation -->
-        <dependency>
-            <groupId>xyz.tcheeric</groupId>
-            <artifactId>nostr-java-identity</artifactId>
-        </dependency>
-
         <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
