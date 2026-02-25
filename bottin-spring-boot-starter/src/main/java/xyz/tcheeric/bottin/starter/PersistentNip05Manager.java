@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nostr.id.Identity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.tcheeric.bottin.core.exception.DomainNotFoundException;
@@ -17,7 +16,9 @@ import xyz.tcheeric.bottin.persistence.repository.Nip05RecordRepository;
 import xyz.tcheeric.nsecbunker.account.nip05.Nip05Manager;
 import xyz.tcheeric.nsecbunker.account.nip05.Nip05Record;
 
+import java.security.SecureRandom;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,9 +61,10 @@ public class PersistentNip05Manager implements Nip05Manager {
                 throw new Nip05RecordExistsException(normalizedUsername + "@" + normalizedDomain);
             }
 
-            // Generate new identity using nostr-java
-            Identity identity = Identity.generateRandomIdentity();
-            String pubkey = identity.getPublicKey().toString();
+            // Generate a random 32-byte public key placeholder
+            byte[] randomBytes = new byte[32];
+            new SecureRandom().nextBytes(randomBytes);
+            String pubkey = HexFormat.of().formatHex(randomBytes);
 
             // Create and persist record
             Nip05RecordEntity entity = Nip05RecordEntity.builder()

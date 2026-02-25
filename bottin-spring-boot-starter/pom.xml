@@ -8,7 +8,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>bottin</artifactId>
-        <version>0.2.0</version>
+        <version>0.2.1</version>
     </parent>
 
     <artifactId>bottin-spring-boot-starter</artifactId>
@@ -43,12 +43,6 @@
             <groupId>xyz.tcheeric</groupId>
             <artifactId>nsecbunker-account</artifactId>
             <version>${nsecbunker-java.version}</version>
-        </dependency>
-
-        <!-- nostr-java for key generation -->
-        <dependency>
-            <groupId>xyz.tcheeric</groupId>
-            <artifactId>nostr-java-id</artifactId>
         </dependency>
 
         <!-- Spring Boot -->

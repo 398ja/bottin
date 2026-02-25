@@ -45,7 +45,6 @@ public class PersistentAccountManager implements AccountManager {
         log.debug("persistent_account_register username={} domain={}", username, domain);
 
         // For bottin, registerAccount and createAccount are equivalent
-        // since key management is handled by nostr-java
         return createAccount(username, domain);
     }
 

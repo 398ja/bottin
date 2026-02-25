@@ -8,7 +8,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>bottin</artifactId>
-        <version>0.2.0</version>
+        <version>0.2.1</version>
     </parent>
 
     <artifactId>bottin-core</artifactId>
@@ -18,12 +18,6 @@
     <description>Core domain models, interfaces, and exceptions for Bottin NIP-05 registry</description>
 
     <dependencies>
-        <!-- nostr-java for key handling -->
-        <dependency>
-            <groupId>xyz.tcheeric</groupId>
-            <artifactId>nostr-java-id</artifactId>
-        </dependency>
-
         <!-- Jackson for JSON -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
