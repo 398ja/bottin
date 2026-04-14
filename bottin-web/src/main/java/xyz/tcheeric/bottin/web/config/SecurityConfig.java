@@ -100,7 +100,10 @@ public class SecurityConfig {
                 .httpBasic(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .cors(Customizer.withDefaults())
+                // CORS is handled by the edge proxy (nginx), not Spring. Removing
+                // the Spring CORS filter avoids double-setting Access-Control-*
+                // headers which browsers reject as "Multiple CORS header not allowed".
+                .cors(AbstractHttpConfigurer::disable)
                 .build();
     }
 

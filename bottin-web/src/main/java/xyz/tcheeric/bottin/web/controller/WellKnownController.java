@@ -83,10 +83,13 @@ public class WellKnownController {
         log.debug("wellknown_response domain={} name_count={}",
                 domain, ((Map<?, ?>) response.get("names")).size());
 
+        // CORS (Access-Control-Allow-Origin) is set by the edge proxy, not here.
+        // The reverse proxy is the right place for cross-cutting concerns —
+        // setting it both here and at the edge produces two headers and browsers
+        // reject the response with "Multiple CORS header ... not allowed".
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(CACHE_MAX_AGE_SECONDS, TimeUnit.SECONDS).cachePublic())
                 .contentType(MediaType.APPLICATION_JSON)
-                .header("Access-Control-Allow-Origin", "*")
                 .body(response);
     }
 
