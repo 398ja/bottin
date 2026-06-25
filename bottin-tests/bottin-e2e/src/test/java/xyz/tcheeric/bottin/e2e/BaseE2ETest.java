@@ -14,7 +14,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Base class for end-to-end tests.
- * Provides full application context with PostgreSQL, nsecbunkerd, and strfry containers.
+ * Provides full application context with PostgreSQL and strfry containers.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestContainersConfig.class)
@@ -26,9 +26,6 @@ public abstract class BaseE2ETest {
     protected int port;
 
     @Autowired
-    protected GenericContainer<?> nsecbunkerdContainer;
-
-    @Autowired
     protected GenericContainer<?> strfryContainer;
 
     protected static final String ADMIN_USER = "admin";
@@ -38,13 +35,6 @@ public abstract class BaseE2ETest {
     void setUpRestAssured() {
         RestAssured.port = port;
         RestAssured.basePath = "";
-    }
-
-    /**
-     * Returns the nsecbunkerd URL for the running container.
-     */
-    protected String getNsecbunkerdUrl() {
-        return "http://" + nsecbunkerdContainer.getHost() + ":" + nsecbunkerdContainer.getMappedPort(3000);
     }
 
     /**
