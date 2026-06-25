@@ -3,6 +3,7 @@ package xyz.tcheeric.bottin.verification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,8 +17,13 @@ import java.util.List;
 /**
  * Scheduled job for periodic re-verification of domains.
  * Runs at configurable intervals to ensure verified domains remain valid.
+ *
+ * <p>Opt-in: disabled unless {@code bottin.verification.scheduled-enabled=true}.
+ * This preserves prior behaviour (these jobs did not run before scheduling was
+ * enabled application-wide) and avoids unintended re-verification/revocation.
  */
 @Component
+@ConditionalOnProperty(prefix = "bottin.verification", name = "scheduled-enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class ScheduledVerificationJob {

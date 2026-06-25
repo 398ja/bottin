@@ -45,6 +45,18 @@ bottin:
     description: REST API for managing NIP-05 identity records and domains
     version: 1.0.0
 
+  # Profile reach (follower count) calculation
+  reach:
+    enabled: true
+    calculation-cron: "0 0 */6 * * ?"   # every 6 hours
+    relay-timeout-seconds: 12
+    max-followers-per-relay: 5000
+    max-profiles-per-run: 10000
+    default-relays:
+      - wss://relay.damus.io
+      - wss://nos.lol
+      - wss://relay.nostr.band         # indexing relay for coverage
+
 # OpenAPI / Swagger
 springdoc:
   api-docs:

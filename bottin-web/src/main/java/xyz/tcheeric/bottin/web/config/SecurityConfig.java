@@ -72,6 +72,7 @@ public class SecurityConfig {
                 .securityMatcher(
                         "/.well-known/**",
                         "/api/v1/verify",
+                        "/api/v1/profiles/*/reach",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/v3/api-docs/**",

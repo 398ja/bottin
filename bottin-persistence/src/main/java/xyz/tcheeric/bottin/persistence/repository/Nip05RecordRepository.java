@@ -75,6 +75,13 @@ public interface Nip05RecordRepository extends JpaRepository<Nip05RecordEntity, 
     List<Nip05RecordEntity> findAllByPubkey(String pubkey);
 
     /**
+     * Returns the distinct pubkeys of all enabled records — the set of profiles
+     * the reach calculation tracks.
+     */
+    @Query("SELECT DISTINCT r.pubkey FROM Nip05RecordEntity r WHERE r.enabled = true")
+    List<String> findDistinctEnabledPubkeys();
+
+    /**
      * Counts records by domain.
      */
     long countByDomain(DomainEntity domain);
