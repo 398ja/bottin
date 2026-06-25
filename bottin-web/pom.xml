@@ -33,6 +33,10 @@
             <groupId>xyz.tcheeric</groupId>
             <artifactId>bottin-verification</artifactId>
         </dependency>
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>bottin-reach</artifactId>
+        </dependency>
 
         <!-- Spring Boot Web -->
         <dependency>

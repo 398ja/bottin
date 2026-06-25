@@ -18,6 +18,7 @@ import xyz.tcheeric.bottin.core.exception.DomainNotFoundException;
 import xyz.tcheeric.bottin.core.exception.DomainNotVerifiedException;
 import xyz.tcheeric.bottin.core.exception.Nip05RecordExistsException;
 import xyz.tcheeric.bottin.core.exception.Nip05RecordNotFoundException;
+import xyz.tcheeric.bottin.core.exception.ReachNotAvailableException;
 import xyz.tcheeric.bottin.web.dto.ErrorResponse;
 
 import java.util.List;
@@ -163,6 +164,21 @@ public class GlobalExceptionHandler {
             Nip05RecordNotFoundException ex, HttpServletRequest request) {
 
         log.warn("nip05_record_not_found path={} message={}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.withSuggestion(
+                        ex.getErrorCode(),
+                        ex.getMessage(),
+                        ex.getSuggestion(),
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(ReachNotAvailableException.class)
+    public ResponseEntity<ErrorResponse> handleReachNotAvailable(
+            ReachNotAvailableException ex, HttpServletRequest request) {
+
+        log.debug("reach_not_available path={} message={}", request.getRequestURI(), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.withSuggestion(

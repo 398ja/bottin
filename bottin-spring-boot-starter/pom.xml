@@ -35,6 +35,10 @@
         </dependency>
         <dependency>
             <groupId>xyz.tcheeric</groupId>
+            <artifactId>bottin-reach</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
             <artifactId>bottin-web</artifactId>
         </dependency>
 
