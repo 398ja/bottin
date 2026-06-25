@@ -41,6 +41,7 @@
         <module>bottin-service</module>
         <module>bottin-web</module>
         <module>bottin-verification</module>
+        <module>bottin-reach</module>
         <module>bottin-admin-ui</module>
         <module>bottin-spring-boot-starter</module>
         <module>bottin-tests</module>
@@ -54,6 +55,9 @@
 
         <!-- Spring Boot -->
         <spring-boot.version>3.4.1</spring-boot.version>
+
+        <!-- nostr-java (relay client for reach calculation) -->
+        <nostr-java.version>2.0.7</nostr-java.version>
 
         <!-- Database -->
         <flyway.version>10.10.0</flyway.version>
@@ -139,8 +143,30 @@
             </dependency>
             <dependency>
                 <groupId>xyz.tcheeric</groupId>
+                <artifactId>bottin-reach</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
                 <artifactId>bottin-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- nostr-java (relay client) -->
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>nostr-java-client</artifactId>
+                <version>${nostr-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>nostr-java-event</artifactId>
+                <version>${nostr-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>nostr-java-core</artifactId>
+                <version>${nostr-java.version}</version>
             </dependency>
 
             <!-- Spring Boot BOM -->
