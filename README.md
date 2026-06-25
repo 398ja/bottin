@@ -9,7 +9,7 @@ A production-ready NIP-05 registry service for Nostr with persistent storage, RE
 - **Admin Dashboard** - Web-based management UI with Thymeleaf + HTMX + Tailwind CSS
 - **Domain Verification** - DNS TXT and well-known file verification methods
 - **External Verification** - Verify external NIP-05 identifiers with caching
-- **nsecbunker-java Integration** - Spring Boot starter for embedding
+- **Spring Boot Starter** - Embeddable auto-configuration for host applications
 - **Production Ready** - PostgreSQL support, Docker deployment, security
 
 ## Quick Start
@@ -113,38 +113,22 @@ bottin:
 3. Add the exact verification token as file contents
 4. Trigger verification check
 
-## Integration with nsecbunker-java
+## Embedding bottin (Spring Boot starter)
 
-Add the Spring Boot starter to your project:
+Add the Spring Boot starter to your project to embed the registry:
 
 ```xml
 <dependency>
     <groupId>xyz.tcheeric</groupId>
     <artifactId>bottin-spring-boot-starter</artifactId>
-    <version>0.1.0</version>
+    <version>0.3.0</version>
 </dependency>
 ```
 
-This automatically provides:
-- `Nip05Manager` implementation (database-backed)
-- `AccountManager` implementation
-- All bottin services and endpoints
-
-Example usage:
-
-```java
-@Service
-@RequiredArgsConstructor
-public class UserService {
-    private final Nip05Manager nip05Manager;
-
-    public void createUser(String username, String domain) {
-        nip05Manager.setupNip05(username, domain)
-            .thenAccept(record ->
-                log.info("Created NIP-05: {}", record.getNip05()));
-    }
-}
-```
+With the starter on the classpath and `bottin.enabled=true` (the default), it
+auto-configures all bottin services and endpoints — database-backed NIP-05
+record management, domain verification, external NIP-05 verification, the REST
+API, and the admin dashboard.
 
 ## Project Structure
 
@@ -222,5 +206,4 @@ MIT License - see LICENSE file for details.
 
 ## Related Projects
 
-- [nsecbunker-java](https://github.com/398ja/nsecbunker-java) - Key management
 - [nostr-java](https://github.com/tcheeric/nostr-java) - Nostr protocol library

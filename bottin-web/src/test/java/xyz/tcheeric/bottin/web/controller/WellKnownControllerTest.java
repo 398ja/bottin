@@ -103,21 +103,24 @@ class WellKnownControllerTest {
     }
 
     /**
-     * Tests that the response includes proper CORS headers.
+     * Tests that the application does NOT emit Access-Control-Allow-Origin.
+     * CORS is the edge proxy's responsibility; if both bottin and nginx emit
+     * the header, browsers reject the response with "Multiple CORS header
+     * Access-Control-Allow-Origin not allowed".
      */
     @Test
-    void shouldIncludeCorsHeaders() throws Exception {
+    void shouldNotEmitCorsHeaders() throws Exception {
         // Arrange: Set up mock to return a record
         Map<String, Object> response = buildSingleUserResponse(TEST_USERNAME, TEST_PUBKEY, List.of());
         when(wellKnownJsonGenerator.generateForUsername(TEST_DOMAIN, TEST_USERNAME))
                 .thenReturn(Optional.of(response));
 
-        // Act & Assert: Check CORS header
+        // Act & Assert: the app must not set any Access-Control-* header.
         mockMvc.perform(get(WELL_KNOWN_PATH)
                         .param("name", TEST_USERNAME)
                         .header("Host", TEST_DOMAIN))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Allow-Origin", "*"));
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 
     /**

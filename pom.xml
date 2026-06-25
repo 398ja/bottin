@@ -7,7 +7,7 @@
 
     <groupId>xyz.tcheeric</groupId>
     <artifactId>bottin</artifactId>
-    <version>0.2.1</version>
+    <version>0.3.0</version>
     <packaging>pom</packaging>
 
     <name>Bottin - NIP-05 Registry Service</name>
@@ -55,8 +55,6 @@
         <!-- Spring Boot -->
         <spring-boot.version>3.4.1</spring-boot.version>
 
-        <!-- nsecbunker-java integration -->
-        <nsecbunker-java.version>0.1.0</nsecbunker-java.version>
         <!-- Database -->
         <flyway.version>10.10.0</flyway.version>
         <h2.version>2.2.224</h2.version>
@@ -152,18 +150,6 @@
                 <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <!-- nsecbunker-java -->
-            <dependency>
-                <groupId>xyz.tcheeric</groupId>
-                <artifactId>nsecbunker-account</artifactId>
-                <version>${nsecbunker-java.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>xyz.tcheeric</groupId>
-                <artifactId>nsecbunker-core</artifactId>
-                <version>${nsecbunker-java.version}</version>
             </dependency>
 
             <!-- Jackson BOM -->

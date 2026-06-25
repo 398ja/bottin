@@ -13,7 +13,7 @@ import java.time.Duration;
 
 /**
  * Testcontainers configuration for E2E tests.
- * Provides PostgreSQL, nsecbunkerd, and strfry relay containers.
+ * Provides PostgreSQL and strfry relay containers.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestContainersConfig {
@@ -32,22 +32,6 @@ public class TestContainersConfig {
                 .withPassword("bottin_e2e")
                 .withNetwork(NETWORK)
                 .withNetworkAliases("postgres");
-    }
-
-    /**
-     * nsecbunkerd container for key management and signing.
-     * Image from docker.398ja.xyz registry.
-     * The container exposes port 3000.
-     */
-    @Bean
-    public GenericContainer<?> nsecbunkerdContainer() {
-        return new GenericContainer<>(DockerImageName.parse("docker.398ja.xyz/nsecbunkerd:latest"))
-                .withNetwork(NETWORK)
-                .withNetworkAliases("nsecbunkerd")
-                .withExposedPorts(3000)
-                .withEnv("NSECBUNKER_LOG_LEVEL", "debug")
-                .waitingFor(Wait.forLogMessage(".*nsecBunker ready to serve requests.*", 1)
-                        .withStartupTimeout(Duration.ofSeconds(120)));
     }
 
     /**

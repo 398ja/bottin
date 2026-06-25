@@ -8,7 +8,7 @@ import org.testcontainers.utility.DockerImageName;
 
 /**
  * Simplified test configuration with only PostgreSQL.
- * Used for E2E tests that don't require nsecbunkerd or relay containers.
+ * Used for E2E tests that don't require relay containers.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class PostgresOnlyTestConfig {
