@@ -1,7 +1,27 @@
 <!--
   Sync Impact Report
   ==================
-  Version change: 0.0.0 (template) -> 1.0.0
+  Version change: 0.0.0 (template) -> 1.0.0 -> 1.1.0
+  1.1.0 amendment (sourced from AGENTS.md):
+    - Expanded Principle III (Clean Architecture) with the Component
+      Principles (REP/CCP/CRP cohesion; ADP/SDP/SAP coupling) and the
+      sanctioned design-pattern catalogue.
+    - Expanded Principle IV (Testing Discipline) with the AAA pattern,
+      F.I.R.S.T., one-concept-per-test, the should[Behavior]When[State]
+      naming convention, test data builders, and jqwik property tests.
+    - Expanded Principle VI with the standard error-message template
+      ("{WHAT}. {WHY}. Suggestion: {ACTIONABLE}.").
+    - Added Principle VIII (Clean Code Craftsmanship): meaningful names,
+      small single-purpose functions, Command-Query Separation, no flag
+      arguments, exceptions over error codes, never return null.
+    - Added two sections: "Documentation Standards" (Diataxis) and
+      "Logging Standards" (structured, subject-first, secrets masked).
+    - Development Workflow: added the "bump version on task completion"
+      rule and the Diataxis documentation-linking requirement.
+    - Deliberately NOT imported from AGENTS.md: its residual Cashu-NUT
+      compliance clause (bottin uses Nostr NIPs — Principle II) and its
+      WalletOperationException references (bottin uses BottinException —
+      Principle VI), both copy-paste artifacts from an upstream template.
   Ratification: First concrete constitution for bottin. All template
     placeholders replaced with bottin-specific content.
   Adapted from cashu-mint constitution (1.1.0) at the user's request,
@@ -143,6 +163,19 @@ Infrastructure (JPA, relay clients, DNS/HTTP clients) MUST NOT leak into the
 domain or use-case layers. Relay, DNS, and external `.well-known` access MUST
 go through ports owned by the relevant feature module.
 
+Module boundaries MUST respect the component principles:
+
+- **Cohesion** — REP (a component is the unit of release), CCP (classes that
+  change together live together), CRP (do not force consumers to depend on what
+  they do not use)
+- **Coupling** — ADP (no cycles in the module dependency graph; break cycles
+  with Dependency Inversion), SDP (depend in the direction of stability), SAP
+  (stable components are abstract)
+
+Apply established design patterns (Strategy, Adapter, Decorator, Template
+Method, Builder, State, Chain of Responsibility, etc.) where they simplify the
+design; never force a pattern where a simpler solution suffices.
+
 ### IV. Testing Discipline
 
 All code MUST meet the following testing standards:
@@ -163,6 +196,21 @@ All code MUST meet the following testing standards:
   verification paths MUST be covered by both unit and integration tests
 - Mocked approximations are forbidden for verification-state and serving
   transitions where a real container or fixture is feasible
+
+All tests MUST follow Clean Code (Chapter 9) discipline:
+
+- **AAA structure**: each test is split into Arrange / Act / Assert (or
+  Given / When / Then) sections
+- **One concept per test**: assert a single logical concept; split unrelated
+  assertions into separate test methods
+- **F.I.R.S.T.**: Fast, Independent, Repeatable, Self-validating, Timely
+- **Descriptive names**: follow `should[ExpectedBehavior]When[StateUnderTest]`;
+  no `testMethod1`-style names
+- **Boundary coverage**: null inputs, empty collections, boundary values
+  (0, -1, MAX), invalid inputs, and concurrency where applicable
+- **Test data builders / factory methods** for complex fixtures; avoid
+  duplicated setup
+- **Property-based tests** (jqwik) where a property holds across many inputs
 
 ### V. Virtual Threads for Concurrency
 
@@ -194,9 +242,13 @@ I/O-bound work in bottin:
   authentication and MUST NOT be exposed on public networks
 - OWASP Top 10 vulnerabilities are blocking defects
 - Follow SOLID principles; use Java records or Lombok to reduce boilerplate
-- Exceptions exposed at the CLI/REST boundary MUST extend `BottinException`
-  with an error code, a retryable flag, a user message, and an actionable
-  suggestion; preserve the original cause when wrapping
+- Prefer exceptions over error codes; exceptions exposed at the REST boundary
+  MUST extend `BottinException` with an error code, a retryable flag, a user
+  message, and an actionable suggestion; preserve the original cause when
+  wrapping. User-facing messages MUST follow the template
+  `{WHAT_HAPPENED}. {WHY_IT_HAPPENED}. Suggestion: {ACTIONABLE_STEP}.`
+- `retryable=true` is reserved for genuinely transient failures (timeouts,
+  temporary unavailability); never swallow a caught exception — log or rethrow
 - YAGNI: no speculative abstractions; prefer a few clear lines over a premature
   helper
 
@@ -226,6 +278,30 @@ Identity Mapping Integrity (Principle I) takes precedence where the two
 interact: audit data genuinely required to protect mapping integrity is
 retained within the stated policy rather than discarded.
 
+### VIII. Clean Code Craftsmanship
+
+Code MUST be written to be read. The following Clean Code rules are enforced in
+review:
+
+- **Meaningful names**: intention-revealing, pronounceable, searchable; no
+  disinformation; one word per concept (pick one of fetch/get/retrieve and keep
+  it); classes are nouns, methods are verbs
+- **Small functions**: ideally under 20 lines; do one thing at one level of
+  abstraction; zero/one/two arguments preferred, three needs justification
+- **No flag arguments**: split a boolean-driven function into two
+- **Command-Query Separation**: a function either does something or answers
+  something, never both
+- **Comments are a last resort**: prefer self-documenting code; good comments
+  explain *why* (intent, consequences, legal, TODO, public-API Javadoc), never
+  restate *what*; no commented-out code, no journal/noise comments
+- **No dead or duplicate code**; replace magic numbers with named constants;
+  encapsulate complex conditionals behind well-named methods; avoid negative
+  conditionals
+- **Never return null** — throw an exception or return a Special Case object;
+  do not pass null unless an API explicitly expects it
+- Use Lombok / Java records to remove boilerplate; rely on imports rather than
+  fully-qualified class names
+
 ## Security Requirements
 
 - **Authentication on admin paths**: all admin endpoints (`bottin-admin-ui` and
@@ -243,6 +319,39 @@ retained within the stated policy rather than discarded.
 - **Verification audit trail**: domain and external NIP-05 verification outcomes
   MUST be persisted as audit entries to support re-checks and incident analysis
 
+## Documentation Standards
+
+Documentation MUST follow the [Diataxis](https://diataxis.fr/) framework:
+
+- Every document is classified as exactly one of: **tutorial**, **how-to
+  guide**, **reference**, or **explanation**, and lives under
+  `docs/<section>` matching that category
+- Each document starts with a top-level `#` heading and a short introduction
+  stating its purpose
+- New documents MUST be linked from `docs/README.md` in the corresponding
+  section; cross-references use relative links and code snippets are kept
+  minimal and tested
+- New REST endpoints MUST be documented in the API documentation; new features
+  MUST update the relevant docs in the same change
+
+## Logging Standards
+
+- Each log entry states, in one plain-language sentence, what happened, why,
+  and the resulting impact — leading with the subject (component/entity), then
+  the action and outcome
+- Use structured key-value pairs (e.g. `domain_id=1 success=false`) with stable
+  field names; messages stay grep-friendly and machine-parseable (no multi-line
+  blobs)
+- State the exact state transition or decision (e.g. `payment_quote
+  marked_pending`) and whether it succeeded, failed, or was skipped
+- **Levels**: ERROR for unexpected failures needing investigation; WARN for
+  expected-but-problematic conditions (retryable failure, circuit open);
+  DEBUG/TRACE for diagnostic variables and branch choices, not payload dumps
+- Secrets, personal data, and cryptographic material MUST be omitted or masked;
+  identifiers and correlation/trace IDs are included where they aid diagnosis
+- Use neutral, professional language; avoid duplicating the same event across
+  levels or components
+
 ## Development Workflow
 
 - **Commits**: Conventional Commits format (`feat(scope):`, `fix(scope):`,
@@ -252,9 +361,13 @@ retained within the stated policy rather than discarded.
 - **Builds**: `mvn -q verify` MUST pass before committing
 - **Integration tests**: PRs that touch verification, relay interaction, or
   `.well-known` serving MUST run the integration tests locally before merge
-- **Versions**: Managed in the parent `pom.xml` properties section; use
-  coordinated bumps following semantic versioning, deriving the bump from the
-  accumulated Conventional Commits
+- **Versions**: Managed in the parent `pom.xml`; use coordinated bumps
+  following semantic versioning, deriving the bump from the accumulated
+  Conventional Commits. Bump the project version on task/feature completion
+  before publishing, and record the change in `CHANGELOG.md`
+- **Documentation**: features that add or change behavior MUST update the
+  corresponding Diataxis document (see Documentation Standards) in the same
+  change
 - **Branching**: Feature branches off `develop`; PRs target `develop`; `main`
   tracks released versions
 - **Code review**: All PRs require review; changes to identity-serving or
@@ -277,4 +390,4 @@ It supersedes ad-hoc practices and informal conventions.
 - **Runtime guidance**: See `CLAUDE.md` and `AGENTS.md` for build commands,
   module structure, coding standards, and operational patterns.
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-25 | **Last Amended**: 2026-06-25
+**Version**: 1.1.0 | **Ratified**: 2026-06-25 | **Last Amended**: 2026-06-25
