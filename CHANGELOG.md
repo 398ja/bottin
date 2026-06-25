@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-25
+
+### Removed
+- Removed the `nsecbunker-java` dependency (`nsecbunker-account` / `nsecbunker-core`) and its integration entirely:
+  the `PersistentNip05Manager`, `PersistentAccountManager`, and SPI provider classes in `bottin-spring-boot-starter`,
+  the `NsecbunkerIntegrationE2ETest` and `nsecbunkerd` Testcontainer in `bottin-tests/bottin-e2e`, and the
+  associated dependency declarations. This also drops the deprecated `nostr-java` 1.x that was pulled in transitively.
+
+### Changed
+- **BREAKING (starter)**: `bottin-spring-boot-starter` no longer exposes the nsecbunker-java SPI beans
+  (`Nip05Manager` / `AccountManager` and their providers). Applications that embedded the starter solely to provide
+  bottin's persistence to nsecbunker-java are affected. The starter continues to auto-configure all bottin services
+  and endpoints. `BottinAutoConfiguration` now activates based on a bottin persistence type rather than an
+  nsecbunker class.
+
 ## [0.2.1] - 2026-02-25
 
 ### Removed
