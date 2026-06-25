@@ -30,11 +30,6 @@ public class BottinProperties {
      */
     private ExternalProperties external = new ExternalProperties();
 
-    /**
-     * Profile reach (follower count) calculation settings.
-     */
-    private ReachProperties reach = new ReachProperties();
-
     @Data
     public static class AdminProperties {
         /**
@@ -87,39 +82,5 @@ public class BottinProperties {
          * Maximum cache entries for external verifications.
          */
         private int cacheMaxSize = 1000;
-    }
-
-    @Data
-    public static class ReachProperties {
-        /**
-         * Whether the scheduled reach calculation is enabled.
-         */
-        private boolean enabled = true;
-
-        /**
-         * Cron expression for the recurring reach calculation (default: every 6 hours).
-         */
-        private String calculationCron = "0 0 */6 * * ?";
-
-        /**
-         * Default application relays consulted for every reach calculation.
-         */
-        private java.util.List<String> defaultRelays = java.util.List.of(
-                "wss://relay.damus.io", "wss://nos.lol", "wss://relay.nostr.band");
-
-        /**
-         * Per-relay connect/read timeout in seconds.
-         */
-        private long relayTimeoutSeconds = 12;
-
-        /**
-         * Maximum follower events requested per relay.
-         */
-        private int maxFollowersPerRelay = 5000;
-
-        /**
-         * Maximum tracked profiles processed in a single scheduled run.
-         */
-        private int maxProfilesPerRun = 10000;
     }
 }
