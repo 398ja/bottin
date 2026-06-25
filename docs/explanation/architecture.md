@@ -148,7 +148,7 @@ bottin-tests/
 The E2E tests use [Testcontainers](https://testcontainers.org/) to spin up real infrastructure:
 
 - **PostgreSQL** - Database for persistent storage
-- **strfry** - Nostr relay (optional, for NIP-46 tests)
+- **strfry** - Nostr relay fixture for relay-dependent tests (optional)
 
 ### Test Profiles
 
