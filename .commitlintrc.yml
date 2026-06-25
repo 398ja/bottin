@@ -30,10 +30,13 @@ rules:
   subject-full-stop:      [2, never, "."]         # Subject must not end with a period
 
   body-leading-blank:     [2, always]             # Body must have a blank line before it
-  body-max-line-length:   [2, always, 100]        # Body lines can not exceed 100 chars
+  # Advisory only (warning, not error): prose, URLs, and trailers routinely wrap
+  # past 100 chars; the structural header/type/scope/subject rules above are what
+  # actually matter for conventional commits and remain hard errors.
+  body-max-line-length:   [1, always, 100]        # Body lines should not exceed 100 chars (warn)
 
   footer-leading-blank:   [2, always]             # Footer must have a blank line before it
-  footer-max-line-length: [2, always, 100]        # Footer lines can not exceed 100 chars
+  footer-max-line-length: [1, always, 100]        # Footer lines should not exceed 100 chars (warn)
 
   # ------------------------------------------------------------
   # BREAKING CHANGES — guidance (informational; not enforced):
