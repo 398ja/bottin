@@ -19,6 +19,7 @@ import xyz.tcheeric.bottin.core.reach.ProfileReach;
 import xyz.tcheeric.bottin.core.reach.ReachQueryService;
 import xyz.tcheeric.bottin.web.dto.ProfileReachResponse;
 import xyz.tcheeric.bottin.web.ratelimit.RateLimitService;
+import xyz.tcheeric.bottin.web.util.ClientIp;
 
 /**
  * REST controller serving precomputed profile reach statistics.
@@ -54,7 +55,7 @@ public class ProfileStatsController {
             @PathVariable String identifier,
             HttpServletRequest request) {
 
-        String clientIp = getClientIp(request);
+        String clientIp = ClientIp.resolve(request);
         log.debug("api_profile_reach identifier={} clientIp={}", identifier, clientIp);
 
         if (!rateLimitService.isAllowed(clientIp)) {
@@ -66,13 +67,5 @@ public class ProfileStatsController {
                 .orElseThrow(() -> new ReachNotAvailableException(identifier));
 
         return ResponseEntity.ok(ProfileReachResponse.from(reach));
-    }
-
-    private String getClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isEmpty()) {
-            return forwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 }

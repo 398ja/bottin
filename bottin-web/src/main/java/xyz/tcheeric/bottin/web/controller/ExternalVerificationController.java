@@ -18,6 +18,7 @@ import xyz.tcheeric.bottin.verification.ExternalNip05VerificationResult;
 import xyz.tcheeric.bottin.verification.ExternalNip05Verifier;
 import xyz.tcheeric.bottin.web.dto.ExternalVerificationResponse;
 import xyz.tcheeric.bottin.web.ratelimit.RateLimitService;
+import xyz.tcheeric.bottin.web.util.ClientIp;
 
 /**
  * REST controller for verifying external NIP-05 identifiers.
@@ -54,7 +55,7 @@ public class ExternalVerificationController {
             @RequestParam(required = false, defaultValue = "false") boolean noCache,
             HttpServletRequest request) {
 
-        String clientIp = getClientIp(request);
+        String clientIp = ClientIp.resolve(request);
         log.debug("api_external_verify nip05={} noCache={} clientIp={}", nip05, noCache, clientIp);
 
         if (!rateLimitService.isAllowed(clientIp)) {
@@ -70,17 +71,5 @@ public class ExternalVerificationController {
         }
 
         return ResponseEntity.ok(ExternalVerificationResponse.from(result));
-    }
-
-    /**
-     * Extracts the client IP address, considering X-Forwarded-For header for proxied requests.
-     */
-    private String getClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isEmpty()) {
-            // Take the first IP in the chain (original client)
-            return forwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 }
