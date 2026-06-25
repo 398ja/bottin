@@ -148,7 +148,6 @@ bottin-tests/
 The E2E tests use [Testcontainers](https://testcontainers.org/) to spin up real infrastructure:
 
 - **PostgreSQL** - Database for persistent storage
-- **nsecbunkerd** - Key management container for integration testing
 - **strfry** - Nostr relay (optional, for NIP-46 tests)
 
 ### Test Profiles
@@ -160,14 +159,5 @@ Maven profiles control test execution:
 | default | `mvn test` | Unit tests only |
 | e2e | `mvn -Pe2e test` | E2E tests with Testcontainers |
 | it | `mvn -Pit test` | Integration tests |
-
-### nsecbunker-java Integration Tests
-
-The `NsecbunkerIntegrationE2ETest` verifies the integration between bottin's `PersistentNip05Manager` and nsecbunker-java:
-
-- NIP-05 record creation with generated keypairs
-- NIP-05 verification and lookup
-- Record management (CRUD operations)
-- Well-known endpoint integration
 
 See [Running E2E Tests](../how-to/running-e2e-tests.md) for detailed instructions.
