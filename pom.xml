@@ -103,7 +103,7 @@
         <maven.javadoc.skip>true</maven.javadoc.skip>
 
         <!-- Docker/Jib -->
-        <jib-maven-plugin.version>3.4.1</jib-maven-plugin.version>
+        <jib-maven-plugin.version>3.5.1</jib-maven-plugin.version>
         <docker.registry>docker.398ja.xyz</docker.registry>
         <docker.image.prefix>${docker.registry}</docker.image.prefix>
     </properties>
