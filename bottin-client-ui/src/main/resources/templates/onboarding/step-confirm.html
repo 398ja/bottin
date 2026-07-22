@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Confirm</title>
+</head>
+<body>
+    <div th:fragment="content" class="container">
+        <div class="wizard-step-indicator">
+            <div class="wizard-step completed">1</div>
+            <div class="wizard-connector completed"></div>
+            <div class="wizard-step completed">2</div>
+            <div class="wizard-connector completed"></div>
+            <div class="wizard-step completed">3</div>
+            <div class="wizard-connector completed"></div>
+            <div class="wizard-step active">4</div>
+        </div>
+
+        <div class="card" style="max-width: 480px; margin: 0 auto;">
+            <h1 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Review Your Profile</h1>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                    <div id="confirm-avatar" style="width: 64px; height: 64px; border-radius: 50%; background: var(--color-bg);"></div>
+                    <div>
+                        <strong id="confirm-display-name" style="font-size: 1.125rem;"></strong>
+                        <div id="confirm-username" style="color: var(--color-text-secondary); font-size: 0.875rem;"></div>
+                    </div>
+                </div>
+
+                <div style="display: grid; gap: 0.75rem;">
+                    <div><span style="font-weight: 500;">NIP-05:</span> <span id="confirm-nip05"></span></div>
+                    <div><span style="font-weight: 500;">Bio:</span> <span id="confirm-about" style="color: var(--color-text-secondary);"></span></div>
+                    <div><span style="font-weight: 500;">Lightning:</span> <span id="confirm-lud16" style="color: var(--color-text-secondary);"></span></div>
+                    <div><span style="font-weight: 500;">Website:</span> <span id="confirm-website" style="color: var(--color-text-secondary);"></span></div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem;">
+                <button class="btn btn-outline" style="flex: 1;" onclick="history.back()">Back</button>
+                <form action="/onboarding/complete" method="post" style="flex: 1;" id="confirm-form">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Create Identity</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            var data = sessionStorage.getItem('onboarding-data');
+            if (data) {
+                var parsed = JSON.parse(data);
+                document.getElementById('confirm-username').textContent = '@' + (parsed.username || '');
+                document.getElementById('confirm-display-name').textContent = parsed.displayName || parsed.username || '';
+                document.getElementById('confirm-nip05').textContent = (parsed.username || '') + '@bottin.example.com';
+                document.getElementById('confirm-about').textContent = parsed.about || '(not set)';
+                document.getElementById('confirm-lud16').textContent = parsed.lud16 || '(not set)';
+                document.getElementById('confirm-website').textContent = parsed.website || '(not set)';
+            }
+        })();
+    </script>
+</body>
+</html>

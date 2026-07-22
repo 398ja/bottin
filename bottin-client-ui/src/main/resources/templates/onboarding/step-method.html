@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Create Account</title>
+</head>
+<body>
+    <div th:fragment="content" class="container">
+        <div class="wizard-step-indicator">
+            <div class="wizard-step active">1</div>
+            <div class="wizard-connector"></div>
+            <div class="wizard-step">2</div>
+            <div class="wizard-connector"></div>
+            <div class="wizard-step">3</div>
+            <div class="wizard-connector"></div>
+            <div class="wizard-step">4</div>
+        </div>
+
+        <div class="card" style="max-width: 480px; margin: 0 auto;">
+            <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Create Your Nostr Identity</h1>
+            <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                Choose how to set up your Nostr identity. Your private key stays in your browser.
+            </p>
+
+            <form hx-post="/onboarding/step-method" hx-target="body" hx-push-url="false">
+                <div class="card" style="cursor: pointer; border: 2px solid var(--color-border);" onclick="document.getElementById('method-create').checked=true">
+                    <label style="display: flex; gap: 0.75rem; cursor: pointer;">
+                        <input type="radio" name="method" id="method-create" value="create" checked style="margin-top: 0.25rem;">
+                        <div>
+                            <strong>Create New Key</strong>
+                            <p style="color: var(--color-text-secondary); font-size: 0.875rem; margin-top: 0.25rem;">
+                                Generate a fresh Nostr keypair. Your nsec will be encrypted and stored locally.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="card" style="cursor: pointer; border: 2px solid var(--color-border); margin-top: 0.75rem;" onclick="document.getElementById('method-import').checked=true">
+                    <label style="display: flex; gap: 0.75rem; cursor: pointer;">
+                        <input type="radio" name="method" id="method-import" value="import" style="margin-top: 0.25rem;">
+                        <div>
+                            <strong>Import Existing Key</strong>
+                            <p style="color: var(--color-text-secondary); font-size: 0.875rem; margin-top: 0.25rem;">
+                                Import an existing nsec. It will be used only in your browser and never transmitted.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
+                <div id="import-section" style="display: none; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Your nsec (private key)</label>
+                        <textarea name="nsec" class="form-input" rows="2" placeholder="nsec1..."></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">
+                    Continue
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('input[name="method"]').forEach(function(r) {
+            r.addEventListener('change', function() {
+                document.getElementById('import-section').style.display =
+                    this.value === 'import' ? 'block' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>

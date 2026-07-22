@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Backup</title>
+</head>
+<body>
+    <div th:fragment="content" class="container" style="max-width: 480px;">
+        <h1 style="font-size: 1.5rem; margin-bottom: 1.5rem;" th:text="${#request.requestURI.startsWith('/restore')} ? 'Restore from Backup' : 'Backup'">Backup</h1>
+
+        <div class="card">
+            <h2 style="font-size: 1.125rem; margin-bottom: 1rem;">Export Encrypted Backup</h2>
+            <p style="font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
+                Download an encrypted backup of your identity, follow list, and block list.
+            </p>
+            <a href="/api/v1/backup/export" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                Download Backup
+            </a>
+        </div>
+
+        <div class="card" style="margin-top: 1rem;">
+            <h2 style="font-size: 1.125rem; margin-bottom: 1rem;">Restore from Backup</h2>
+            <p style="font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
+                Upload a backup file and enter your passphrase to restore your identity.
+            </p>
+
+            <form id="restore-form" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label class="form-label">Backup File</label>
+                    <input type="file" name="file" class="form-input" accept=".bottin-backup,.json">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Passphrase</label>
+                    <input type="password" name="passphrase" class="form-input" minlength="8">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Restore
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

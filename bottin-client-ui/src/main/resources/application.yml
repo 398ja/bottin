@@ -1,0 +1,32 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: bottin-client-ui
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+
+nap:
+  enabled: true
+  cookie-name: client_session
+  session:
+    idle-timeout: 30m
+    absolute-expiry: 24h
+
+bottin:
+  client:
+    domain: bottin.example.com
+    blossom-url: http://localhost:8888
+    default-relays:
+      - url: wss://relay.damus.io
+        read: true
+        write: true
+      - url: wss://nos.lol
+        read: true
+        write: true
+      - url: wss://relay.nostr.band
+        read: true
+        write: false

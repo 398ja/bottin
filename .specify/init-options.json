@@ -1,11 +1,8 @@
 {
-  "ai": "claude",
-  "ai_commands_dir": null,
-  "ai_skills": false,
-  "branch_numbering": "sequential",
+  "ai": "generic",
+  "feature_numbering": "sequential",
   "here": true,
-  "offline": true,
-  "preset": null,
+  "integration": "generic",
   "script": "sh",
-  "speckit_version": "0.4.4.dev0"
+  "speckit_version": "0.12.8.dev0"
 }

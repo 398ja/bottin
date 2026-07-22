@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Relay Management</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.navbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.navbar .logo { font-weight: 700; font-size: 1.125rem; }
+.navbar .nav-links { display: flex; gap: 16px; align-items: center; }
+.navbar .nav-links a { text-decoration: none; color: var(--muted); font-size: .875rem; cursor: pointer; }
+.navbar .avatar-nav { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .75rem; font-weight: 600; cursor: pointer; }
+.page { max-width: 640px; margin: 0 auto; padding: 32px 24px; }
+.page h1 { font-size: 1.25rem; margin-bottom: 4px; }
+.page .subtitle { color: var(--muted); font-size: .875rem; margin-bottom: 24px; }
+.settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+.settings-section h2 { font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.relay-list { display: flex; flex-direction: column; gap: 8px; }
+.relay-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg); border-radius: 8px; font-size: .8125rem; font-family: monospace; }
+.relay-item .remove { color: var(--danger); cursor: pointer; font-size: .75rem; padding: 4px 8px; border: none; background: none; }
+.relay-placeholder { font-size: .8125rem; color: var(--muted); padding: 12px; text-align: center; }
+.add-relay-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 12px; }
+.add-relay-row input { flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: .8125rem; outline: none; }
+.add-relay-row input:focus { border-color: var(--primary); }
+.relay-toggles { display: flex; gap: 10px; align-items: center; }
+.relay-toggles label { display: flex; align-items: center; gap: 4px; font-size: .8125rem; cursor: pointer; }
+.relay-toggles input[type=checkbox] { margin: 0; }
+.save-row { display: flex; justify-content: flex-end; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.save-row button { padding: 10px 24px; border: none; border-radius: 8px; font-size: .875rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.mobile-nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.mobile-nav .logo { font-weight: 700; font-size: 1.125rem; }
+.back-link { color: var(--muted); text-decoration: none; font-size: .875rem; display: inline-block; margin-bottom: 16px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="page-frame">
+    <div class="page-frame-header">
+        <h2>Relay Management (Desktop)</h2>
+        <span class="badge">Authenticated</span>
+    </div>
+    <div class="page-frame-body" style="padding:0">
+        <div class="navbar">
+            <div class="logo">Bottin</div>
+            <div class="nav-links">
+                <a>Search</a>
+                <a style="font-weight:600;color:var(--text)">Settings</a>
+                <a>Logout</a>
+                <div class="avatar-nav">A</div>
+            </div>
+        </div>
+        <div class="page">
+            <a class="back-link">← Back to Settings</a>
+            <h1>Relays</h1>
+            <p class="subtitle">Manage which Nostr relays your client uses for reading and publishing</p>
+
+            <div class="settings-section">
+                <h2>📖 Read Relays</h2>
+                <div class="relay-list">
+                    <div class="relay-item">
+                        wss://relay.damus.io
+                        <button class="remove">✕</button>
+                    </div>
+                    <div class="relay-item">
+                        wss://nos.lol
+                        <button class="remove">✕</button>
+                    </div>
+                    <div class="relay-item">
+                        wss://relay.nostr.band
+                        <button class="remove">✕</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>✏️ Write Relays</h2>
+                <div class="relay-list">
+                    <div class="relay-item">
+                        wss://relay.damus.io
+                        <button class="remove">✕</button>
+                    </div>
+                    <div class="relay-item">
+                        wss://nos.lol
+                        <button class="remove">✕</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>➕ Add Relay</h2>
+                <div class="add-relay-row">
+                    <input type="url" placeholder="wss://relay.example.com">
+                    <div class="relay-toggles">
+                        <label><input type="checkbox" checked> Read</label>
+                        <label><input type="checkbox" checked> Write</label>
+                    </div>
+                    <button style="padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.8125rem">Add</button>
+                </div>
+                <div class="save-row">
+                    <button style="background:var(--primary);color:#fff">⬆ Save &amp; Publish</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-frame">
+    <div class="page-frame-header">
+        <h2>Relay Management (Mobile)</h2>
+        <span class="badge">375px</span>
+    </div>
+    <div class="page-frame-body" style="display:flex;justify-content:center;padding:0">
+        <div class="phone-frame" style="margin:0">
+            <div class="notch"><div></div></div>
+            <div class="phone-content">
+                <div class="mobile-nav">
+                    <span>←</span>
+                    <span style="font-weight:600">Relays</span>
+                    <span style="width:20px"></span>
+                </div>
+                <div style="padding:16px">
+                    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px">
+                        <h3 style="font-size:.875rem;margin-bottom:10px">📖 Read Relays</h3>
+                        <div style="display:flex;flex-direction:column;gap:6px">
+                            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg);border-radius:6px;font-size:.75rem;font-family:monospace">wss://relay.damus.io <span style="color:var(--danger)">✕</span></div>
+                            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg);border-radius:6px;font-size:.75rem;font-family:monospace">wss://nos.lol <span style="color:var(--danger)">✕</span></div>
+                        </div>
+                    </div>
+                    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px">
+                        <h3 style="font-size:.875rem;margin-bottom:10px">✏️ Write Relays</h3>
+                        <div style="display:flex;flex-direction:column;gap:6px">
+                            <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg);border-radius:6px;font-size:.75rem;font-family:monospace">wss://relay.damus.io <span style="color:var(--danger)">✕</span></div>
+                        </div>
+                    </div>
+                    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+                        <h3 style="font-size:.875rem;margin-bottom:10px">➕ Add Relay</h3>
+                        <input type="url" placeholder="wss://relay.example.com" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.8125rem;outline:none;margin-bottom:10px">
+                        <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+                            <label style="display:flex;align-items:center;gap:4px;font-size:.75rem"><input type="checkbox" checked> Read</label>
+                            <label style="display:flex;align-items:center;gap:4px;font-size:.75rem"><input type="checkbox" checked> Write</label>
+                        </div>
+                        <button style="width:100%;padding:10px 0;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:.8125rem;cursor:pointer;margin-bottom:10px">Add Relay</button>
+                        <button style="width:100%;padding:10px 0;background:var(--surface);color:var(--primary);border:1px solid var(--primary);border-radius:8px;font-size:.8125rem;cursor:pointer">⬆ Save &amp; Publish</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p style="text-align:center;color:var(--muted);font-size:.8125rem;padding:16px">
+    <a href="index.html" style="color:var(--primary)">← Back to gallery</a>
+</p>
+
+</body>
+</html>

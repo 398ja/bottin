@@ -43,6 +43,7 @@
         <module>bottin-verification</module>
         <module>bottin-reach</module>
         <module>bottin-admin-ui</module>
+        <module>bottin-client-ui</module>
         <module>bottin-spring-boot-starter</module>
         <module>bottin-tests</module>
     </modules>
@@ -58,6 +59,10 @@
 
         <!-- nostr-java (relay client for reach calculation) -->
         <nostr-java.version>2.0.7</nostr-java.version>
+
+        <!-- NAP (Nostr Authentication Protocol) -->
+        <nap-java.version>0.23.0</nap-java.version>
+        <nostrdb-jni.version>0.23.0</nostrdb-jni.version>
 
         <!-- Database -->
         <flyway.version>10.10.0</flyway.version>
@@ -167,6 +172,21 @@
                 <groupId>xyz.tcheeric</groupId>
                 <artifactId>nostr-java-core</artifactId>
                 <version>${nostr-java.version}</version>
+            </dependency>
+
+            <!-- NAP (Nostr Authentication Protocol) -->
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>nap-spring</artifactId>
+                <version>${nap-java.version}</version>
+            </dependency>
+
+
+            <!-- nostrdb (search index) -->
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>imani-nostrdb</artifactId>
+                <version>${nostrdb-jni.version}</version>
             </dependency>
 
             <!-- Spring Boot BOM -->

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Onboarding: Welcome & Backup</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.page { max-width: 520px; margin: 0 auto; text-align: center; }
+.step-indicator { display: flex; gap: 6px; justify-content: center; margin-bottom: 24px; }
+.step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+.step-dot.completed { background: var(--success); }
+.success-icon { width: 64px; height: 64px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 2rem; }
+h1 { font-size: 1.5rem; margin-bottom: 4px; }
+.subtitle { color: var(--muted); font-size: .875rem; margin-bottom: 32px; }
+.backup-card {
+    background: #fef9c3; border: 1px solid #facc15; border-radius: var(--radius);
+    padding: 20px; text-align: left; margin-bottom: 24px;
+}
+.backup-card h3 { font-size: .9375rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.backup-card .nsec-display {
+    font-family: monospace; font-size: .8125rem; background: rgba(0,0,0,.05);
+    padding: 12px; border-radius: 8px; word-break: break-all; margin-bottom: 12px;
+}
+.backup-card .nsec-masked { filter: blur(4px); user-select: none; }
+.backup-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.backup-actions button {
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); font-size: .8125rem; cursor: pointer; display: flex; align-items: center; gap: 6px;
+}
+.backup-actions button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.checkbox-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 24px; text-align: left; }
+.checkbox-row input[type=checkbox] { margin-top: 3px; }
+.checkbox-row label { font-size: .8125rem; color: var(--muted); }
+.mobile-nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.mobile-nav .logo { font-weight: 700; font-size: 1.125rem; }
+</style>
+</head>
+<body>
+
+<div class="page-frame">
+    <div class="page-frame-header">
+        <h2>Onboarding — Welcome & Backup (Desktop)</h2>
+        <span class="badge">Complete</span>
+    </div>
+    <div class="page-frame-body">
+        <div class="page">
+            <div class="step-indicator">
+                <div class="step-dot completed"></div>
+                <div class="step-dot completed"></div>
+                <div class="step-dot completed"></div>
+                <div class="step-dot completed"></div>
+                <div class="step-dot completed"></div>
+            </div>
+            <div class="success-icon">🎉</div>
+            <h1>You're all set!</h1>
+            <p class="subtitle">Your Nostr identity has been created and encrypted locally</p>
+
+            <div class="backup-card">
+                <h3>⚠️ Save Your Backup Key</h3>
+                <p style="font-size:.8125rem;color:#92400e;margin-bottom:12px">
+                    This is the only time you'll see your full private key. If you lose it, you cannot recover your identity.
+                </p>
+                <div class="nsec-display">
+                    <span style="filter:blur(4px);user-select:none">nsec1qz2x3y4w5e6r7t8y9u0i1o2p3a4s5d6f7g8h9j0k1l</span>
+                </div>
+                <div class="backup-actions">
+                    <button>📋 Copy</button>
+                    <button class="primary">⬇ Download Backup</button>
+                    <button>👁 Reveal</button>
+                </div>
+            </div>
+
+            <div class="checkbox-row">
+                <input type="checkbox" id="ack">
+                <label for="ack">I have saved my backup key somewhere safe. I understand that without it, I cannot recover my identity.</label>
+            </div>
+
+            <button style="background:var(--primary);color:#fff;border:none;padding:12px 0;border-radius:8px;font-size:.9375rem;cursor:pointer;width:100%;opacity:.5" disabled>Continue to App</button>
+        </div>
+    </div>
+</div>
+
+<div class="page-frame">
+    <div class="page-frame-header">
+        <h2>Onboarding — Welcome & Backup (Mobile)</h2>
+        <span class="badge">375px</span>
+    </div>
+    <div class="page-frame-body" style="display:flex;justify-content:center">
+        <div class="phone-frame">
+            <div class="notch"><div></div></div>
+            <div class="phone-content">
+                <div class="mobile-nav">
+                    <span class="logo">Bottin</span>
+                    <span style="color:var(--success);font-size:.8125rem">✓ Complete</span>
+                </div>
+                <div style="padding:24px 20px;text-align:center">
+                    <div class="success-icon" style="width:48px;height:48px;font-size:1.5rem">🎉</div>
+                    <h1 style="font-size:1.25rem;margin-bottom:4px">You're all set!</h1>
+                    <p style="font-size:.8125rem;color:var(--muted);margin-bottom:24px">Identity created and encrypted</p>
+
+                    <div class="backup-card" style="padding:16px;text-align:left">
+                        <h3 style="font-size:.8125rem">⚠️ Save Backup Key</h3>
+                        <p style="font-size:.75rem;color:#92400e;margin-bottom:10px">This is the only time you'll see your full private key.</p>
+                        <div class="nsec-display" style="font-size:.75rem;padding:10px">
+                            <span style="filter:blur(4px)">nsec1qz2x3y4w5e6r7t8y9u</span>
+                        </div>
+                        <div class="backup-actions" style="gap:6px">
+                            <button style="padding:6px 12px;font-size:.75rem">📋 Copy</button>
+                            <button class="primary" style="padding:6px 12px;font-size:.75rem">⬇ Download</button>
+                        </div>
+                    </div>
+
+                    <div class="checkbox-row" style="margin-bottom:20px">
+                        <input type="checkbox" id="ack-m">
+                        <label for="ack-m" style="font-size:.75rem">I have saved my backup key.</label>
+                    </div>
+
+                    <button style="background:var(--primary);color:#fff;border:none;padding:12px 0;border-radius:8px;font-size:.875rem;cursor:pointer;width:100%;opacity:.5" disabled>Continue to App</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p style="text-align:center;color:var(--muted);font-size:.8125rem;padding:16px">
+    <a href="index.html" style="color:var(--primary)">← Back to gallery</a>
+</p>
+
+</body>
+</html>
