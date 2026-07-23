@@ -1,11 +1,15 @@
 package xyz.tcheeric.bottin.client.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.Map;
@@ -62,9 +66,26 @@ public class OnboardingController {
         return "layout";
     }
 
-    @GetMapping("/api/v1/resolve/{username}")
+    @GetMapping(value = "/api/v1/resolve/{username}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public Map<String, Object> resolveUsername(@PathVariable String username) {
+        return resolve(username);
+    }
+
+    @GetMapping("/api/v1/resolve")
+    @ResponseBody
+    public ResponseEntity<?> resolveByQuery(@RequestParam String username, HttpServletRequest request) {
+        boolean available = username != null && username.matches("[a-z0-9_-]{1,64}");
+        if (request.getHeader("HX-Request") != null) {
+            String message = available
+                    ? "<span style=\"color: var(--color-success, #22c55e); font-size: 0.875rem;\">\u2713 Available</span>"
+                    : "<span style=\"color: var(--color-error, #ef4444); font-size: 0.875rem;\">\u2717 Not available (lowercase letters, numbers, hyphens, underscores only)</span>";
+            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(message);
+        }
+        return ResponseEntity.ok(Map.of("available", available));
+    }
+
+    private Map<String, Object> resolve(String username) {
         boolean available = username != null && username.matches("[a-z0-9_-]{1,64}");
         return Map.of("available", available);
     }

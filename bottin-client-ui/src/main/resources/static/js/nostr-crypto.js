@@ -6,6 +6,13 @@ var NostrCrypto = (function() {
         return Array.from(bytes).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
     }
 
+    async function sha256Hex(str) {
+        var encoder = new TextEncoder();
+        var data = encoder.encode(str);
+        var hash = await crypto.subtle.digest('SHA-256', data);
+        return bytesToHex(new Uint8Array(hash));
+    }
+
     function hexToBytes(hex) {
         var bytes = [];
         for (var i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.substring(i, i + 2), 16));
@@ -39,13 +46,13 @@ var NostrCrypto = (function() {
         },
 
         nsecToNpub: function(nsec) {
-            var decoded = NT.nip19.nsecDecode(nsec);
+            var decoded = NT.nip19.decode(nsec);
             var publicKeyHex = NT.getPublicKey(decoded.data);
             return NT.nip19.npubEncode(publicKeyHex);
         },
 
         nsecToHex: function(nsec) {
-            var decoded = NT.nip19.nsecDecode(nsec);
+            var decoded = NT.nip19.decode(nsec);
             return bytesToHex(decoded.data);
         },
 
@@ -57,13 +64,14 @@ var NostrCrypto = (function() {
             var encoder = new TextEncoder();
             var salt = crypto.getRandomValues(new Uint8Array(16));
             var iv = crypto.getRandomValues(new Uint8Array(12));
+            var verifySalt = crypto.getRandomValues(new Uint8Array(16));
 
             var keyMaterial = await crypto.subtle.importKey(
                 'raw', encoder.encode(password), 'PBKDF2', false, ['deriveKey']
             );
 
             var aesKey = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
+                { name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' },
                 keyMaterial,
                 { name: 'AES-GCM', length: 256 },
                 false,
@@ -76,16 +84,41 @@ var NostrCrypto = (function() {
                 encoder.encode(privateKeyHex)
             );
 
-            var passwordHash = await crypto.subtle.digest(
-                'SHA-256', encoder.encode(password + bytesToHex(salt))
+            var verifyKeyMaterial = await crypto.subtle.importKey(
+                'raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']
+            );
+
+            var verifyBits = await crypto.subtle.deriveBits(
+                { name: 'PBKDF2', salt: verifySalt, iterations: 600000, hash: 'SHA-256' },
+                verifyKeyMaterial,
+                256
             );
 
             return {
                 encrypted: bytesToBase64(new Uint8Array(encrypted)),
                 iv: bytesToBase64(iv),
                 salt: bytesToBase64(salt),
-                passwordHash: bytesToBase64(new Uint8Array(passwordHash)),
-                passwordSalt: bytesToBase64(salt)
+                passwordHash: bytesToBase64(new Uint8Array(verifyBits)),
+                passwordSalt: bytesToBase64(verifySalt)
+            };
+        },
+
+        buildEncryptedIdentity: async function(nsec, password) {
+            var decoded = NT.nip19.decode(nsec);
+            var privateKeyHex = bytesToHex(decoded.data);
+            var pubkeyHex = NT.getPublicKey(decoded.data);
+            var npub = NT.nip19.npubEncode(pubkeyHex);
+            var encrypted = await this.encryptPrivateKey(privateKeyHex, password);
+            return {
+                userId: npub,
+                npub: npub,
+                pubkeyHex: pubkeyHex,
+                privateKeyEncrypted: encrypted.encrypted,
+                privateKeyIv: encrypted.iv,
+                privateKeySalt: encrypted.salt,
+                passwordHash: encrypted.passwordHash,
+                passwordSalt: encrypted.passwordSalt,
+                createdAt: Date.now()
             };
         },
 
@@ -100,7 +133,7 @@ var NostrCrypto = (function() {
             );
 
             var aesKey = await crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
+                { name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' },
                 keyMaterial,
                 { name: 'AES-GCM', length: 256 },
                 false,
@@ -119,13 +152,29 @@ var NostrCrypto = (function() {
         verifyPassword: async function(passwordHashBase64, passwordSaltBase64, password) {
             var salt = base64ToBytes(passwordSaltBase64);
             var encoder = new TextEncoder();
-            var hash = await crypto.subtle.digest('SHA-256', encoder.encode(password + bytesToHex(salt)));
-            return bytesToBase64(new Uint8Array(hash)) === passwordHashBase64;
+
+            var keyMaterial = await crypto.subtle.importKey(
+                'raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']
+            );
+
+            var verifyBits = await crypto.subtle.deriveBits(
+                { name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' },
+                keyMaterial,
+                256
+            );
+
+            var computedHash = bytesToBase64(new Uint8Array(verifyBits));
+            if (computedHash === passwordHashBase64) return true;
+
+            var legacyHash = await crypto.subtle.digest('SHA-256', encoder.encode(password + bytesToHex(salt)));
+            return bytesToBase64(new Uint8Array(legacyHash)) === passwordHashBase64;
         },
 
-        signNip98Event: function(challenge, challengeId, authUrl, method, nsecHex) {
+        signNip98Event: async function(challenge, challengeId, authUrl, method, nsecHex) {
             var now = Math.floor(Date.now() / 1000);
             var publicKeyHex = NT.getPublicKey(nsecHex);
+            var body = JSON.stringify({ challenge_id: challengeId });
+            var payloadHash = await sha256Hex(body);
 
             var event = {
                 kind: 27235,
@@ -135,6 +184,7 @@ var NostrCrypto = (function() {
                 tags: [
                     ['u', authUrl],
                     ['method', method],
+                    ['payload', payloadHash],
                     ['challenge', challenge],
                     ['challenge_id', challengeId]
                 ]

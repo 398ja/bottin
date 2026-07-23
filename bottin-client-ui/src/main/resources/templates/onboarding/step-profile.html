@@ -4,9 +4,9 @@
     <title>Bottin - Profile Setup</title>
 </head>
 <body>
-    <div th:fragment="content" class="container">
+    <div th:fragment="content" class="container-narrow">
         <div class="wizard-step-indicator">
-            <div class="wizard-step completed">1</div>
+            <div class="wizard-step completed">✓</div>
             <div class="wizard-connector completed"></div>
             <div class="wizard-step active">2</div>
             <div class="wizard-connector"></div>
@@ -17,20 +17,27 @@
 
         <div class="card" style="max-width: 480px; margin: 0 auto;">
             <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Set Up Your Profile</h1>
-            <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
-                Your NIP-05 identifier is automatically derived from your username.
+            <p class="text-secondary text-sm mb-3">
+                This information will be visible to others on the Nostr network.
             </p>
 
-            <form hx-post="/onboarding/step-profile" hx-target="body" hx-push-url="false">
+            <form hx-post="/onboarding/step-profile" hx-target="body" hx-push-url="false"
+                  hx-on::before-request="saveProfileData(event)">
                 <div class="form-group">
                     <label class="form-label">Username</label>
-                    <input type="text" name="username" class="form-input" pattern="[a-z0-9_-]+" maxlength="64"
-                           placeholder="alice" required autocomplete="off"
-                           hx-get="/api/v1/resolve/{username}"
-                           hx-trigger="keyup changed delay:500ms"
-                           hx-target="next .form-error">
+                    <div style="display: flex; gap: 0.25rem; align-items: stretch;">
+                        <span class="form-input" style="flex: 0 0 auto; width: auto; border-right: none; border-radius: var(--radius) 0 0 var(--radius); background: var(--color-bg); display: flex; align-items: center; padding: 0 0.75rem; font-size: 0.875rem; color: var(--color-text-secondary);">@</span>
+                        <input type="text" name="username" class="form-input" pattern="[a-z0-9_\-]+" maxlength="64"
+                               placeholder="alice" required autocomplete="off"
+                               style="border-radius: 0 var(--radius) var(--radius) 0;"
+                               hx-get="/api/v1/resolve"
+                               hx-trigger="keyup changed delay:500ms"
+                               hx-target="#username-hint"
+                               hx-swap="innerHTML"
+                               hx-params="username">
+                    </div>
                     <div class="form-error"></div>
-                    <div class="form-hint">
+                    <div class="form-hint" id="username-hint">
                         NIP-05: <strong th:text="${bottinDomain} ?: 'alice@bottin.example.com'">alice@bottin.example.com</strong>
                         (auto-registered)
                     </div>
@@ -38,7 +45,7 @@
 
                 <div class="form-group">
                     <label class="form-label">Display Name</label>
-                    <input type="text" name="displayName" class="form-input" maxlength="100" placeholder="Alice">
+                    <input type="text" name="display_name" class="form-input" maxlength="64" placeholder="Alice">
                 </div>
 
                 <div class="form-group">
@@ -47,23 +54,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Avatar</label>
-                    <div class="upload-area" id="avatar-upload">
-                        <p>Drag & drop or click to upload</p>
-                        <input type="file" accept="image/*" style="display: none" id="avatar-input">
-                    </div>
-                    <input type="hidden" name="picture" id="avatar-url">
-                    <div id="avatar-preview"></div>
+                    <label class="form-label">Avatar URL</label>
+                    <input type="url" name="picture" class="form-input" placeholder="https://example.com/avatar.png">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Banner</label>
-                    <div class="upload-area" id="banner-upload">
-                        <p>Drag & drop or click to upload</p>
-                        <input type="file" accept="image/*" style="display: none" id="banner-input">
-                    </div>
-                    <input type="hidden" name="banner" id="banner-url">
-                    <div id="banner-preview"></div>
+                    <label class="form-label">Banner URL</label>
+                    <input type="url" name="banner" class="form-input" placeholder="https://example.com/banner.png">
                 </div>
 
                 <div class="form-group">
@@ -76,11 +73,23 @@
                     <input type="url" name="website" class="form-input" placeholder="https://example.com">
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary btn-full mt-2">
                     Continue
                 </button>
             </form>
         </div>
     </div>
+
+    <script>
+        function saveProfileData() {
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            document.querySelectorAll('[name]').forEach(function(el) {
+                if (el.name !== 'method' && el.name !== 'nsec') {
+                    data[el.name] = el.value;
+                }
+            });
+            sessionStorage.setItem('onboarding-data', JSON.stringify(data));
+        }
+    </script>
 </body>
 </html>

@@ -4,7 +4,7 @@
     <title>Bottin - Create Account</title>
 </head>
 <body>
-    <div th:fragment="content" class="container">
+    <div th:fragment="content" class="container-narrow">
         <div class="wizard-step-indicator">
             <div class="wizard-step active">1</div>
             <div class="wizard-connector"></div>
@@ -17,43 +17,44 @@
 
         <div class="card" style="max-width: 480px; margin: 0 auto;">
             <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Create Your Nostr Identity</h1>
-            <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+            <p class="text-secondary text-sm mb-3">
                 Choose how to set up your Nostr identity. Your private key stays in your browser.
             </p>
 
-            <form hx-post="/onboarding/step-method" hx-target="body" hx-push-url="false">
-                <div class="card" style="cursor: pointer; border: 2px solid var(--color-border);" onclick="document.getElementById('method-create').checked=true">
-                    <label style="display: flex; gap: 0.75rem; cursor: pointer;">
+            <form hx-post="/onboarding/step-method" hx-target="body" hx-push-url="false"
+                  hx-on::before-request="saveMethod(event)">
+                <div class="card-radio" onclick="document.getElementById('method-create').checked=true">
+                    <label class="flex-row-gap-sm" style="cursor: pointer;">
                         <input type="radio" name="method" id="method-create" value="create" checked style="margin-top: 0.25rem;">
                         <div>
                             <strong>Create New Key</strong>
-                            <p style="color: var(--color-text-secondary); font-size: 0.875rem; margin-top: 0.25rem;">
+                            <p class="text-secondary text-xs mt-1">
                                 Generate a fresh Nostr keypair. Your nsec will be encrypted and stored locally.
                             </p>
                         </div>
                     </label>
                 </div>
 
-                <div class="card" style="cursor: pointer; border: 2px solid var(--color-border); margin-top: 0.75rem;" onclick="document.getElementById('method-import').checked=true">
-                    <label style="display: flex; gap: 0.75rem; cursor: pointer;">
+                <div class="card-radio mt-2" onclick="document.getElementById('method-import').checked=true">
+                    <label class="flex-row-gap-sm" style="cursor: pointer;">
                         <input type="radio" name="method" id="method-import" value="import" style="margin-top: 0.25rem;">
                         <div>
                             <strong>Import Existing Key</strong>
-                            <p style="color: var(--color-text-secondary); font-size: 0.875rem; margin-top: 0.25rem;">
+                            <p class="text-secondary text-xs mt-1">
                                 Import an existing nsec. It will be used only in your browser and never transmitted.
                             </p>
                         </div>
                     </label>
                 </div>
 
-                <div id="import-section" style="display: none; margin-top: 1rem;">
+                <div id="import-section" class="hidden mt-2">
                     <div class="form-group">
                         <label class="form-label">Your nsec (private key)</label>
-                        <textarea name="nsec" class="form-input" rows="2" placeholder="nsec1..."></textarea>
+                        <textarea name="nsec" class="form-input form-input-mono" rows="2" placeholder="nsec1..."></textarea>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary btn-full mt-3">
                     Continue
                 </button>
             </form>
@@ -63,10 +64,17 @@
     <script>
         document.querySelectorAll('input[name="method"]').forEach(function(r) {
             r.addEventListener('change', function() {
-                document.getElementById('import-section').style.display =
-                    this.value === 'import' ? 'block' : 'none';
+                var s = document.getElementById('import-section');
+                s.className = this.value === 'import' ? 'mt-2' : 'hidden';
             });
         });
+
+        function saveMethod() {
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            data.method = document.querySelector('input[name="method"]:checked').value;
+            data.nsec = document.querySelector('[name="nsec"]').value;
+            sessionStorage.setItem('onboarding-data', JSON.stringify(data));
+        }
     </script>
 </body>
 </html>

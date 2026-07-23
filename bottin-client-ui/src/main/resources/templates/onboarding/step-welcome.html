@@ -4,36 +4,37 @@
     <title>Bottin - Welcome</title>
 </head>
 <body>
-    <div th:fragment="content" class="container" style="max-width: 480px;">
-        <div class="card" style="text-align: center;">
+    <div th:fragment="content" class="container-narrow">
+        <div class="card text-center">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🎉</div>
             <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Your Nostr Identity is Ready!</h1>
-            <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+            <p class="text-secondary text-sm mb-3">
                 Your key has been generated and encrypted locally. Save your backup key below.
             </p>
 
-            <div class="card" style="background: #fef3c7; border: 1px solid #f59e0b; text-align: left;">
-                <strong style="font-size: 0.875rem;">Your Backup Key (nsec)</strong>
-                <p style="font-size: 0.75rem; color: #92400e; margin-bottom: 0.5rem;">
+            <div class="card card-warning" style="text-align: left;">
+                <strong class="text-sm">Your Backup Key (nsec)</strong>
+                <p class="text-2xs" style="color: var(--color-warning); margin-bottom: 0.5rem;">
                     This is the only way to recover your identity. Save it somewhere safe.
                 </p>
                 <div style="position: relative;">
-                    <input type="password" id="nsec-display" class="form-input" readonly
-                           value="nsec1..." style="font-family: monospace; font-size: 0.8125rem; padding-right: 2.5rem;">
-                    <button type="button" id="reveal-btn" style="position: absolute; right: 0.5rem; top: 0.375rem; background: none; border: none; cursor: pointer; font-size: 0.875rem;">👁</button>
+                    <input type="password" id="nsec-display" class="form-input form-input-mono" readonly
+                           value="nsec1..." style="font-size: 0.8125rem; padding-right: 2.5rem;">
+                    <button type="button" id="reveal-btn" class="btn-ghost" style="position: absolute; right: 0.25rem; top: 0.25rem; font-size: 0.875rem;">👁</button>
                 </div>
-                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <div class="flex-row-gap-sm mt-1">
                     <button class="btn btn-sm btn-outline" id="copy-btn" style="flex: 1;">Copy</button>
                     <button class="btn btn-sm btn-outline" id="download-btn" style="flex: 1;">Download</button>
                 </div>
             </div>
 
-            <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.875rem; justify-content: center;">
+            <label class="flex-center gap-sm mt-2 text-sm">
                 <input type="checkbox" id="backup-check">
                 I have saved my backup key
             </label>
 
-            <a href="/search" class="btn btn-primary" id="continue-btn" style="width: 100%; margin-top: 1rem; pointer-events: none; opacity: 0.5; text-decoration: none; display: inline-block; text-align: center;">
+            <a href="/search" class="btn btn-primary btn-full mt-2" id="continue-btn"
+               style="pointer-events: none; opacity: 0.5; text-decoration: none; display: inline-block; text-align: center;">
                 Continue to Search
             </a>
         </div>
@@ -80,6 +81,10 @@
                 var enabled = this.checked;
                 continueBtn.style.pointerEvents = enabled ? 'auto' : 'none';
                 continueBtn.style.opacity = enabled ? '1' : '0.5';
+            });
+
+            continueBtn.addEventListener('click', function() {
+                sessionStorage.removeItem('onboarding-nsec');
             });
         })();
     </script>

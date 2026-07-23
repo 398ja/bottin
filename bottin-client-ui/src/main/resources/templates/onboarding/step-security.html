@@ -4,11 +4,11 @@
     <title>Bottin - Set Password</title>
 </head>
 <body>
-    <div th:fragment="content" class="container">
+    <div th:fragment="content" class="container-narrow">
         <div class="wizard-step-indicator">
-            <div class="wizard-step completed">1</div>
+            <div class="wizard-step completed">✓</div>
             <div class="wizard-connector completed"></div>
-            <div class="wizard-step completed">2</div>
+            <div class="wizard-step completed">✓</div>
             <div class="wizard-connector completed"></div>
             <div class="wizard-step active">3</div>
             <div class="wizard-connector"></div>
@@ -16,30 +16,29 @@
         </div>
 
         <div class="card" style="max-width: 480px; margin: 0 auto;">
-            <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Set Your Encryption Password</h1>
-            <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
-                This password encrypts your private key locally. It is never sent to any server.
+            <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Set Encryption Password</h1>
+            <p class="text-secondary text-sm mb-3">
+                Your private key will be encrypted with this password and stored in your browser.
             </p>
 
-            <form hx-post="/onboarding/step-security" hx-target="body" hx-push-url="false">
+            <form hx-post="/onboarding/step-security" hx-target="body" hx-push-url="false"
+                  hx-on::before-request="saveSecurityData(event)">
                 <div class="form-group">
                     <label class="form-label">Password</label>
-                    <input type="password" name="password" class="form-input" minlength="8" required
-                           id="password-input" autocomplete="new-password">
+                    <input type="password" name="password" id="password" class="form-input" minlength="8" required autocomplete="new-password">
                     <div class="password-strength">
                         <div class="password-strength-bar" id="strength-bar"></div>
                     </div>
-                    <div class="form-hint">Minimum 8 characters</div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Confirm Password</label>
-                    <input type="password" name="passwordConfirm" class="form-input" minlength="8" required
-                           id="password-confirm-input" autocomplete="new-password">
-                    <div class="form-error" id="password-mismatch" style="display: none;">Passwords do not match</div>
+                    <input type="password" name="confirm" id="confirm" class="form-input" minlength="8" required autocomplete="new-password">
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" id="submit-btn">
+                <div id="mismatch" class="form-error hidden mb-2">Passwords do not match</div>
+
+                <button type="submit" class="btn btn-primary btn-full mt-2">
                     Continue
                 </button>
             </form>
@@ -47,32 +46,32 @@
     </div>
 
     <script>
-        var passwordInput = document.getElementById('password-input');
-        var confirmInput = document.getElementById('password-confirm-input');
-        var strengthBar = document.getElementById('strength-bar');
-        var mismatch = document.getElementById('password-mismatch');
-        var submitBtn = document.getElementById('submit-btn');
+        function saveSecurityData(event) {
+            var password = document.getElementById('password').value;
+            var confirm = document.getElementById('confirm').value;
+            var mismatch = document.getElementById('mismatch');
 
-        function calcStrength(pw) {
-            var score = 0;
-            if (pw.length >= 8) score++;
-            if (pw.length >= 12) score++;
-            if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
-            if (/\d/.test(pw)) score++;
-            if (/[^a-zA-Z0-9]/.test(pw)) score++;
-            return score;
+            if (password !== confirm) {
+                mismatch.style.display = 'block';
+                if (event) event.preventDefault();
+                return;
+            }
+
+            mismatch.style.display = 'none';
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            data.password = password;
+            sessionStorage.setItem('onboarding-data', JSON.stringify(data));
         }
 
-        passwordInput.addEventListener('input', function() {
-            var score = calcStrength(this.value);
+        document.getElementById('password').addEventListener('input', function() {
+            var score = 0;
+            if (this.value.length >= 8) score++;
+            if (this.value.length >= 12) score++;
+            if (/[a-z]/.test(this.value) && /[A-Z]/.test(this.value)) score++;
+            if (/\d/.test(this.value)) score++;
+            if (/[^a-zA-Z0-9]/.test(this.value)) score++;
             var labels = ['', 'weak', 'fair', 'good', 'strong', 'strong'];
-            strengthBar.className = 'password-strength-bar ' + labels[score];
-        });
-
-        confirmInput.addEventListener('input', function() {
-            var match = this.value === passwordInput.value;
-            mismatch.style.display = (this.value && !match) ? 'block' : 'none';
-            submitBtn.disabled = !!this.value && !match;
+            document.getElementById('strength-bar').className = 'password-strength-bar ' + labels[score];
         });
     </script>
 </body>
