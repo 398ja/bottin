@@ -1,14 +1,48 @@
 var RelayManager = (function() {
     var relays = [];
     var dirty = false;
+    var loading = false;
 
     function loadRelays() {
+        if (loading) return;
+        loading = true;
         fetch('/api/v1/relays')
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 relays = data.relays || [];
                 render();
+            })
+            .catch(function() {
+                APP.showToast('Failed to load relays', 'error');
+            })
+            .finally(function() {
+                loading = false;
             });
+    }
+
+    function createRelayRow(r, badgeClass, badgeLabel) {
+        var div = document.createElement('div');
+        div.className = 'search-result';
+
+        var badge = document.createElement('span');
+        badge.className = 'badge ' + badgeClass;
+        badge.style.marginRight = '0.5rem';
+        badge.textContent = badgeLabel;
+        div.appendChild(badge);
+
+        var urlSpan = document.createElement('span');
+        urlSpan.style.flex = '1';
+        urlSpan.style.fontSize = '0.875rem';
+        urlSpan.textContent = r.url;
+        div.appendChild(urlSpan);
+
+        var removeBtn = document.createElement('button');
+        removeBtn.className = 'btn btn-sm btn-danger';
+        removeBtn.textContent = '\u00D7';
+        removeBtn.addEventListener('click', function() { removeRelay(r.url); });
+        div.appendChild(removeBtn);
+
+        return div;
     }
 
     function render() {
@@ -19,17 +53,37 @@ var RelayManager = (function() {
         var readRelays = relays.filter(function(r) { return r.read; });
         var writeRelays = relays.filter(function(r) { return r.write; });
 
-        readEl.innerHTML = readRelays.length
-            ? readRelays.map(function(r) {
-                return '<div class="search-result"><span class="badge badge-primary" style="margin-right: 0.5rem;">Read</span><span style="flex:1; font-size:0.875rem;">' + r.url + '</span><button class="btn btn-sm btn-danger" onclick="RelayManager.remove(\'' + r.url + '\')">×</button></div>';
-            }).join('')
-            : '<div class="empty-state" style="padding: 1rem;"><p style="font-size: 0.875rem;">No read relays configured</p></div>';
+        readEl.innerHTML = '';
+        if (readRelays.length) {
+            readRelays.forEach(function(r) {
+                readEl.appendChild(createRelayRow(r, 'badge-primary', 'Read'));
+            });
+        } else {
+            var empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.style.padding = '1rem';
+            var p = document.createElement('p');
+            p.style.fontSize = '0.875rem';
+            p.textContent = 'No read relays configured';
+            empty.appendChild(p);
+            readEl.appendChild(empty);
+        }
 
-        writeEl.innerHTML = writeRelays.length
-            ? writeRelays.map(function(r) {
-                return '<div class="search-result"><span class="badge badge-success" style="margin-right: 0.5rem;">Write</span><span style="flex:1; font-size:0.875rem;">' + r.url + '</span><button class="btn btn-sm btn-danger" onclick="RelayManager.remove(\'' + r.url + '\')">×</button></div>';
-            }).join('')
-            : '<div class="empty-state" style="padding: 1rem;"><p style="font-size: 0.875rem;">No write relays configured</p></div>';
+        writeEl.innerHTML = '';
+        if (writeRelays.length) {
+            writeRelays.forEach(function(r) {
+                writeEl.appendChild(createRelayRow(r, 'badge-success', 'Write'));
+            });
+        } else {
+            var empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.style.padding = '1rem';
+            var p = document.createElement('p');
+            p.style.fontSize = '0.875rem';
+            p.textContent = 'No write relays configured';
+            empty.appendChild(p);
+            writeEl.appendChild(empty);
+        }
 
         publishBtn.style.display = dirty ? 'block' : 'none';
     }
@@ -64,6 +118,8 @@ var RelayManager = (function() {
             } else {
                 APP.showToast('Failed to add relay', 'error');
             }
+        }).catch(function() {
+            APP.showToast('Failed to add relay', 'error');
         });
     }
 
@@ -78,6 +134,8 @@ var RelayManager = (function() {
                 dirty = true;
                 loadRelays();
             }
+        }).catch(function() {
+            APP.showToast('Failed to remove relay', 'error');
         });
     }
 
@@ -91,6 +149,8 @@ var RelayManager = (function() {
                 } else {
                     APP.showToast('Publish failed', 'error');
                 }
+            }).catch(function() {
+                APP.showToast('Publish failed', 'error');
             });
     }
 
