@@ -61,6 +61,28 @@ services:
     networks:
       - bottin-network
 
+  bottin-client:
+    build:
+      context: ./bottin-client-ui
+      dockerfile: ../Dockerfile.client
+    container_name: bottin-client
+    ports:
+      - "${BOTTIN_CLIENT_PORT:-8082}:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NAP_ENABLED=true
+      - BOTTIN_CLIENT_DOMAIN=${BOTTIN_CLIENT_DOMAIN:-bottin.example.com}
+      - BOTTIN_CLIENT_BLOSSOM_URL=${BOTTIN_CLIENT_BLOSSOM_URL:-http://localhost:8888}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - bottin-network
+
   postgres:
     image: postgres:16-alpine
     container_name: bottin-postgres
