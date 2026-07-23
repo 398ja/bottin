@@ -1,4 +1,5 @@
-const APP = {
+if (window.APP) { /* already loaded */ } else {
+window.APP = {
     identityKey: function(userId) { return 'imani.identity.' + userId; },
     followsKey: function(userId) { return 'imani.follows.' + userId; },
     blocksKey: function(userId) { return 'imani.blocks.' + userId; },
@@ -26,8 +27,18 @@ const APP = {
         localStorage.setItem(this.followsKey(userId), JSON.stringify(follows));
     },
 
+    loadFollowList: function(userId) {
+        var data = localStorage.getItem(this.followsKey(userId));
+        return data ? JSON.parse(data) : [];
+    },
+
     saveBlockList: function(userId, blocks) {
         localStorage.setItem(this.blocksKey(userId), JSON.stringify(blocks));
+    },
+
+    loadBlockList: function(userId) {
+        var data = localStorage.getItem(this.blocksKey(userId));
+        return data ? JSON.parse(data) : [];
     },
 
     clearAll: function(userId) {
@@ -63,7 +74,10 @@ const APP = {
             });
     }
 };
+}
 
+if (!window.__appInitialized) {
+window.__appInitialized = true;
 document.addEventListener('DOMContentLoaded', function() {
     var authedPages = ['/search', '/profile', '/settings'];
     var currentPath = window.location.pathname;
@@ -72,3 +86,4 @@ document.addEventListener('DOMContentLoaded', function() {
         APP.checkSession();
     }
 });
+}

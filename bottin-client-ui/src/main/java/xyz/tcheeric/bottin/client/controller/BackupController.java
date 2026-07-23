@@ -1,13 +1,14 @@
 package xyz.tcheeric.bottin.client.controller;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
 
-import java.util.Map;
-
+/**
+ * Serves the backup and restore pages. Backup export and restore run entirely in
+ * the browser against the encrypted identity held in {@code localStorage}, so there
+ * are no server-side backup endpoints — the server cannot read the client's key.
+ */
 @Controller
 public class BackupController {
 
@@ -23,15 +24,5 @@ public class BackupController {
         model.addAttribute("title", "Backup");
         model.addAttribute("content", "backup");
         return "layout";
-    }
-
-    @GetMapping("/api/v1/backup/export")
-    public ResponseEntity<byte[]> exportBackup() {
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/api/v1/backup/restore")
-    public ResponseEntity<Map<String, String>> restoreBackup(@RequestParam("file") MultipartFile file) {
-        return ResponseEntity.ok(Map.of("status", "uploaded"));
     }
 }

@@ -5,16 +5,16 @@
 </head>
 <body>
     <div th:fragment="content" class="container" style="max-width: 480px;">
-        <h1 style="font-size: 1.5rem; margin-bottom: 1.5rem;" th:text="${#request.requestURI.startsWith('/restore')} ? 'Restore from Backup' : 'Backup'">Backup</h1>
+        <h1 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Backup</h1>
 
         <div class="card">
             <h2 style="font-size: 1.125rem; margin-bottom: 1rem;">Export Encrypted Backup</h2>
             <p style="font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
                 Download an encrypted backup of your identity, follow list, and block list.
             </p>
-            <a href="/api/v1/backup/export" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+            <button type="button" class="btn btn-primary" onclick="exportBackup()">
                 Download Backup
-            </a>
+            </button>
         </div>
 
         <div class="card" style="margin-top: 1rem;">
@@ -23,7 +23,7 @@
                 Upload a backup file and enter your passphrase to restore your identity.
             </p>
 
-            <form id="restore-form" enctype="multipart/form-data">
+            <form id="restore-form" enctype="multipart/form-data" onsubmit="restoreBackup(event); return false;">
                 <div class="form-group">
                     <label class="form-label">Backup File</label>
                     <input type="file" name="file" class="form-input" accept=".bottin-backup,.json">
@@ -31,7 +31,7 @@
 
                 <div class="form-group">
                     <label class="form-label">Passphrase</label>
-                    <input type="password" name="passphrase" class="form-input" minlength="8">
+                    <input type="password" name="passphrase" class="form-input" minlength="8" autocomplete="off">
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width: 100%;">
@@ -40,5 +40,70 @@
             </form>
         </div>
     </div>
+
+    <script>
+        function exportBackup() {
+            var userId = APP.getIdentityUserId();
+            var identity = userId ? APP.loadIdentity(userId) : null;
+            if (!identity) {
+                APP.showToast('No identity found to back up', 'error');
+                return;
+            }
+            var backup = {
+                version: 1,
+                createdAt: Date.now(),
+                npub: identity.npub,
+                identity: identity,
+                follows: APP.loadFollowList(userId),
+                blocks: APP.loadBlockList(userId)
+            };
+            var blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = (identity.npub || 'identity') + '.bottin-backup';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function restoreBackup(event) {
+            var form = document.getElementById('restore-form');
+            var file = form.querySelector('input[name="file"]').files[0];
+            if (!file) {
+                APP.showToast('Please choose a backup file', 'error');
+                return;
+            }
+
+            var backup;
+            try {
+                backup = JSON.parse(await file.text());
+            } catch (e) {
+                APP.showToast('That file is not a valid backup', 'error');
+                return;
+            }
+
+            var identity = backup && backup.identity;
+            if (!identity || !identity.userId || !identity.privateKeyEncrypted) {
+                APP.showToast('That file is not a valid backup', 'error');
+                return;
+            }
+
+            var passphrase = form.querySelector('input[name="passphrase"]').value;
+            if (passphrase) {
+                var valid = await NostrCrypto.verifyPassword(
+                    identity.passwordHash, identity.passwordSalt, passphrase);
+                if (!valid) {
+                    APP.showToast('Incorrect passphrase for this backup', 'error');
+                    return;
+                }
+            }
+
+            APP.saveIdentity(identity);
+            if (Array.isArray(backup.follows)) APP.saveFollowList(identity.userId, backup.follows);
+            if (Array.isArray(backup.blocks)) APP.saveBlockList(identity.userId, backup.blocks);
+            APP.showToast('Backup restored', 'success');
+            window.location.href = '/search';
+        }
+    </script>
 </body>
 </html>
