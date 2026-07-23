@@ -8,15 +8,15 @@
 | Phase | Tasks | Est. Effort | Dependencies |
 |-------|-------|-------------|--------------|
 | Phase 0 | 11 | 5h | None | ✓
-| Phase 1 | 14 | 20h | Phase 0 |
-| Phase 2 | 9 | 14h | Phase 1 |
-| Phase 3 | 5 | 6h | Phase 2 |
-| Phase 4 | 13 | 18h | Phase 3 |
-| Phase 5 | 10 | 14h | Phase 2 |
-| Phase 6 | 7 | 10h | Phase 2 |
-| Phase 7 | 7 | 8h | Phase 1 |
-| Phase 8 | 8 | 10h | All above |
-| **Total** | **84** | **~105h** | |
+| Phase 1 | 14 | 20h | Phase 0 | ✓
+| Phase 2 | 9 | 14h | Phase 1 | ✓
+| Phase 3 | 5 | 6h | Phase 2 | ✓
+| Phase 4 | 13 | 18h | Phase 3 | ✓
+| Phase 5 | 10 | 14h | Phase 2 | ✓
+| Phase 6 | 7 | 10h | Phase 2 | ✓
+| Phase 7 | 7 | 8h | Phase 1 | ✓
+| Phase 8 | 8 | 10h | All above | |
+| **Total** | **84** | **~105h** | | **76/84 ✓** |
 
 ---
 

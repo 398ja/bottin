@@ -28,3 +28,10 @@ This repository implements Bottin, a NIP-05 registry service for Nostr. When usi
 - Document new features in the README or related docs.
 
 These instructions help Copilot produce code that respects the repository's conventions and Nostr protocol requirements.
+
+## Active Technologies
+- Java 21 (matching parent POM) + Spring Boot 3.4, Thymeleaf, HTMX, nostrdb-jni (search), nap-spring (NAP auth), nap-client, nostr-java (event signing, NIP-98), nostr-java-client (relay publishing) (003-nostr-client-onboarding)
+- nostrdb LMDB (search index), browser IndexedDB (follow/block lists per identity), no new server-side DB required beyond bottin's existing PostgreSQL (003-nostr-client-onboarding)
+
+## Recent Changes
+- 003-nostr-client-onboarding: Added Java 21 (matching parent POM) + Spring Boot 3.4, Thymeleaf, HTMX, nostrdb-jni (search), nap-spring (NAP auth), nap-client, nostr-java (event signing, NIP-98), nostr-java-client (relay publishing)
