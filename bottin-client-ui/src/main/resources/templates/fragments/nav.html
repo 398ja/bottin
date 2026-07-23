@@ -10,7 +10,9 @@
             <a th:href="@{/profile}" class="nav-link">
                 <img src="/img/default-avatar.png" alt="" class="nav-avatar" th:src="${userAvatar} ?: '/img/default-avatar.png'">
             </a>
-            <a th:href="@{/api/v1/auth/logout}" class="nav-link"
+            <a class="nav-link"
+               href="#"
+               onclick="event.preventDefault();"
                hx-post="/api/v1/auth/logout"
                hx-confirm="This will clear your session."
                hx-target="body"
