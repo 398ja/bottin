@@ -32,6 +32,7 @@ public class Nip05RecordService {
     private final Nip05RecordRepository nip05RecordRepository;
     private final DomainRepository domainRepository;
     private final ObjectMapper objectMapper;
+    private final Nip05RecordProperties recordProperties;
 
     /**
      * Retrieves all records with pagination.
@@ -86,7 +87,7 @@ public class Nip05RecordService {
             throw new Nip05RecordExistsException(normalizedUsername + "@" + normalizedDomain);
         }
 
-        String relaysJson = serializeRelays(relays);
+        String relaysJson = serializeRelays(mergeWithDefaults(relays));
 
         Nip05RecordEntity entity = Nip05RecordEntity.builder()
                 .domain(domainEntity)
@@ -180,6 +181,25 @@ public class Nip05RecordService {
     public Page<Nip05RecordData> findByDomain(String domain, Pageable pageable) {
         return nip05RecordRepository.findByDomainName(domain.toLowerCase(), pageable)
                 .map(Nip05RecordEntity::toNip05RecordData);
+    }
+
+    /**
+     * Merges the app's configured default relays (union, de-duplicated,
+     * app-relays-first) with any caller-supplied relays. Guarantees every
+     * created record advertises the deployment's own relay while preserving
+     * whatever the caller sent. Configured defaults are empty by default, so
+     * with no configuration this is a no-op passthrough of {@code callerRelays}.
+     */
+    List<String> mergeWithDefaults(List<String> callerRelays) {
+        java.util.LinkedHashSet<String> merged = new java.util.LinkedHashSet<>();
+        List<String> defaults = recordProperties.getDefaultRelays();
+        if (defaults != null) {
+            merged.addAll(defaults);
+        }
+        if (callerRelays != null) {
+            merged.addAll(callerRelays);
+        }
+        return new java.util.ArrayList<>(merged);
     }
 
     private String serializeRelays(List<String> relays) {
