@@ -1,0 +1,108 @@
+package xyz.tcheeric.bottin.client.controller;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(OnboardingController.class)
+class OnboardingControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void shouldRedirectRootToOnboarding() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/onboarding"));
+    }
+
+    @Test
+    void shouldShowStepMethodPage() throws Exception {
+        mockMvc.perform(get("/onboarding"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("layout"))
+                .andExpect(model().attribute("content", "onboarding/step-method"));
+    }
+
+    @Test
+    void shouldAdvanceToProfileStep() throws Exception {
+        mockMvc.perform(post("/onboarding/step-method").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("layout"))
+                .andExpect(model().attribute("content", "onboarding/step-profile"));
+    }
+
+    @Test
+    void shouldAdvanceToSecurityStep() throws Exception {
+        mockMvc.perform(post("/onboarding/step-profile").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("layout"))
+                .andExpect(model().attribute("content", "onboarding/step-security"));
+    }
+
+    @Test
+    void shouldAdvanceToConfirmStep() throws Exception {
+        mockMvc.perform(post("/onboarding/step-security").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("layout"))
+                .andExpect(model().attribute("content", "onboarding/step-confirm"));
+    }
+
+    @Test
+    void shouldRedirectToWelcomeOnComplete() throws Exception {
+        mockMvc.perform(post("/onboarding/complete").with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/onboarding/welcome"));
+    }
+
+    @Test
+    void shouldShowWelcomePage() throws Exception {
+        mockMvc.perform(get("/onboarding/welcome"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("layout"))
+                .andExpect(model().attribute("content", "onboarding/step-welcome"));
+    }
+
+    @Test
+    void shouldResolveAvailableLowercaseUsername() throws Exception {
+        mockMvc.perform(get("/api/v1/resolve/alice"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(true));
+    }
+
+    @Test
+    void shouldResolveAvailableUsernameWithNumbers() throws Exception {
+        mockMvc.perform(get("/api/v1/resolve/user123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(true));
+    }
+
+    @Test
+    void shouldResolveUnavailableUsernameForUppercase() throws Exception {
+        mockMvc.perform(get("/api/v1/resolve/ALICE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(false));
+    }
+
+    @Test
+    void shouldMarkUnavailableForInvalidCharacters() throws Exception {
+        mockMvc.perform(get("/api/v1/resolve/alice@example"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(false));
+    }
+
+    @Test
+    void shouldMarkUnavailableForOversizedUsername() throws Exception {
+        String longUsername = "a".repeat(65);
+        mockMvc.perform(get("/api/v1/resolve/" + longUsername))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(false));
+    }
+}
