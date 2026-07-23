@@ -31,8 +31,9 @@ public class SearchController {
             return Map.of("query", query, "results", Collections.emptyList(), "total", 0);
         }
 
+        int cappedLimit = Math.min(Math.max(limit, 1), 100);
         List<SearchResult> results = Collections.emptyList();
 
-        return Map.of("query", query, "results", results, "total", results.size());
+        return Map.of("query", query, "results", results, "total", results.size(), "limit", cappedLimit);
     }
 }

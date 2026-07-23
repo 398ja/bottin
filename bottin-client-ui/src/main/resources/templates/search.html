@@ -35,7 +35,11 @@
 
             var debouncedSearch = APP.debounce(function(query) {
                 if (!query || !query.trim()) {
-                    results.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>Search for Nostr profiles</p></div>';
+                    results.innerHTML = '';
+                    var empty = document.createElement('div');
+                    empty.className = 'empty-state';
+                    empty.innerHTML = '<div class="empty-state-icon">🔍</div><p>Search for Nostr profiles</p>';
+                    results.appendChild(empty);
                     return;
                 }
 
@@ -45,32 +49,71 @@
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
                         loading.style.display = 'none';
+                        results.innerHTML = '';
                         if (data.results && data.results.length > 0) {
-                            var html = '';
                             data.results.forEach(function(r) {
-                                html += '<div class="search-result">';
-                                html += '<img src="' + (r.picture || '/img/default-avatar.svg') + '" alt="" class="avatar-sm" onerror="this.src=\'/img/default-avatar.svg\'">';
-                                html += '<div class="search-result-info">';
-                                html += '<div class="search-result-name">' + (r.display_name || r.name || 'Unknown') + '</div>';
-                                html += '<div class="search-result-detail">@' + (r.name || '') + ' &middot; ' + (r.nip05 || 'no NIP-05') + '</div>';
-                                html += '</div>';
-                                if (r.is_blocked) {
-                                    html += '<span class="badge badge-danger">Blocked</span>';
-                                } else if (r.is_followed) {
-                                    html += '<button class="btn btn-sm btn-outline" onclick="unfollow(\'' + r.pubkey + '\')">Unfollow</button>';
+                                var div = document.createElement('div');
+                                div.className = 'search-result';
+
+                                var img = document.createElement('img');
+                                img.src = r.picture || '/img/default-avatar.svg';
+                                img.alt = '';
+                                img.className = 'avatar-sm';
+                                img.onerror = function() { this.src = '/img/default-avatar.svg'; };
+                                div.appendChild(img);
+
+                                var info = document.createElement('div');
+                                info.className = 'search-result-info';
+
+                                var name = document.createElement('div');
+                                name.className = 'search-result-name';
+                                name.textContent = r.displayName || r.name || 'Unknown';
+                                info.appendChild(name);
+
+                                var detail = document.createElement('div');
+                                detail.className = 'search-result-detail';
+                                detail.textContent = '@' + (r.name || '') + ' \u00B7 ' + (r.nip05 || 'no NIP-05');
+                                info.appendChild(detail);
+
+                                div.appendChild(info);
+
+                                if (r.blocked) {
+                                    var badge = document.createElement('span');
+                                    badge.className = 'badge badge-danger';
+                                    badge.textContent = 'Blocked';
+                                    div.appendChild(badge);
+                                } else if (r.followed) {
+                                    var btn = document.createElement('button');
+                                    btn.className = 'btn btn-sm btn-outline';
+                                    btn.textContent = 'Unfollow';
+                                    btn.dataset.pubkey = r.pubkey;
+                                    btn.addEventListener('click', function() { unfollow(this.dataset.pubkey); });
+                                    div.appendChild(btn);
                                 } else {
-                                    html += '<button class="btn btn-sm btn-primary" onclick="follow(\'' + r.pubkey + '\')">Follow</button>';
+                                    var btn = document.createElement('button');
+                                    btn.className = 'btn btn-sm btn-primary';
+                                    btn.textContent = 'Follow';
+                                    btn.dataset.pubkey = r.pubkey;
+                                    btn.addEventListener('click', function() { follow(this.dataset.pubkey); });
+                                    div.appendChild(btn);
                                 }
-                                html += '</div>';
+
+                                results.appendChild(div);
                             });
-                            results.innerHTML = html;
                         } else {
-                            results.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No profiles found</p></div>';
+                            var empty = document.createElement('div');
+                            empty.className = 'empty-state';
+                            empty.innerHTML = '<div class="empty-state-icon">📭</div><p>No profiles found</p>';
+                            results.appendChild(empty);
                         }
                     })
                     .catch(function() {
                         loading.style.display = 'none';
-                        results.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Search failed. Try again.</p></div>';
+                        results.innerHTML = '';
+                        var empty = document.createElement('div');
+                        empty.className = 'empty-state';
+                        empty.innerHTML = '<div class="empty-state-icon">⚠️</div><p>Search failed. Try again.</p>';
+                        results.appendChild(empty);
                     });
             }, 300);
 
