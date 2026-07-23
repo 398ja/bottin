@@ -50,3 +50,8 @@ logs/
 /AGENTS.md
 /CLAUDE.md
 /.claude/
+
+# Local tooling / test artifacts
+/.playwright-mcp/
+/.opencode/
+/.specify/
