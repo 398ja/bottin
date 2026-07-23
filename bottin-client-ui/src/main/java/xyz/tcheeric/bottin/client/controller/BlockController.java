@@ -22,6 +22,9 @@ public class BlockController {
     @PostMapping("/unblock")
     public ResponseEntity<Map<String, String>> unblock(@RequestBody Map<String, String> body) {
         String pubkey = body.get("pubkey");
+        if (pubkey == null || !pubkey.matches("[0-9a-f]{64}")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "invalid_pubkey"));
+        }
         return ResponseEntity.ok(Map.of("status", "unblocked", "pubkey", pubkey));
     }
 

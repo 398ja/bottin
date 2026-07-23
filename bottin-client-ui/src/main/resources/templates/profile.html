@@ -4,22 +4,21 @@
     <title>Bottin - Profile</title>
 </head>
 <body>
-    <div th:fragment="content" class="container" style="max-width: 480px;">
-        <div class="card" style="text-align: center;">
-            <img src="/img/default-avatar.svg" alt="" class="avatar"
-                 style="width: 96px; height: 96px; margin-bottom: 0.75rem;">
+    <div th:fragment="content" class="container-narrow">
+        <div class="card text-center">
+            <img src="/img/default-avatar.svg" alt="" class="avatar-lg mb-2">
 
             <h1 style="font-size: 1.25rem;" id="display-name">Loading...</h1>
-            <div style="color: var(--color-text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;" id="username">@...</div>
-            <div style="font-size: 0.8125rem; color: var(--color-text-secondary); margin-bottom: 0.75rem;" id="nip05"></div>
-            <p style="font-size: 0.875rem; margin-bottom: 1rem;" id="about"></p>
+            <div class="text-secondary text-sm mb-1" id="username">@...</div>
+            <div class="text-xs text-secondary mb-2" id="nip05"></div>
+            <p class="text-sm mb-2" id="about"></p>
 
-            <div style="display: flex; gap: 1rem; justify-content: center; font-size: 0.8125rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
+            <div class="flex-center gap-lg text-xs text-secondary mb-2">
                 <span id="lightning"></span>
                 <span id="website"></span>
             </div>
 
-            <div style="display: flex; gap: 0.5rem; justify-content: center;">
+            <div class="flex-center gap-sm">
                 <button class="btn btn-sm btn-outline" id="npub-copy-btn">Copy npub</button>
             </div>
         </div>

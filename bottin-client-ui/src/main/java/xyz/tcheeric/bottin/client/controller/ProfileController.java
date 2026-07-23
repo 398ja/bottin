@@ -19,6 +19,9 @@ public class ProfileController {
 
     @GetMapping("/{pubkey}")
     public String userProfile(@PathVariable String pubkey, Model model) {
+        if (pubkey == null || !pubkey.matches("[0-9a-f]{64}")) {
+            return "redirect:/profile";
+        }
         model.addAttribute("title", "Profile");
         model.addAttribute("content", "profile");
         model.addAttribute("profilePubkey", pubkey);

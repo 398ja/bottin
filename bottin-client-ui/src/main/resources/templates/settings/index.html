@@ -4,38 +4,38 @@
     <title>Bottin - Settings</title>
 </head>
 <body>
-    <div th:fragment="content" class="container" style="max-width: 600px;">
+    <div th:fragment="content" class="container-wide">
         <h1 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Settings</h1>
 
-        <div style="display: grid; gap: 0.75rem;">
-            <a href="/profile" class="card" style="display: flex; align-items: center; gap: 1rem; text-decoration: none; color: inherit;">
+        <div class="grid-6">
+            <a href="/profile" class="card card-clickable">
                 <div style="font-size: 1.5rem;">👤</div>
-                <div><strong>Profile</strong><p style="font-size: 0.8125rem; color: var(--color-text-secondary);">Edit display name, bio, avatar</p></div>
+                <div><strong>Profile</strong><p class="text-xs text-secondary">Edit display name, bio, avatar</p></div>
             </a>
 
-            <a href="/settings/relays" class="card" style="display: flex; align-items: center; gap: 1rem; text-decoration: none; color: inherit;">
+            <a href="/settings/relays" class="card card-clickable">
                 <div style="font-size: 1.5rem;">🔁</div>
-                <div><strong>Relays</strong><p style="font-size: 0.8125rem; color: var(--color-text-secondary);">Manage Nostr relay connections</p></div>
+                <div><strong>Relays</strong><p class="text-xs text-secondary">Manage Nostr relay connections</p></div>
             </a>
 
-            <a href="/settings/security" class="card" style="display: flex; align-items: center; gap: 1rem; text-decoration: none; color: inherit;">
+            <a href="/settings/security" class="card card-clickable">
                 <div style="font-size: 1.5rem;">🔒</div>
-                <div><strong>Security</strong><p style="font-size: 0.8125rem; color: var(--color-text-secondary);">Change passphrase, reveal nsec</p></div>
+                <div><strong>Security</strong><p class="text-xs text-secondary">Change passphrase, reveal nsec</p></div>
             </a>
 
-            <a href="/settings/follows" class="card" style="display: flex; align-items: center; gap: 1rem; text-decoration: none; color: inherit;">
+            <a href="/settings/follows" class="card card-clickable">
                 <div style="font-size: 1.5rem;">👥</div>
-                <div><strong>Follows</strong><p style="font-size: 0.8125rem; color: var(--color-text-secondary);">View and manage followed users</p></div>
+                <div><strong>Follows</strong><p class="text-xs text-secondary">View and manage followed users</p></div>
             </a>
 
-            <a href="/settings/blocks" class="card" style="display: flex; align-items: center; gap: 1rem; text-decoration: none; color: inherit;">
+            <a href="/settings/blocks" class="card card-clickable">
                 <div style="font-size: 1.5rem;">🚫</div>
-                <div><strong>Blocks</strong><p style="font-size: 0.8125rem; color: var(--color-text-secondary);">View and manage blocked users</p></div>
+                <div><strong>Blocks</strong><p class="text-xs text-secondary">View and manage blocked users</p></div>
             </a>
 
-            <a href="/settings/backup" class="card" style="display: flex; align-items: center; gap: 1rem; text-decoration: none; color: inherit;">
+            <a href="/settings/backup" class="card card-clickable">
                 <div style="font-size: 1.5rem;">💾</div>
-                <div><strong>Backup</strong><p style="font-size: 0.8125rem; color: var(--color-text-secondary);">Export encrypted backup file</p></div>
+                <div><strong>Backup</strong><p class="text-xs text-secondary">Export encrypted backup file</p></div>
             </a>
         </div>
     </div>

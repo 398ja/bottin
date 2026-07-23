@@ -4,30 +4,30 @@
     <title>Bottin - Sign In</title>
 </head>
 <body>
-    <div th:fragment="content" class="container" style="max-width: 400px;">
-        <div class="card" style="margin-top: 3rem;">
+    <div th:fragment="content" class="container-narrow">
+        <div class="card mt-3">
             <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Sign In</h1>
-            <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+            <p class="text-secondary text-sm mb-3">
                 Paste your nsec to sign in. Your key stays in your browser.
             </p>
 
             <div id="login-form">
                 <div class="form-group">
                     <label class="form-label">Your nsec (private key)</label>
-                    <textarea id="nsec-input" class="form-input" rows="2" placeholder="nsec1..." style="font-family: monospace;"></textarea>
+                    <textarea id="nsec-input" class="form-input form-input-mono" rows="2" placeholder="nsec1..." autocomplete="off"></textarea>
                 </div>
 
-                <button id="signin-btn" class="btn btn-primary" style="width: 100%;" onclick="handleLogin()">
+                <button id="signin-btn" class="btn btn-primary btn-full" onclick="handleLogin()">
                     Sign In
                 </button>
 
-                <div id="login-error" class="form-error" style="display: none; margin-top: 0.75rem; text-align: center;"></div>
-                <div id="login-loading" style="display: none; text-align: center; margin-top: 1rem; color: var(--color-text-secondary);">
+                <div id="login-error" class="form-error text-center mt-2 hidden"></div>
+                <div id="login-loading" class="hidden text-center mt-2 text-secondary text-sm">
                     Signing challenge...
                 </div>
             </div>
 
-            <div style="margin-top: 1.5rem; text-align: center; font-size: 0.875rem;">
+            <div class="text-center mt-3 text-sm">
                 <a href="/restore">Restore from backup</a>
             </div>
         </div>
@@ -61,21 +61,21 @@
                 })
                 .then(function(r) { return r.json(); })
                 .then(function(challenge) {
-                    var signedEvent = NostrCrypto.signNip98Event(
+                    return NostrCrypto.signNip98Event(
                         challenge.challenge,
                         challenge.challenge_id,
                         challenge.auth_url,
                         'POST',
                         hexKey
-                    );
-
-                    return fetch('/api/v1/auth/complete', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Nostr ' + signedEvent
-                        },
-                        body: JSON.stringify({ challenge_id: challenge.challenge_id })
+                    ).then(function(signedEvent) {
+                        return fetch('/api/v1/auth/complete', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Nostr ' + signedEvent
+                            },
+                            body: JSON.stringify({ challenge_id: challenge.challenge_id })
+                        });
                     });
                 })
                 .then(function(r) {
