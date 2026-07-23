@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: ${BOTTIN_CLIENT_PORT:8081}
 
 spring:
   application:
@@ -7,19 +7,31 @@ spring:
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
-    cache: false
+    cache: ${THYMELEAF_CACHE:false}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
 
 nap:
   enabled: true
-  cookie-name: client_session
-  session:
-    idle-timeout: 30m
-    absolute-expiry: 24h
+  external-base-url: ${BOTTIN_EXTERNAL_URL:http://localhost:8080}
+  challenge-ttl-seconds: 60
+  session-ttl-seconds: 3600
+  max-clock-skew-seconds: 60
+  protected-path-prefixes: /api/v1/follow,/api/v1/block,/api/v1/relays,/api/v1/publish-contact-list
+  cookie:
+    name: client_session
+    http-only: true
+    secure: ${COOKIE_SECURE:true}
+    same-site: Lax
+    path: /
+    max-age-seconds: 3600
 
 bottin:
   client:
     domain: bottin.example.com
-    blossom-url: http://localhost:8888
+    blossom-url: ${BOTTIN_BLOSSOM_URL:https://localhost:8888}
     default-relays:
       - url: wss://relay.damus.io
         read: true
