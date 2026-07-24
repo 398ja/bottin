@@ -47,10 +47,45 @@
     </div>
 
     <script>
-        function setImportBusy(busy) {
-            document.getElementById('import-loading').style.display = busy ? 'block' : 'none';
-            document.getElementById('import-btn').disabled = busy;
-            if (busy) document.getElementById('import-error').style.display = 'none';
+        var DEFAULT_RELAYS = [
+            'wss://relay.damus.io', 'wss://nos.lol',
+            'wss://relay.primal.net', 'wss://relay.nostr.band'
+        ];
+
+        function showImportStatus(message) {
+            var loading = document.getElementById('import-loading');
+            loading.textContent = message;
+            loading.style.display = 'block';
+            document.getElementById('import-btn').disabled = true;
+            document.getElementById('import-error').style.display = 'none';
+        }
+
+        function endImportBusy() {
+            document.getElementById('import-loading').style.display = 'none';
+            document.getElementById('import-btn').disabled = false;
+        }
+
+        // Best-effort kind-0 profile lookup for an imported key. Returns null on
+        // timeout or when nothing is found so import never blocks on relays.
+        async function fetchProfile(pubkeyHex) {
+            var pool = new NostrTools.SimplePool();
+            try {
+                var events = await pool.querySync(
+                    DEFAULT_RELAYS, { kinds: [0], authors: [pubkeyHex] }, { maxWait: 4000 });
+                if (!events || !events.length) return null;
+                events.sort(function(a, b) { return b.created_at - a.created_at; });
+                var meta = JSON.parse(events[0].content || '{}');
+                return {
+                    displayName: meta.display_name || meta.name || null,
+                    picture: meta.picture || null,
+                    banner: meta.banner || null,
+                    nip05: meta.nip05 || null
+                };
+            } catch (e) {
+                return null;
+            } finally {
+                try { pool.close(DEFAULT_RELAYS); } catch (ignored) {}
+            }
         }
 
         async function handleImport() {
@@ -69,16 +104,27 @@
             if (pw.length < 8) { fail('Passphrase must be at least 8 characters.'); return; }
             if (pw !== confirm) { fail('Passphrases do not match.'); return; }
 
-            setImportBusy(true);
             try {
+                showImportStatus('Encrypting your key...');
                 var identity = await NostrCrypto.buildEncryptedIdentity(nsec, pw);
+
+                showImportStatus('Looking up your profile...');
+                var profile = await fetchProfile(identity.pubkeyHex);
+                if (profile) {
+                    if (profile.displayName) identity.displayName = profile.displayName;
+                    if (profile.picture) identity.picture = profile.picture;
+                    if (profile.banner) identity.banner = profile.banner;
+                    if (profile.nip05) identity.nip05 = profile.nip05;
+                }
                 APP.saveIdentity(identity);
+
+                showImportStatus('Signing you in...');
                 await APP.napLogin(NostrCrypto.nsecToHex(nsec), identity.npub);
                 sessionStorage.removeItem('onboarding-data');
                 window.location.href = '/search';
             } catch (e) {
                 fail('Import failed: ' + e.message);
-                setImportBusy(false);
+                endImportBusy();
             }
         }
 
