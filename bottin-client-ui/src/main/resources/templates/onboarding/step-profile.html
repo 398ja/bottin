@@ -41,6 +41,7 @@
                         NIP-05: <strong th:text="${bottinDomain} ?: 'alice@bottin.example.com'">alice@bottin.example.com</strong>
                         (auto-registered)
                     </div>
+                    <span id="nip05-domain" th:text="${bottinDomain} ?: 'bottin.example.com'" hidden>bottin.example.com</span>
                 </div>
 
                 <div class="form-group">
@@ -96,6 +97,11 @@
 
         (function() {
             var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            var domainEl = document.getElementById('nip05-domain');
+            if (domainEl) {
+                data.domain = domainEl.textContent.trim();
+                sessionStorage.setItem('onboarding-data', JSON.stringify(data));
+            }
             document.querySelectorAll('[name]').forEach(function(el) {
                 if (el.name !== 'method' && el.name !== 'nsec' && data[el.name]) {
                     el.value = data[el.name];
