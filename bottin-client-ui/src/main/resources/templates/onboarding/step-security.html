@@ -38,14 +38,23 @@
 
                 <div id="mismatch" class="form-error hidden mb-2">Passwords do not match</div>
 
-                <button type="submit" class="btn btn-primary btn-full mt-2">
-                    Continue
-                </button>
+                <div class="flex-row-gap-sm mt-2">
+                    <button type="button" class="btn btn-outline" style="flex: 1;"
+                            hx-get="/onboarding/step/profile" hx-target="body" hx-push-url="false"
+                            hx-params="none" hx-on::before-request="persistSecurity()">Back</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Continue</button>
+                </div>
             </form>
         </div>
     </div>
 
     <script>
+        function persistSecurity() {
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            data.password = document.getElementById('password').value;
+            sessionStorage.setItem('onboarding-data', JSON.stringify(data));
+        }
+
         function saveSecurityData(event) {
             var password = document.getElementById('password').value;
             var confirm = document.getElementById('confirm').value;
@@ -58,10 +67,16 @@
             }
 
             mismatch.style.display = 'none';
-            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
-            data.password = password;
-            sessionStorage.setItem('onboarding-data', JSON.stringify(data));
+            persistSecurity();
         }
+
+        (function() {
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            if (data.password) {
+                document.getElementById('password').value = data.password;
+                document.getElementById('confirm').value = data.password;
+            }
+        })();
 
         document.getElementById('password').addEventListener('input', function() {
             var score = 0;

@@ -17,6 +17,13 @@ import java.util.Map;
 @Controller
 public class OnboardingController {
 
+    private static final Map<String, String> STEP_TITLES = Map.of(
+            "method", "Create Account",
+            "profile", "Profile Setup",
+            "security", "Set Password",
+            "confirm", "Review"
+    );
+
     @Value("${bottin.client.domain:bottin.example.com}")
     private String bottinDomain;
 
@@ -63,6 +70,20 @@ public class OnboardingController {
     public String welcome(Model model) {
         model.addAttribute("title", "Welcome");
         model.addAttribute("content", "onboarding/step-welcome");
+        return "layout";
+    }
+
+    @GetMapping("/onboarding/step/{step}")
+    public String step(@PathVariable String step, Model model) {
+        String title = STEP_TITLES.get(step);
+        if (title == null) {
+            return "redirect:/onboarding";
+        }
+        model.addAttribute("title", title);
+        model.addAttribute("content", "onboarding/step-" + step);
+        if ("profile".equals(step)) {
+            model.addAttribute("bottinDomain", bottinDomain);
+        }
         return "layout";
     }
 

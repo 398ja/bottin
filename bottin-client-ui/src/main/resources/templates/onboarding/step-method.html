@@ -75,6 +75,17 @@
             data.nsec = document.querySelector('[name="nsec"]').value;
             sessionStorage.setItem('onboarding-data', JSON.stringify(data));
         }
+
+        (function() {
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            if (data.method === 'import') {
+                document.getElementById('method-import').checked = true;
+                document.getElementById('import-section').className = 'mt-2';
+            }
+            if (data.nsec) {
+                document.querySelector('[name="nsec"]').value = data.nsec;
+            }
+        })();
     </script>
 </body>
 </html>

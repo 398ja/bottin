@@ -40,7 +40,9 @@
             </div>
 
             <div class="flex-row-gap-sm">
-                <button class="btn btn-outline" style="flex: 1;" onclick="goBack()">Back</button>
+                <button type="button" class="btn btn-outline" style="flex: 1;"
+                        hx-get="/onboarding/step/security" hx-target="body" hx-push-url="false"
+                        hx-params="none">Back</button>
                 <form action="/onboarding/complete" method="post" style="flex: 1;" id="confirm-form"
                       onsubmit="generateAndSaveKey(event); return false;">
                     <button type="submit" class="btn btn-primary btn-full">Create Identity</button>
@@ -71,10 +73,6 @@
                 img.src = data.picture;
             }
         })();
-
-        function goBack() {
-            window.history.back();
-        }
 
         async function generateAndSaveKey(event) {
             if (event) event.preventDefault();
