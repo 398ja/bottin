@@ -9,8 +9,16 @@
             <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Sign In</h1>
 
             <div id="unlock-form" class="hidden">
-                <p class="text-secondary text-sm mb-3">
-                    Enter your passphrase to unlock the key stored in this browser.
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <div id="recognition-banner"
+                         style="display: none; height: 72px; border-radius: 8px 8px 0 0; background-size: cover; background-position: center;"></div>
+                    <img id="recognition-avatar" src="/img/default-avatar.svg" alt=""
+                         style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid var(--color-surface, #fff); background: var(--color-bg);">
+                    <div id="recognition-name" style="font-weight: 600; font-size: 1.125rem; margin-top: 0.5rem;"></div>
+                    <div id="recognition-nip05" class="text-secondary text-sm"></div>
+                </div>
+                <p class="text-secondary text-sm text-center mb-3">
+                    Enter your passphrase to unlock and sign in.
                 </p>
                 <div class="form-group">
                     <label class="form-label">Passphrase</label>
@@ -119,9 +127,36 @@
             document.getElementById('nsec-input').focus();
         }
 
+        function renderRecognition(identity) {
+            document.getElementById('recognition-name').textContent =
+                identity.displayName || 'Welcome back';
+
+            var nip05El = document.getElementById('recognition-nip05');
+            if (identity.nip05) {
+                nip05El.textContent = identity.nip05;
+            } else {
+                var npub = identity.npub || identity.userId || '';
+                nip05El.textContent = npub ? (npub.slice(0, 12) + '…' + npub.slice(-6)) : '';
+            }
+
+            if (identity.picture) {
+                var avatar = document.getElementById('recognition-avatar');
+                avatar.onerror = function() { this.src = '/img/default-avatar.svg'; };
+                avatar.src = identity.picture;
+            }
+
+            var banner = document.getElementById('recognition-banner');
+            if (identity.banner) {
+                banner.style.backgroundImage = 'url(' + identity.banner + ')';
+                banner.style.display = 'block';
+                document.getElementById('recognition-avatar').style.marginTop = '-32px';
+            }
+        }
+
         (function() {
-            var hasStoredIdentity = APP.getIdentityUserId();
-            if (hasStoredIdentity) {
+            var userId = APP.getIdentityUserId();
+            if (userId) {
+                renderRecognition(APP.loadIdentity(userId) || {});
                 document.getElementById('unlock-form').className = '';
                 document.getElementById('passphrase-input').focus();
             } else {
