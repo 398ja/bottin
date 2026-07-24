@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import xyz.tcheeric.nap.server.AclResolver;
 import xyz.tcheeric.nap.server.SessionStore;
 import xyz.tcheeric.nap.spring.config.NapProperties;
+import xyz.tcheeric.nap.spring.filter.NapServletFilter;
 import xyz.tcheeric.nap.spring.filter.NapSessionFilter;
 
 import java.time.Duration;
@@ -18,6 +19,26 @@ public class ClientSecurityConfig {
             "/api/v1/follow/*", "/api/v1/block/*", "/api/v1/relays/*",
             "/api/v1/publish-contact-list"
     };
+
+    private static final String NAP_COMPLETE_PATH = "/api/v1/auth/complete";
+
+    /**
+     * Captures the raw request body of the NAP challenge-completion request.
+     *
+     * <p>{@link NapServletFilter} stashes the body as a request attribute that
+     * {@link xyz.tcheeric.nap.spring.controller.NapAuthController} reads to verify the
+     * NIP-98 payload hash. Without it, completion fails with "Request body not captured"
+     * and no login can succeed. nap-spring does not auto-register this filter, so the
+     * application must — the companion registration to {@link #napSessionFilter}.
+     */
+    @Bean
+    public FilterRegistrationBean<NapServletFilter> napServletFilter() {
+        FilterRegistrationBean<NapServletFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new NapServletFilter());
+        registrationBean.addUrlPatterns(NAP_COMPLETE_PATH);
+        registrationBean.setOrder(0);
+        return registrationBean;
+    }
 
     /**
      * Registers the NAP session filter over the protected client API paths.
