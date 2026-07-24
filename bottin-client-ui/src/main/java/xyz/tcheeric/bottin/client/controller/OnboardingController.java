@@ -30,7 +30,7 @@ public class OnboardingController {
 
     @GetMapping("/")
     public String root() {
-        return "redirect:/onboarding";
+        return "router";
     }
 
     @GetMapping("/onboarding")

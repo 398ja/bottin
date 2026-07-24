@@ -17,10 +17,10 @@ class OnboardingControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void shouldRedirectRootToOnboarding() throws Exception {
+    void shouldRenderClientRouterAtRoot() throws Exception {
         mockMvc.perform(get("/"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/onboarding"));
+                .andExpect(status().isOk())
+                .andExpect(view().name("router"));
     }
 
     @Test

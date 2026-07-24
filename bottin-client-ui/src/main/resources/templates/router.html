@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Bottin</title>
+    <script>
+        (function() {
+            function hasStoredIdentity() {
+                for (var i = 0; i < localStorage.length; i++) {
+                    if (localStorage.key(i).indexOf('imani.identity.') === 0) return true;
+                }
+                return false;
+            }
+            function routeByStorage() {
+                window.location.replace(hasStoredIdentity() ? '/login' : '/onboarding');
+            }
+            fetch('/api/v1/auth/session')
+                .then(function(r) {
+                    if (r.status === 200) {
+                        window.location.replace('/search');
+                    } else {
+                        routeByStorage();
+                    }
+                })
+                .catch(routeByStorage);
+        })();
+    </script>
+</head>
+<body></body>
+</html>
