@@ -7,24 +7,40 @@
     <div th:fragment="content" class="container-narrow">
         <div class="card mt-3">
             <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Sign In</h1>
-            <p class="text-secondary text-sm mb-3">
-                Paste your nsec to sign in. Your key stays in your browser.
-            </p>
 
-            <div id="login-form">
+            <div id="unlock-form" class="hidden">
+                <p class="text-secondary text-sm mb-3">
+                    Enter your passphrase to unlock the key stored in this browser.
+                </p>
+                <div class="form-group">
+                    <label class="form-label">Passphrase</label>
+                    <input type="password" id="passphrase-input" class="form-input"
+                           autocomplete="current-password" placeholder="Your passphrase">
+                </div>
+                <button id="unlock-btn" class="btn btn-primary btn-full" onclick="handleUnlock()">
+                    Unlock &amp; Sign In
+                </button>
+                <div class="text-center mt-2 text-sm">
+                    <a href="#" onclick="showPasteMode(event)">Use a different key</a>
+                </div>
+            </div>
+
+            <div id="paste-form" class="hidden">
+                <p class="text-secondary text-sm mb-3">
+                    Paste your nsec to sign in. Your key stays in your browser.
+                </p>
                 <div class="form-group">
                     <label class="form-label">Your nsec (private key)</label>
                     <textarea id="nsec-input" class="form-input form-input-mono" rows="2" placeholder="nsec1..." autocomplete="off"></textarea>
                 </div>
-
                 <button id="signin-btn" class="btn btn-primary btn-full" onclick="handleLogin()">
                     Sign In
                 </button>
+            </div>
 
-                <div id="login-error" class="form-error text-center mt-2 hidden"></div>
-                <div id="login-loading" class="hidden text-center mt-2 text-secondary text-sm">
-                    Signing challenge...
-                </div>
+            <div id="login-error" class="form-error text-center mt-2 hidden"></div>
+            <div id="login-loading" class="hidden text-center mt-2 text-secondary text-sm">
+                Signing challenge...
             </div>
 
             <div class="text-center mt-3 text-sm">
@@ -34,70 +50,112 @@
     </div>
 
     <script>
+        function showError(message) {
+            var error = document.getElementById('login-error');
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        function setBusy(busy) {
+            document.getElementById('login-loading').style.display = busy ? 'block' : 'none';
+            var unlockBtn = document.getElementById('unlock-btn');
+            var signinBtn = document.getElementById('signin-btn');
+            if (unlockBtn) unlockBtn.disabled = busy;
+            if (signinBtn) signinBtn.disabled = busy;
+            if (busy) document.getElementById('login-error').style.display = 'none';
+        }
+
+        // Runs the NAP challenge/sign/complete handshake with a hex private key.
+        function napLogin(hexKey, npub) {
+            return fetch('/api/v1/auth/init', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ npub: npub })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(challenge) {
+                return NostrCrypto.signNip98Event(
+                    challenge.challenge, challenge.challenge_id, challenge.auth_url, 'POST', hexKey
+                ).then(function(signedEvent) {
+                    return fetch('/api/v1/auth/complete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Nostr ' + signedEvent
+                        },
+                        body: JSON.stringify({ challenge_id: challenge.challenge_id })
+                    });
+                });
+            })
+            .then(function(r) {
+                if (!r.ok) throw new Error('Authentication failed');
+            });
+        }
+
         function handleLogin() {
             var nsec = document.getElementById('nsec-input').value.trim();
-            var error = document.getElementById('login-error');
-            var loading = document.getElementById('login-loading');
-            var signinBtn = document.getElementById('signin-btn');
-
             if (!nsec) {
-                error.textContent = 'Please enter your nsec';
-                error.style.display = 'block';
+                showError('Please enter your nsec');
                 return;
             }
-
-            error.style.display = 'none';
-            loading.style.display = 'block';
-            signinBtn.disabled = true;
-
+            var npub, hexKey;
             try {
-                var npub = NostrCrypto.nsecToNpub(nsec);
-                var hexKey = NostrCrypto.nsecToHex(nsec);
-
-                fetch('/api/v1/auth/init', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ npub: npub })
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(challenge) {
-                    return NostrCrypto.signNip98Event(
-                        challenge.challenge,
-                        challenge.challenge_id,
-                        challenge.auth_url,
-                        'POST',
-                        hexKey
-                    ).then(function(signedEvent) {
-                        return fetch('/api/v1/auth/complete', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Nostr ' + signedEvent
-                            },
-                            body: JSON.stringify({ challenge_id: challenge.challenge_id })
-                        });
-                    });
-                })
-                .then(function(r) {
-                    if (r.ok) {
-                        window.location.href = '/search';
-                    } else {
-                        throw new Error('Authentication failed');
-                    }
-                })
-                .catch(function(err) {
-                    error.textContent = err.message;
-                    error.style.display = 'block';
-                    loading.style.display = 'none';
-                    signinBtn.disabled = false;
-                });
+                npub = NostrCrypto.nsecToNpub(nsec);
+                hexKey = NostrCrypto.nsecToHex(nsec);
             } catch (err) {
-                error.textContent = 'Invalid nsec format';
-                error.style.display = 'block';
-                loading.style.display = 'none';
-                signinBtn.disabled = false;
+                showError('Invalid nsec format');
+                return;
+            }
+            setBusy(true);
+            napLogin(hexKey, npub)
+                .then(function() { window.location.href = '/search'; })
+                .catch(function(err) { showError(err.message); setBusy(false); });
+        }
+
+        async function handleUnlock() {
+            var passphrase = document.getElementById('passphrase-input').value;
+            if (!passphrase) {
+                showError('Please enter your passphrase');
+                return;
+            }
+            setBusy(true);
+            try {
+                var identity = APP.loadIdentity(APP.getIdentityUserId());
+                if (!identity) throw new Error('No stored identity found');
+
+                var valid = await NostrCrypto.verifyPassword(
+                    identity.passwordHash, identity.passwordSalt, passphrase);
+                if (!valid) throw new Error('Incorrect passphrase');
+
+                var hexKey = await NostrCrypto.decryptPrivateKey(
+                    identity.privateKeyEncrypted, identity.privateKeyIv, identity.privateKeySalt, passphrase);
+
+                await napLogin(hexKey, identity.npub);
+                window.location.href = '/search';
+            } catch (err) {
+                showError(err.message);
+                setBusy(false);
             }
         }
+
+        function showPasteMode(event) {
+            if (event) event.preventDefault();
+            document.getElementById('unlock-form').className = 'hidden';
+            document.getElementById('paste-form').className = '';
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('nsec-input').focus();
+        }
+
+        (function() {
+            var hasStoredIdentity = APP.getIdentityUserId();
+            if (hasStoredIdentity) {
+                document.getElementById('unlock-form').className = '';
+                document.getElementById('passphrase-input').focus();
+            } else {
+                document.getElementById('paste-form').className = '';
+                document.getElementById('nsec-input').focus();
+            }
+        })();
     </script>
 </body>
 </html>
