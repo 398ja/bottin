@@ -139,18 +139,31 @@
                 nip05El.textContent = npub ? (npub.slice(0, 12) + '…' + npub.slice(-6)) : '';
             }
 
-            if (identity.picture) {
+            var pictureUrl = safeImageUrl(identity.picture);
+            if (pictureUrl) {
                 var avatar = document.getElementById('recognition-avatar');
                 avatar.onerror = function() { this.src = '/img/default-avatar.svg'; };
-                avatar.src = identity.picture;
+                avatar.src = pictureUrl;
             }
 
-            var banner = document.getElementById('recognition-banner');
-            if (identity.banner) {
-                banner.style.backgroundImage = 'url(' + identity.banner + ')';
+            var bannerUrl = safeImageUrl(identity.banner);
+            if (bannerUrl) {
+                var banner = document.getElementById('recognition-banner');
+                banner.style.backgroundImage = 'url("' + bannerUrl + '")';
                 banner.style.display = 'block';
                 document.getElementById('recognition-avatar').style.marginTop = '-32px';
             }
+        }
+
+        // Accepts only http(s) URLs and returns the normalized href (which
+        // percent-encodes quotes/parens), so profile URLs from relay data cannot
+        // break out of a CSS url("...") or trigger non-http schemes.
+        function safeImageUrl(value) {
+            try {
+                var url = new URL(value);
+                if (url.protocol === 'https:' || url.protocol === 'http:') return url.href;
+            } catch (e) { /* invalid or non-absolute URL */ }
+            return null;
         }
 
         (function() {
