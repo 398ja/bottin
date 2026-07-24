@@ -21,7 +21,8 @@ public class OnboardingController {
             "method", "Create Account",
             "profile", "Profile Setup",
             "security", "Set Password",
-            "confirm", "Review"
+            "confirm", "Review",
+            "import", "Import Identity"
     );
 
     @Value("${bottin.client.domain:bottin.example.com}")

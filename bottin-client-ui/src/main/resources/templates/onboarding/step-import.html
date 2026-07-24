@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Import Identity</title>
+</head>
+<body>
+    <div th:fragment="content" class="container-narrow">
+        <div class="wizard-step-indicator">
+            <div class="wizard-step completed">✓</div>
+            <div class="wizard-connector completed"></div>
+            <div class="wizard-step active">2</div>
+        </div>
+
+        <div class="card" style="max-width: 480px; margin: 0 auto;">
+            <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Set Encryption Password</h1>
+            <p class="text-secondary text-sm mb-3">
+                Your imported key will be encrypted with this passphrase and stored in your browser.
+            </p>
+
+            <div class="form-group">
+                <label class="form-label">Passphrase</label>
+                <input type="password" id="import-password" class="form-input" minlength="8" autocomplete="new-password">
+                <div class="password-strength">
+                    <div class="password-strength-bar" id="strength-bar"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Confirm Passphrase</label>
+                <input type="password" id="import-confirm" class="form-input" minlength="8" autocomplete="new-password">
+            </div>
+
+            <div id="import-error" class="form-error hidden mb-2"></div>
+
+            <div class="flex-row-gap-sm mt-2">
+                <button type="button" class="btn btn-outline" style="flex: 1;"
+                        hx-get="/onboarding/step/method" hx-target="body" hx-push-url="false"
+                        hx-params="none">Back</button>
+                <button type="button" id="import-btn" class="btn btn-primary" style="flex: 1;"
+                        onclick="handleImport()">Import &amp; Sign In</button>
+            </div>
+
+            <div id="import-loading" class="hidden text-center mt-2 text-secondary text-sm">
+                Signing you in...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setImportBusy(busy) {
+            document.getElementById('import-loading').style.display = busy ? 'block' : 'none';
+            document.getElementById('import-btn').disabled = busy;
+            if (busy) document.getElementById('import-error').style.display = 'none';
+        }
+
+        async function handleImport() {
+            var pw = document.getElementById('import-password').value;
+            var confirm = document.getElementById('import-confirm').value;
+            var error = document.getElementById('import-error');
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            var nsec = (data.nsec || '').trim();
+
+            function fail(message) {
+                error.textContent = message;
+                error.style.display = 'block';
+            }
+
+            if (!nsec) { fail('No nsec found. Please go back and enter it.'); return; }
+            if (pw.length < 8) { fail('Passphrase must be at least 8 characters.'); return; }
+            if (pw !== confirm) { fail('Passphrases do not match.'); return; }
+
+            setImportBusy(true);
+            try {
+                var identity = await NostrCrypto.buildEncryptedIdentity(nsec, pw);
+                APP.saveIdentity(identity);
+                await APP.napLogin(NostrCrypto.nsecToHex(nsec), identity.npub);
+                sessionStorage.removeItem('onboarding-data');
+                window.location.href = '/search';
+            } catch (e) {
+                fail('Import failed: ' + e.message);
+                setImportBusy(false);
+            }
+        }
+
+        document.getElementById('import-password').addEventListener('input', function() {
+            var score = 0;
+            if (this.value.length >= 8) score++;
+            if (this.value.length >= 12) score++;
+            if (/[a-z]/.test(this.value) && /[A-Z]/.test(this.value)) score++;
+            if (/\d/.test(this.value)) score++;
+            if (/[^a-zA-Z0-9]/.test(this.value)) score++;
+            var labels = ['', 'weak', 'fair', 'good', 'strong', 'strong'];
+            document.getElementById('strength-bar').className = 'password-strength-bar ' + labels[score];
+        });
+    </script>
+</body>
+</html>

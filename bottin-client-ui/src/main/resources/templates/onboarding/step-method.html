@@ -21,8 +21,7 @@
                 Choose how to set up your Nostr identity. Your private key stays in your browser.
             </p>
 
-            <form hx-post="/onboarding/step-method" hx-target="body" hx-push-url="false"
-                  hx-on::before-request="saveMethod(event)">
+            <form onsubmit="return false;">
                 <div class="card-radio" onclick="document.getElementById('method-create').checked=true">
                     <label class="flex-row-gap-sm" style="cursor: pointer;">
                         <input type="radio" name="method" id="method-create" value="create" checked style="margin-top: 0.25rem;">
@@ -54,7 +53,9 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-full mt-3">
+                <div id="method-error" class="form-error hidden mt-2"></div>
+
+                <button type="button" class="btn btn-primary btn-full mt-3" onclick="continueFromMethod()">
                     Continue
                 </button>
             </form>
@@ -62,29 +63,59 @@
     </div>
 
     <script>
+        function onMethodChange(method) {
+            document.getElementById('import-section').className = method === 'import' ? 'mt-2' : 'hidden';
+            // The import path is two steps; the create path is four.
+            var steps = document.querySelectorAll('.wizard-step-indicator .wizard-step');
+            var connectors = document.querySelectorAll('.wizard-step-indicator .wizard-connector');
+            var hide = method === 'import';
+            steps[2].style.display = steps[3].style.display = hide ? 'none' : '';
+            connectors[1].style.display = connectors[2].style.display = hide ? 'none' : '';
+        }
+
         document.querySelectorAll('input[name="method"]').forEach(function(r) {
-            r.addEventListener('change', function() {
-                var s = document.getElementById('import-section');
-                s.className = this.value === 'import' ? 'mt-2' : 'hidden';
-            });
+            r.addEventListener('change', function() { onMethodChange(this.value); });
         });
 
-        function saveMethod() {
+        function continueFromMethod() {
+            var method = document.querySelector('input[name="method"]:checked').value;
+            var nsec = document.querySelector('[name="nsec"]').value;
             var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
-            data.method = document.querySelector('input[name="method"]:checked').value;
-            data.nsec = document.querySelector('[name="nsec"]').value;
+            data.method = method;
+            data.nsec = nsec;
             sessionStorage.setItem('onboarding-data', JSON.stringify(data));
+
+            if (method === 'import') {
+                var error = document.getElementById('method-error');
+                var trimmed = (nsec || '').trim();
+                if (!trimmed) {
+                    error.textContent = 'Please enter your nsec.';
+                    error.style.display = 'block';
+                    return;
+                }
+                try {
+                    if (NostrTools.nip19.decode(trimmed).type !== 'nsec') throw new Error();
+                } catch (e) {
+                    error.textContent = 'That is not a valid nsec. Please check and try again.';
+                    error.style.display = 'block';
+                    return;
+                }
+                error.style.display = 'none';
+                htmx.ajax('GET', '/onboarding/step/import', { target: 'body' });
+            } else {
+                htmx.ajax('GET', '/onboarding/step/profile', { target: 'body' });
+            }
         }
 
         (function() {
             var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
             if (data.method === 'import') {
                 document.getElementById('method-import').checked = true;
-                document.getElementById('import-section').className = 'mt-2';
             }
             if (data.nsec) {
                 document.querySelector('[name="nsec"]').value = data.nsec;
             }
+            onMethodChange(document.querySelector('input[name="method"]:checked').value);
         })();
     </script>
 </body>

@@ -14,6 +14,34 @@ window.APP = {
         };
     },
 
+    // Runs the NAP challenge/sign/complete handshake with a hex private key and
+    // establishes the session cookie. Resolves on success, rejects otherwise.
+    napLogin: function(hexKey, npub) {
+        return fetch('/api/v1/auth/init', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ npub: npub })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(challenge) {
+            return NostrCrypto.signNip98Event(
+                challenge.challenge, challenge.challenge_id, challenge.auth_url, 'POST', hexKey
+            ).then(function(signedEvent) {
+                return fetch('/api/v1/auth/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Nostr ' + signedEvent
+                    },
+                    body: JSON.stringify({ challenge_id: challenge.challenge_id })
+                });
+            });
+        })
+        .then(function(r) {
+            if (!r.ok) throw new Error('Authentication failed');
+        });
+    },
+
     saveIdentity: function(identity) {
         localStorage.setItem(this.identityKey(identity.userId), JSON.stringify(identity));
     },
