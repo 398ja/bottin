@@ -17,7 +17,7 @@
             fetch('/api/v1/auth/session')
                 .then(function(r) {
                     if (r.status === 200) {
-                        window.location.replace('/search');
+                        window.location.replace('/apps');
                     } else {
                         routeByStorage();
                     }
