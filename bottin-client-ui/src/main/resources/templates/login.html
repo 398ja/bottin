@@ -89,7 +89,7 @@
             }
             setBusy(true);
             APP.napLogin(hexKey, npub)
-                .then(function() { window.location.href = '/search'; })
+                .then(function() { window.location.href = '/apps'; })
                 .catch(function(err) { showError(err.message); setBusy(false); });
         }
 
@@ -112,7 +112,7 @@
                     identity.privateKeyEncrypted, identity.privateKeyIv, identity.privateKeySalt, passphrase);
 
                 await APP.napLogin(hexKey, identity.npub);
-                window.location.href = '/search';
+                window.location.href = '/apps';
             } catch (err) {
                 showError(err.message);
                 setBusy(false);
