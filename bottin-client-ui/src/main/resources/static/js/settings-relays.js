@@ -1,24 +1,8 @@
-var RelayManager = (function() {
+var RelayEditor = (function () {
+    var userId = null;
     var relays = [];
-    var dirty = false;
-    var loading = false;
 
-    function loadRelays() {
-        if (loading) return;
-        loading = true;
-        fetch('/api/v1/relays')
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                relays = data.relays || [];
-                render();
-            })
-            .catch(function() {
-                APP.showToast('Failed to load relays', 'error');
-            })
-            .finally(function() {
-                loading = false;
-            });
-    }
+    function el(id) { return document.getElementById(id); }
 
     function createRelayRow(r, badgeClass, badgeLabel) {
         var div = document.createElement('div');
@@ -38,61 +22,50 @@ var RelayManager = (function() {
 
         var removeBtn = document.createElement('button');
         removeBtn.className = 'btn btn-sm btn-danger';
-        removeBtn.textContent = '\u00D7';
-        removeBtn.addEventListener('click', function() { removeRelay(r.url); });
+        removeBtn.textContent = '×';
+        removeBtn.addEventListener('click', function () { removeRelay(r.url); });
         div.appendChild(removeBtn);
 
         return div;
     }
 
+    function renderColumn(elId, filtered, badgeClass, badgeLabel, emptyText) {
+        var container = el(elId);
+        container.innerHTML = '';
+        if (filtered.length) {
+            filtered.forEach(function (r) {
+                container.appendChild(createRelayRow(r, badgeClass, badgeLabel));
+            });
+        } else {
+            var empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.style.padding = '1rem';
+            var p = document.createElement('p');
+            p.style.fontSize = '0.875rem';
+            p.textContent = emptyText;
+            empty.appendChild(p);
+            container.appendChild(empty);
+        }
+    }
+
     function render() {
-        var readEl = document.getElementById('read-relays');
-        var writeEl = document.getElementById('write-relays');
-        var publishBtn = document.getElementById('publish-btn');
+        renderColumn('read-relays', relays.filter(function (r) { return r.read; }),
+            'badge-primary', 'Read', 'No read relays configured');
+        renderColumn('write-relays', relays.filter(function (r) { return r.write; }),
+            'badge-success', 'Write', 'No write relays configured');
+        el('publish-btn').style.display = relays.length ? 'block' : 'none';
+    }
 
-        var readRelays = relays.filter(function(r) { return r.read; });
-        var writeRelays = relays.filter(function(r) { return r.write; });
-
-        readEl.innerHTML = '';
-        if (readRelays.length) {
-            readRelays.forEach(function(r) {
-                readEl.appendChild(createRelayRow(r, 'badge-primary', 'Read'));
-            });
-        } else {
-            var empty = document.createElement('div');
-            empty.className = 'empty-state';
-            empty.style.padding = '1rem';
-            var p = document.createElement('p');
-            p.style.fontSize = '0.875rem';
-            p.textContent = 'No read relays configured';
-            empty.appendChild(p);
-            readEl.appendChild(empty);
-        }
-
-        writeEl.innerHTML = '';
-        if (writeRelays.length) {
-            writeRelays.forEach(function(r) {
-                writeEl.appendChild(createRelayRow(r, 'badge-success', 'Write'));
-            });
-        } else {
-            var empty = document.createElement('div');
-            empty.className = 'empty-state';
-            empty.style.padding = '1rem';
-            var p = document.createElement('p');
-            p.style.fontSize = '0.875rem';
-            p.textContent = 'No write relays configured';
-            empty.appendChild(p);
-            writeEl.appendChild(empty);
-        }
-
-        publishBtn.style.display = dirty ? 'block' : 'none';
+    function persist() {
+        APP.saveRelays(userId, relays);
+        render();
     }
 
     function addRelay() {
-        var url = document.getElementById('relay-url').value.trim();
-        var read = document.getElementById('relay-read').checked;
-        var write = document.getElementById('relay-write').checked;
-        var error = document.getElementById('relay-url-error');
+        var url = el('relay-url').value.trim();
+        var read = el('relay-read').checked;
+        var write = el('relay-write').checked;
+        var error = el('relay-url-error');
 
         if (!url.startsWith('wss://')) {
             error.style.display = 'block';
@@ -104,61 +77,61 @@ var RelayManager = (function() {
             APP.showToast('Select read and/or write permission', 'error');
             return;
         }
+        if (relays.some(function (r) { return r.url === url; })) {
+            APP.showToast('Relay already added', 'error');
+            return;
+        }
 
-        fetch('/api/v1/relays', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url, read: read, write: write })
-        }).then(function(r) {
-            if (r.ok) {
-                APP.showToast('Relay added', 'success');
-                dirty = true;
-                loadRelays();
-                document.getElementById('relay-url').value = '';
-            } else {
-                APP.showToast('Failed to add relay', 'error');
-            }
-        }).catch(function() {
-            APP.showToast('Failed to add relay', 'error');
-        });
+        relays.push({ url: url, read: read, write: write });
+        persist();
+        el('relay-url').value = '';
+        APP.showToast('Relay added', 'success');
     }
 
     function removeRelay(url) {
-        fetch('/api/v1/relays', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url })
-        }).then(function(r) {
-            if (r.ok) {
-                APP.showToast('Relay removed', 'success');
-                dirty = true;
-                loadRelays();
-            }
-        }).catch(function() {
-            APP.showToast('Failed to remove relay', 'error');
-        });
+        relays = relays.filter(function (r) { return r.url !== url; });
+        persist();
+        APP.showToast('Relay removed', 'success');
     }
 
     function publishRelays() {
-        fetch('/api/v1/relays/publish', { method: 'POST' })
-            .then(function(r) {
-                if (r.ok) {
-                    dirty = false;
-                    APP.showToast('Published!', 'success');
-                    render();
-                } else {
-                    APP.showToast('Publish failed', 'error');
-                }
-            }).catch(function() {
-                APP.showToast('Publish failed', 'error');
-            });
+        var writeRelays = relays.filter(function (r) { return r.write; })
+            .map(function (r) { return r.url; });
+        if (!writeRelays.length) {
+            APP.showToast('Add at least one write relay before publishing.', 'error');
+            return;
+        }
+        APP.ensureUnlocked(userId).then(function (hexKey) {
+            var unsigned = NostrPublish.buildRelayListEvent(relays);
+            var signed = NostrCrypto.signEvent(unsigned, hexKey);
+            return NostrPublish.publish(new NostrTools.SimplePool(), writeRelays, signed);
+        }).then(function (results) {
+            var accepted = results.filter(function (r) { return r.accepted; }).length;
+            if (accepted) {
+                APP.showToast('Published to ' + accepted + ' of ' + results.length + ' relays', 'success');
+            } else {
+                APP.showToast('Publish failed on all relays', 'error');
+            }
+        }).catch(function () { /* unlock cancelled: local list is retained */ });
     }
 
-    return { loadRelays: loadRelays, addRelay: addRelay, remove: removeRelay, publish: publishRelays };
+    function init() {
+        userId = APP.getIdentityUserId();
+        if (!userId || !el('read-relays')) return;
+        APP.ensureRelaysSeeded(userId).then(function (seeded) {
+            relays = seeded;
+            render();
+        }).catch(function () {
+            relays = APP.loadRelays(userId);
+            render();
+        });
+    }
+
+    return { init: init, addRelay: addRelay, publishRelays: publishRelays };
 })();
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('read-relays')) {
-        RelayManager.loadRelays();
-    }
-});
+// Global handles for the template's inline onclick attributes.
+function addRelay() { RelayEditor.addRelay(); }
+function publishRelays() { RelayEditor.publishRelays(); }
+
+document.addEventListener('DOMContentLoaded', function () { RelayEditor.init(); });
