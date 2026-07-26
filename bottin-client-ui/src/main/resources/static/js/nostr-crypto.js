@@ -194,6 +194,16 @@ var NostrCrypto = (function() {
             return btoa(JSON.stringify(signed));
         },
 
+        signEvent: function(unsignedEvent, nsecHex) {
+            var template = {
+                kind: unsignedEvent.kind,
+                created_at: unsignedEvent.created_at || Math.floor(Date.now() / 1000),
+                tags: unsignedEvent.tags || [],
+                content: unsignedEvent.content || ''
+            };
+            return NT.finalizeEvent(template, hexToBytes(nsecHex));
+        },
+
         reEncryptPrivateKey: async function(oldPassword, newPassword, storedIdentity) {
             var privateKeyHex = await this.decryptPrivateKey(
                 storedIdentity.privateKeyEncrypted,
