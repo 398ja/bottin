@@ -6,11 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import xyz.tcheeric.bottin.client.config.ClientProperties;
 
+import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -139,13 +143,46 @@ class RelayControllerTest {
     }
 
     /**
-     * A blank configured entry is dropped so an unset or empty env var never seeds a
-     * bogus relay URL.
+     * The defaults endpoint returns a JSON array (not an object or scalar) through the
+     * full MVC stack, regardless of the specific configured relay values.
      */
     @Test
     void shouldExposeDefaultsEndpointAsArray() throws Exception {
         mockMvc.perform(get("/api/v1/relays/defaults"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.relays").isArray());
+    }
+
+    /**
+     * Blank or whitespace-only configured entries are dropped so an unset or partially
+     * filled env var never seeds a bogus relay URL.
+     */
+    @Test
+    void shouldDropBlankDefaultRelayEntries() {
+        ClientProperties props = new ClientProperties();
+        props.setDefaultRelays(List.of("wss://relay.one", "  ", ""));
+        RelayController controller = new RelayController(props);
+
+        ResponseEntity<Map<String, Object>> response = controller.getDefaultRelays();
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> relays = (List<Map<String, Object>>) response.getBody().get("relays");
+        assertThat(relays).hasSize(1);
+        assertThat(relays.get(0).get("url")).isEqualTo("wss://relay.one");
+    }
+
+    /**
+     * An empty default-relays configuration yields an empty relay array rather than null,
+     * so the client always receives a well-formed list to seed from.
+     */
+    @Test
+    void shouldReturnEmptyArrayWhenNoDefaultRelaysConfigured() {
+        RelayController controller = new RelayController(new ClientProperties());
+
+        ResponseEntity<Map<String, Object>> response = controller.getDefaultRelays();
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> relays = (List<Map<String, Object>>) response.getBody().get("relays");
+        assertThat(relays).isEmpty();
     }
 }
