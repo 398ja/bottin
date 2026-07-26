@@ -8,7 +8,7 @@
             <a th:href="@{/search}" class="nav-link">Search</a>
             <div class="nav-dropdown">
                 <button class="nav-link nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
-                    <img src="/img/default-avatar.png" alt="" class="nav-avatar" th:src="${userAvatar} ?: '/img/default-avatar.png'">
+                    <img id="nav-avatar" src="/img/default-avatar.svg" alt="" class="nav-avatar">
                 </button>
                 <div class="nav-dropdown-menu">
                     <a th:href="@{/profile}" class="nav-dropdown-item">Profile</a>
