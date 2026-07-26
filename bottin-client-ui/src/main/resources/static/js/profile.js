@@ -90,24 +90,27 @@ document.addEventListener('DOMContentLoaded', function () {
         identity.website = fields.website;
         APP.saveIdentity(identity);
 
-        var writeRelays = APP.loadRelays(userId).filter(function (r) { return r.write; })
-            .map(function (r) { return r.url; });
-        if (!writeRelays.length) {
-            APP.showToast('Add at least one write relay in Settings → Relays.', 'error');
-            return;
-        }
-
-        APP.ensureUnlocked(userId).then(function (hexKey) {
-            var unsigned = NostrPublish.buildProfileEvent(fields);
-            var signed = NostrCrypto.signEvent(unsigned, hexKey);
-            return NostrPublish.publish(new NostrTools.SimplePool(), writeRelays, signed);
-        }).then(function (results) {
-            var accepted = results.filter(function (r) { return r.accepted; }).length;
-            if (accepted) {
-                APP.showToast('Published to ' + accepted + '/' + results.length + ' relays', 'success');
-            } else {
-                APP.showToast('Publish failed on all relays', 'error');
+        // Seed the default relay list on first use so a fresh profile can publish
+        // out of the box, then publish to the configured write relays.
+        APP.ensureRelaysSeeded(userId).then(function (relays) {
+            var writeRelays = relays.filter(function (r) { return r.write; })
+                .map(function (r) { return r.url; });
+            if (!writeRelays.length) {
+                APP.showToast('Add at least one write relay in Settings → Relays.', 'error');
+                return;
             }
+            return APP.ensureUnlocked(userId).then(function (hexKey) {
+                var unsigned = NostrPublish.buildProfileEvent(fields);
+                var signed = NostrCrypto.signEvent(unsigned, hexKey);
+                return NostrPublish.publish(new NostrTools.SimplePool(), writeRelays, signed);
+            }).then(function (results) {
+                var accepted = results.filter(function (r) { return r.accepted; }).length;
+                if (accepted) {
+                    APP.showToast('Published to ' + accepted + '/' + results.length + ' relays', 'success');
+                } else {
+                    APP.showToast('Publish failed on all relays', 'error');
+                }
+            });
         }).catch(function (err) {
             APP.showToast('Publish failed: ' + (err && err.message ? err.message : err), 'error');
         });
