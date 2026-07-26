@@ -15,6 +15,20 @@
     <main th:remove="tag">
         <div th:replace="${content}"></div>
     </main>
+    <div id="unlock-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-title">Unlock to Sign</div>
+            <p class="text-secondary text-sm mb-2">
+                Enter your passphrase to sign and publish. It stays unlocked for this session.
+            </p>
+            <input type="password" id="unlock-password" class="form-input" placeholder="Passphrase" autocomplete="off">
+            <div id="unlock-error" class="form-error hidden mt-1"></div>
+            <div class="flex-row-gap-sm mt-2">
+                <button class="btn btn-outline" style="flex: 1;" id="unlock-cancel">Cancel</button>
+                <button class="btn btn-primary" style="flex: 1;" id="unlock-confirm">Unlock</button>
+            </div>
+        </div>
+    </div>
     <script src="/js/nostr-crypto.js" defer></script>
     <script src="/js/nap-client.js" defer></script>
     <script>

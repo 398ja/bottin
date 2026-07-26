@@ -85,6 +85,115 @@ window.APP = {
         return null;
     },
 
+    relaysKey: function(userId) { return 'imani.relays.' + userId; },
+
+    loadRelays: function(userId) {
+        var data = localStorage.getItem(this.relaysKey(userId));
+        return data ? JSON.parse(data) : [];
+    },
+
+    saveRelays: function(userId, relays) {
+        localStorage.setItem(this.relaysKey(userId), JSON.stringify(relays));
+    },
+
+    // Seeds the relay list from the server-configured defaults on first use only.
+    // A stored list is authoritative and is returned untouched.
+    ensureRelaysSeeded: function(userId) {
+        var existing = this.loadRelays(userId);
+        if (existing.length) return Promise.resolve(existing);
+        var self = this;
+        return fetch('/api/v1/relays/defaults', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var relays = (data && data.relays) || [];
+                self.saveRelays(userId, relays);
+                return relays;
+            });
+    },
+
+    SESSION_TTL_MS: 15 * 60 * 1000,
+
+    sessionKey: function(userId) { return 'imani.session.' + userId; },
+
+    setSessionKey: function(userId, hexKey) {
+        var entry = { key: hexKey, expiresAt: Date.now() + this.SESSION_TTL_MS };
+        sessionStorage.setItem(this.sessionKey(userId), JSON.stringify(entry));
+    },
+
+    // Returns the live decrypted key, refreshing its idle expiry, or null once the
+    // idle window has passed.
+    getSessionKey: function(userId) {
+        var raw = sessionStorage.getItem(this.sessionKey(userId));
+        if (!raw) return null;
+        var entry = JSON.parse(raw);
+        if (!entry.expiresAt || entry.expiresAt <= Date.now()) {
+            this.lockSession(userId);
+            return null;
+        }
+        this.setSessionKey(userId, entry.key);
+        return entry.key;
+    },
+
+    lockSession: function(userId) {
+        sessionStorage.removeItem(this.sessionKey(userId));
+    },
+
+    // Verifies the passphrase, decrypts the private key, and caches it for the
+    // session. Rejects on a wrong passphrase without caching anything.
+    unlockSession: function(userId, passphrase) {
+        var self = this;
+        var identity = this.loadIdentity(userId);
+        if (!identity) return Promise.reject(new Error('No identity found'));
+        return NostrCrypto.verifyPassword(identity.passwordHash, identity.passwordSalt, passphrase)
+            .then(function(valid) {
+                if (!valid) throw new Error('Wrong passphrase');
+                return NostrCrypto.decryptPrivateKey(
+                    identity.privateKeyEncrypted, identity.privateKeyIv, identity.privateKeySalt, passphrase);
+            })
+            .then(function(hexKey) {
+                self.setSessionKey(userId, hexKey);
+                return hexKey;
+            });
+    },
+
+    // Resolves the session key, prompting once via the shared unlock modal when the
+    // session is locked or expired.
+    ensureUnlocked: function(userId) {
+        var live = this.getSessionKey(userId);
+        if (live) return Promise.resolve(live);
+        return this.promptUnlock(userId);
+    },
+
+    promptUnlock: function(userId) {
+        var self = this;
+        var modal = document.getElementById('unlock-modal');
+        var input = document.getElementById('unlock-password');
+        var error = document.getElementById('unlock-error');
+        var confirmBtn = document.getElementById('unlock-confirm');
+        var cancelBtn = document.getElementById('unlock-cancel');
+        input.value = '';
+        error.className = 'form-error hidden mt-1';
+        modal.className = 'modal-overlay';
+        input.focus();
+
+        return new Promise(function(resolve, reject) {
+            function cleanup() {
+                modal.className = 'modal-overlay hidden';
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+            }
+            confirmBtn.onclick = function() {
+                self.unlockSession(userId, input.value)
+                    .then(function(hexKey) { cleanup(); resolve(hexKey); })
+                    .catch(function() {
+                        error.textContent = 'Wrong passphrase';
+                        error.className = 'form-error mt-1';
+                    });
+            };
+            cancelBtn.onclick = function() { cleanup(); reject(new Error('cancelled')); };
+        });
+    },
+
     showToast: function(message, type) {
         var toast = document.createElement('div');
         toast.className = 'toast toast-' + type;
@@ -151,6 +260,8 @@ window.APP = {
     // Logout ends the session; it does not forget the device.
     logout: function() {
         if (!window.confirm('This will clear your session.')) return;
+        var userId = this.getIdentityUserId();
+        if (userId) this.lockSession(userId);
         var goToLogin = function() { window.location.href = '/login'; };
         fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'same-origin' })
             .then(goToLogin)
