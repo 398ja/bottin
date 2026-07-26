@@ -47,24 +47,28 @@ patterns for passphrase entry).
 | State | Storage | Shape | Notes |
 | --- | --- | --- | --- |
 | Identity | `localStorage: imani.identity.<npub>` | crypto fields + `displayName`, `picture`, `banner`, `nip05`, `about`, `lud16`, `website` | Gains `about`, `lud16`, `website`, which onboarding currently collects then drops. |
-| Relay list | `localStorage: imani.relays.<npub>` | `[{ url, read, write }]` | New. NIP-65-shaped. Seeded with a default set on first visit if absent. Single source of truth for both pages. |
+| Relay list | `localStorage: imani.relays.<npub>` | `[{ url, read, write }]` | New. NIP-65-shaped. Seeded on first visit from the server-configured defaults (see below) if absent. Single source of truth for both pages. |
 | Session key | `sessionStorage: imani.session.<npub>` | `{ key: <hexPrivateKey>, expiresAt: <epochMs> }` | Written on unlock, read by publish actions, cleared on logout, on tab close, and on idle expiry. |
 
 ### Default relay set
 
-On first visit, if no relay list exists, seed a small set of well-known relays so the
-user can publish immediately, each seeded as both read and write:
+The default relays come from server configuration, not a client-side constant. They are
+provided by the `BOTTIN_DEFAULT_RELAYS` environment variable — a comma-separated list of
+`wss://` URLs — and every configured relay is seeded as both **read and write**.
 
-- `wss://relay.damus.io`
-- `wss://nos.lol`
-- `wss://relay.primal.net`
-- `wss://relay.nostr.band`
-
-The list is defined as a client-side constant.
-
-> **Review flag:** the default relays could instead be sourced from the user's bottin
-> NIP-05 record (bottin already serves relay hints in NIP-05 responses). Confirm during
-> review whether to seed from a static constant or from the NIP-05 record.
+- **Binding:** `application.yml` maps `bottin.client.default-relays: ${BOTTIN_DEFAULT_RELAYS:}`,
+  bound to a `List<String>` via a new `ClientProperties` (`@ConfigurationProperties(prefix =
+  "bottin.client")`) class. The public relays currently hardcoded in the yml are removed;
+  real deployments set the env var. If unset, the default list is empty.
+- **Surfacing to the client:** a new authed endpoint `GET /api/v1/relays/defaults` returns
+  the configured relays as `{ relays: [{ url, read: true, write: true }, ...] }`, backed by
+  `ClientProperties`.
+- **Seeding:** a shared `APP.ensureRelaysSeeded()` helper runs on the Profile and Relays
+  pages; if `imani.relays.<npub>` is absent, it fetches `/api/v1/relays/defaults` and saves
+  the result as the user's initial relay list. Thereafter the user's edited list is the
+  source of truth.
+- **Empty config:** if `BOTTIN_DEFAULT_RELAYS` is unset (no defaults) and the user has no
+  saved relays, publish is blocked with "Add at least one write relay in Settings → Relays."
 
 ## Components
 
@@ -98,8 +102,10 @@ The list is defined as a client-side constant.
 
 ### 2. Relays page (kind-10002)
 
-- **Route (only server change):** add `relays()` to `SettingsController` mapping
+- **Route:** add `relays()` to `SettingsController` mapping
   `GET /settings/relays` → `content="settings/relays"` (mirrors `index`/`security`).
+- **Defaults endpoint:** add `GET /api/v1/relays/defaults` (backed by `ClientProperties`)
+  so the client can seed the initial list from `BOTTIN_DEFAULT_RELAYS`.
 - **Template (`settings/relays.html`, existing):** already renders read/write relay
   lists, an add-relay form (`wss://` URL + read/write checkboxes), and a publish
   button. Kept; only its JS is rewired.
@@ -107,7 +113,8 @@ The list is defined as a client-side constant.
   endpoints; point it at `APP.loadRelays()/saveRelays()` instead. The stub REST
   endpoints go unused (left in place).
 - **Behavior:**
-  - On load, render relays from the stored list; seed defaults if none exist.
+  - On load, render relays from the stored list; `ensureRelaysSeeded()` seeds from the
+    server-configured defaults if none exist.
   - **Add relay:** validate `wss://` URL, add with read/write flags, persist immediately.
   - **Remove relay:** drop it, persist immediately.
   - **Publish:** `buildRelayListEvent(relays)` → kind-10002; `ensureUnlocked()` →
@@ -208,9 +215,13 @@ durably CI-enforced.
   - Session-key logic: expiry, refresh, lock/clear.
   - Relay-list load/save shape.
   - Publish-result handling with `SimplePool`/`WebSocket` mocked.
+  - `ensureRelaysSeeded()`: seeds from the fetched defaults when absent, no-op when a
+    stored list already exists.
 - **Server-side `@WebMvcTest`:** a `SettingsControllerTest` case for the new
-  `GET /settings/relays` route; a `ProfileControllerTest` asserting the profile form's
-  field IDs render.
+  `GET /settings/relays` route; a `RelayControllerTest` case asserting
+  `GET /api/v1/relays/defaults` returns the configured `BOTTIN_DEFAULT_RELAYS` as
+  read+write entries; a `ProfileControllerTest` asserting the profile form's field IDs
+  render.
 - **Diátaxis how-to** documenting the end-to-end verification (unlock, edit profile,
   publish, confirm the kind-0/kind-10002 landed on a relay), linked from `docs/README.md`.
 - **Live Playwright verification** of the full unlock → edit → publish flow during
@@ -221,6 +232,10 @@ durably CI-enforced.
 **Server (Java)**
 
 - `controller/SettingsController.java` — add `relays()` → `GET /settings/relays`.
+- `config/ClientProperties.java` — new `@ConfigurationProperties(prefix = "bottin.client")`
+  binding `domain`, `blossomUrl`, and `defaultRelays` (`List<String>`).
+- `controller/RelayController.java` — add `GET /api/v1/relays/defaults` returning the
+  configured defaults as `{ relays: [{ url, read: true, write: true }] }`.
 
 **Templates**
 
@@ -229,9 +244,10 @@ durably CI-enforced.
 
 **Client JS**
 
-- `static/js/app.js` — relay storage helpers (`loadRelays`/`saveRelays`), session helpers
-  (`unlockSession`/`getSessionKey`/`lockSession`), `ensureUnlocked()` + shared passphrase
-  modal; `logout()` clears the session key.
+- `static/js/app.js` — relay storage helpers (`loadRelays`/`saveRelays`),
+  `ensureRelaysSeeded()` (fetches `/api/v1/relays/defaults` when the list is absent),
+  session helpers (`unlockSession`/`getSessionKey`/`lockSession`), `ensureUnlocked()` +
+  shared passphrase modal; `logout()` clears the session key.
 - `static/js/nostr-crypto.js` — add generic `signEvent(unsignedEvent, hexKey)`.
 - `static/js/nostr-publish.js` — new: `buildProfileEvent`, `buildRelayListEvent`, `publish`.
 - `static/js/profile.js` — new: drives the Profile page.
@@ -241,7 +257,10 @@ durably CI-enforced.
 
 - `bottin-client-ui/package.json`, Vitest config — new.
 - `pom.xml` (`bottin-client-ui`) — add `frontend-maven-plugin` bound to the `test` phase.
+- `src/main/resources/application.yml` — replace the structured public-relay
+  `default-relays` list with `default-relays: ${BOTTIN_DEFAULT_RELAYS:}` (comma-separated).
 - `src/test/.../SettingsControllerTest.java` — add `/settings/relays` case.
+- `src/test/.../RelayControllerTest.java` — assert `/api/v1/relays/defaults`.
 - `src/test/.../ProfileControllerTest.java` — assert profile form field IDs.
 - JS unit test files under the module.
 
@@ -251,5 +270,5 @@ durably CI-enforced.
 
 ## Open questions
 
-- **Default relays source:** static client-side constant vs. seeding from the user's
-  bottin NIP-05 record. (Recommendation: static constant this iteration; revisit.)
+None outstanding. The default-relay source is resolved: server-configured via
+`BOTTIN_DEFAULT_RELAYS` (comma-separated `wss://` URLs, all seeded read+write).
