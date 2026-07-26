@@ -16,6 +16,7 @@ Problem-oriented guides that show you how to achieve a specific goal.
 
 - [Deploy with Docker](how-to/docker-deployment.md) - Deploy Bottin services using Docker Compose
 - [Running E2E Tests](how-to/running-e2e-tests.md) - Run end-to-end tests with Testcontainers
+- [Verify the /apps Nav and Avatar Dropdown](how-to/verify-apps-nav-and-avatar-dropdown.md) - Browser-level check of the authenticated nav and logout flow
 
 ## Reference
 
