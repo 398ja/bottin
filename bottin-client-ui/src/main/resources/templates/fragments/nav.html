@@ -4,7 +4,7 @@
     <nav th:fragment="nav" class="nav">
         <a th:href="@{/}" class="nav-brand">Bottin</a>
         <div class="nav-spacer"></div>
-        <div th:if="${#httpServletRequest?.userPrincipal != null}">
+        <div id="nav-authed" class="hidden">
             <a th:href="@{/search}" class="nav-link">Search</a>
             <a th:href="@{/settings}" class="nav-link">Settings</a>
             <div class="nav-dropdown">

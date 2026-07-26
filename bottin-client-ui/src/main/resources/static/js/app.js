@@ -100,6 +100,19 @@ window.APP = {
                     window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
                 }
             });
+    },
+
+    // Reveals the authenticated nav (Search, Settings, avatar dropdown) once an
+    // active NAP session is confirmed. Page routes are anonymous-accessible and
+    // carry no server-side principal, so nav visibility is decided client-side.
+    revealAuthenticatedNav: function() {
+        var authedNav = document.getElementById('nav-authed');
+        if (!authedNav) return;
+        fetch('/api/v1/auth/session', { credentials: 'same-origin' })
+            .then(function(r) {
+                if (r.status === 200) authedNav.classList.remove('hidden');
+            })
+            .catch(function() { /* no session established: leave nav hidden */ });
     }
 };
 }
@@ -107,7 +120,8 @@ window.APP = {
 if (!window.__appInitialized) {
 window.__appInitialized = true;
 document.addEventListener('DOMContentLoaded', function() {
-    var authedPages = ['/search', '/profile', '/settings'];
+    APP.revealAuthenticatedNav();
+    var authedPages = ['/apps', '/search', '/profile', '/settings'];
     var currentPath = window.location.pathname;
     var isAuthedPage = authedPages.some(function(p) { return currentPath.startsWith(p); });
     if (isAuthedPage) {
