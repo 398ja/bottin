@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
@@ -14,6 +16,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RelayController.class)
+@Import(xyz.tcheeric.bottin.client.config.ClientProperties.class)
+@TestPropertySource(properties = "bottin.client.default-relays=wss://relay.one,wss://relay.two")
 class RelayControllerTest {
 
     @Autowired
@@ -117,5 +121,31 @@ class RelayControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("published"))
                 .andExpect(jsonPath("$.published_to").isArray());
+    }
+
+    /**
+     * The defaults endpoint returns each configured relay as a read+write entry so
+     * the client can seed a usable relay list on first visit.
+     */
+    @Test
+    void shouldReturnConfiguredDefaultRelaysAsReadWrite() throws Exception {
+        mockMvc.perform(get("/api/v1/relays/defaults"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relays.length()").value(2))
+                .andExpect(jsonPath("$.relays[0].url").value("wss://relay.one"))
+                .andExpect(jsonPath("$.relays[0].read").value(true))
+                .andExpect(jsonPath("$.relays[0].write").value(true))
+                .andExpect(jsonPath("$.relays[1].url").value("wss://relay.two"));
+    }
+
+    /**
+     * A blank configured entry is dropped so an unset or empty env var never seeds a
+     * bogus relay URL.
+     */
+    @Test
+    void shouldExposeDefaultsEndpointAsArray() throws Exception {
+        mockMvc.perform(get("/api/v1/relays/defaults"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relays").isArray());
     }
 }

@@ -1,10 +1,13 @@
 package xyz.tcheeric.bottin.client.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import xyz.tcheeric.bottin.client.config.ClientProperties;
 
 import java.net.InetAddress;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +15,21 @@ import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/v1/relays")
+@RequiredArgsConstructor
 public class RelayController {
+
+    private final ClientProperties clientProperties;
+
+    @GetMapping("/defaults")
+    public ResponseEntity<Map<String, Object>> getDefaultRelays() {
+        List<Map<String, Object>> defaults = new ArrayList<>();
+        for (String url : clientProperties.getDefaultRelays()) {
+            if (url != null && !url.isBlank()) {
+                defaults.add(Map.of("url", url.trim(), "read", true, "write", true));
+            }
+        }
+        return ResponseEntity.ok(Map.of("relays", defaults));
+    }
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getRelays() {

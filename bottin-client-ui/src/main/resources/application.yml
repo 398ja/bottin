@@ -32,13 +32,5 @@ bottin:
   client:
     domain: bottin.example.com
     blossom-url: ${BOTTIN_BLOSSOM_URL:https://localhost:8888}
-    default-relays:
-      - url: wss://relay.damus.io
-        read: true
-        write: true
-      - url: wss://nos.lol
-        read: true
-        write: true
-      - url: wss://relay.nostr.band
-        read: true
-        write: false
+    # Comma-separated wss:// URLs seeded read+write for a user's initial relay list.
+    default-relays: ${BOTTIN_DEFAULT_RELAYS:}
