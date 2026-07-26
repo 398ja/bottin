@@ -15,11 +15,7 @@
                     <a th:href="@{/settings}" class="nav-dropdown-item">Settings</a>
                     <a class="nav-dropdown-item"
                        href="#"
-                       onclick="event.preventDefault();"
-                       hx-post="/api/v1/auth/logout"
-                       hx-confirm="This will clear your session."
-                       hx-target="body"
-                       hx-push-url="/login">Logout</a>
+                       onclick="event.preventDefault(); APP.logout();">Logout</a>
                 </div>
             </div>
         </div>

@@ -143,6 +143,18 @@ window.APP = {
                 }
             })
             .catch(function() { /* no session established: leave nav hidden */ });
+    },
+
+    // Ends the NAP session server-side, then performs a real navigation to the
+    // login page. The stored identity is retained on purpose: the private key
+    // is held encrypted, so the returning user can unlock with their passphrase.
+    // Logout ends the session; it does not forget the device.
+    logout: function() {
+        if (!window.confirm('This will clear your session.')) return;
+        var goToLogin = function() { window.location.href = '/login'; };
+        fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'same-origin' })
+            .then(goToLogin)
+            .catch(goToLogin);
     }
 };
 }
