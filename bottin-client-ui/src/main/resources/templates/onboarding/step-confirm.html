@@ -119,6 +119,9 @@
                 if (data.display_name) identity.displayName = data.display_name;
                 if (data.picture) identity.picture = data.picture;
                 if (data.banner) identity.banner = data.banner;
+                if (data.about) identity.about = data.about;
+                if (data.lud16) identity.lud16 = data.lud16;
+                if (data.website) identity.website = data.website;
                 if (data.username && data.domain) identity.nip05 = data.username + '@' + data.domain;
                 APP.saveIdentity(identity);
             } catch (e) {
