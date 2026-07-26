@@ -22,4 +22,11 @@ public class SettingsController {
         model.addAttribute("content", "settings/security");
         return "layout";
     }
+
+    @GetMapping("/relays")
+    public String relays(Model model) {
+        model.addAttribute("title", "Relays");
+        model.addAttribute("content", "settings/relays");
+        return "layout";
+    }
 }

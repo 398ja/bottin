@@ -29,4 +29,16 @@ class SettingsControllerTest {
                 .andExpect(view().name("layout"))
                 .andExpect(model().attribute("content", "settings/security"));
     }
+
+    /**
+     * The relays settings route renders through the shared layout so the client-side
+     * relay editor has a page to attach to.
+     */
+    @Test
+    void shouldShowRelaysPage() throws Exception {
+        mockMvc.perform(get("/settings/relays"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("layout"))
+                .andExpect(model().attribute("content", "settings/relays"));
+    }
 }
