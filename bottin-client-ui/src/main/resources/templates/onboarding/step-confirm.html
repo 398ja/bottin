@@ -100,6 +100,11 @@
                     return;
                 }
                 nsec = imported;
+            } else if (data.generatedNsec) {
+                // The profile step already minted a key to sign an image
+                // upload; reusing it keeps uploaded blobs owned by the same
+                // pubkey the identity is built from.
+                nsec = data.generatedNsec;
             } else {
                 if (typeof NostrTools === 'undefined') {
                     alert('Key generation library not loaded. Please refresh and try again.');
