@@ -27,6 +27,19 @@
             preview.classList.remove('hidden');
         }
 
+        // A failed pick restores the last settled src, but most fields start
+        // with none. Restoring nothing means clearing the src outright, or the
+        // preview keeps rendering the object URL the failure path just revoked.
+        function restorePreview(src) {
+            if (!preview) return;
+            if (src) {
+                setPreview(src);
+                return;
+            }
+            preview.removeAttribute('src');
+            preview.classList.add('hidden');
+        }
+
         // APP is a global loaded by app.js; guard it the way this file's own
         // IIFE guards window/module, so the field still works, minus toasts
         // and URL validation, wherever app.js was not loaded first.
@@ -99,7 +112,7 @@
                 })
                 .catch(function (err) {
                     releaseObjectUrl();
-                    if (preview && restoreSrc) preview.src = restoreSrc;
+                    restorePreview(restoreSrc);
                     input.value = '';
                     // A dismissed unlock prompt is a deliberate no-op, not a failure.
                     // app.js tags the cancellation error with this flag on purpose;

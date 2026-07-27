@@ -204,6 +204,35 @@ describe('ProfileImage.bind', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:pick-2');
   });
 
+  // Three of the four bound fields render with no src at all (the profile
+  // banner and both onboarding previews). A first upload that fails there has
+  // nothing to restore, so the preview must be cleared and re-hidden rather
+  // than left displaying the object URL the failure path just revoked.
+  it('clears the preview when a first upload fails and there was no prior image', async () => {
+    document.body.innerHTML =
+      '<img id="pic-preview" class="hidden">' +
+      '<input type="file" id="pic-input">' +
+      '<div class="form-error hidden" id="pic-error"></div>';
+    const input = document.getElementById('pic-input');
+    const preview = document.getElementById('pic-preview');
+    vi.spyOn(window.BlossomUpload, 'upload').mockRejectedValue(new Error('Upload rejected: HTTP 500'));
+    const toast = vi.spyOn(window.APP, 'showToast').mockImplementation(() => {});
+    ProfileImage.bind({
+      fileInputId: 'pic-input', previewId: 'pic-preview', errorId: 'pic-error',
+      blossomUrl: 'http://blossom.test',
+      resolveSigner: () => Promise.resolve(signer),
+      onUploaded: () => {},
+    });
+
+    selectFile(input, fakeFile('image/png', 10));
+    expect(preview.getAttribute('src')).toBe('blob:preview');
+
+    await vi.waitFor(() => expect(toast).toHaveBeenCalled());
+    expect(preview.getAttribute('src')).toBe(null);
+    expect(preview.classList.contains('hidden')).toBe(true);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
+  });
+
   // Binding a field the page does not render must not throw.
   it('is a no-op when the file input is absent', () => {
     document.body.innerHTML = '';
