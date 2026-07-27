@@ -13,11 +13,13 @@
     return hex;
   }
 
-  // Blossom addresses a blob by the SHA-256 of its bytes. The auth event is
-  // bound to the same hash, so a captured header cannot be reused.
+  // Blossom addresses a blob by the SHA-256 of its bytes, and the auth event
+  // is bound to that same hash so a captured header cannot be reused.
+  // The buffer is wrapped in a view before digesting: a no-op in a browser,
+  // but jsdom's SubtleCrypto rejects an ArrayBuffer built in another realm.
   function sha256Hex(file) {
     return file.arrayBuffer()
-      .then(function (buffer) { return crypto.subtle.digest('SHA-256', buffer); })
+      .then(function (buffer) { return crypto.subtle.digest('SHA-256', new Uint8Array(buffer)); })
       .then(function (digest) { return bytesToHex(new Uint8Array(digest)); });
   }
 

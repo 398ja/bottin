@@ -4,8 +4,8 @@ import Blossom from '../../main/resources/static/js/blossom.js';
 // A stand-in for a browser File: jsdom's File has no arrayBuffer(), and those
 // three members are all blossom.js ever reads.
 function fakeFile(type, size, bytes) {
-  const data = new Uint8Array(bytes || [1, 2, 3]);
-  return { type: type, size: size, arrayBuffer: () => Promise.resolve(data) };
+  const buffer = new Uint8Array(bytes || [1, 2, 3]).buffer;
+  return { type: type, size: size, arrayBuffer: () => Promise.resolve(buffer) };
 }
 
 function signer(unsigned) {
@@ -17,6 +17,11 @@ beforeEach(() => {
 });
 
 describe('rejectionReason', () => {
+  // A missing file is rejected with the same message as a non-image.
+  it('rejects a null file', () => {
+    expect(Blossom.rejectionReason(null)).toBe('Choose an image file.');
+  });
+
   // A JPEG under the cap is acceptable, so no reason is returned.
   it('accepts an image within the size cap', () => {
     expect(Blossom.rejectionReason(fakeFile('image/jpeg', 1024))).toBeNull();
