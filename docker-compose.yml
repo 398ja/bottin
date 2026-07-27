@@ -78,7 +78,10 @@ services:
       - BOTTIN_DEFAULT_RELAYS=${BOTTIN_DEFAULT_RELAYS:-ws://localhost:${BOTTIN_RELAY_PORT:-8086}}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/actuator/health"]
+      # This module has no actuator dependency, so /actuator/health 404s and the
+      # container never leaves "unhealthy". /login is a rendered page, so a 200
+      # also proves Thymeleaf and the servlet stack are up.
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/login"]
       interval: 30s
       timeout: 10s
       retries: 3
