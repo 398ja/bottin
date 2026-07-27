@@ -6,13 +6,15 @@ document.addEventListener('DOMContentLoaded', function () {
     var identity = userId ? APP.loadIdentity(userId) : null;
     if (!identity) return;
 
+    // Only the keys are used (to clear/show error divs below); picture and
+    // banner have no companion text-input id since they moved to file inputs.
     var fieldIds = {
-        display_name: 'profile-display-name',
-        about: 'profile-about',
-        picture: 'profile-picture',
-        banner: 'profile-banner',
-        lud16: 'profile-lud16',
-        website: 'profile-website'
+        display_name: null,
+        about: null,
+        picture: null,
+        banner: null,
+        lud16: null,
+        website: null
     };
 
     function el(id) { return document.getElementById(id); }
