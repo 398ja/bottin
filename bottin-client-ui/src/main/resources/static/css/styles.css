@@ -240,8 +240,9 @@ p {
 
 .card {
     background: var(--color-surface);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
     padding: 1.5rem;
     margin-bottom: 1rem;
 }
@@ -261,16 +262,62 @@ p {
     gap: 1rem;
     text-decoration: none;
     color: inherit;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow);
-    transition: box-shadow 0.2s, transform 0.15s;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, transform 0.15s, border-color 0.15s;
     cursor: pointer;
 }
 
 .card-clickable:hover {
     box-shadow: var(--shadow-lg);
+    border-color: var(--color-border-soft);
     transform: translateY(-1px);
     text-decoration: none;
+}
+
+/* Nested help callout — the SWR "Didn't receive the email?" pattern */
+.callout {
+    background: var(--color-border-soft);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+}
+
+.callout + .callout {
+    margin-top: 0.75rem;
+}
+
+.callout-title {
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 0.35rem;
+}
+
+.callout-body,
+.callout p {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.callout-info {
+    background: var(--color-primary-subtle);
+    border-color: transparent;
+}
+
+.callout-info .callout-title {
+    color: var(--color-primary-ink);
+}
+
+.callout-warning {
+    background: var(--color-warning-subtle);
+    border-color: transparent;
+}
+
+.callout-danger {
+    background: var(--color-danger-subtle);
+    border-color: transparent;
 }
 
 .card-clickable:active {
