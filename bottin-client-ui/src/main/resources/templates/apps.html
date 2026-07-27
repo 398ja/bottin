@@ -5,8 +5,8 @@
 </head>
 <body>
     <div th:fragment="content" class="container">
+        <div th:replace="~{fragments/page-header :: header('Apps', 'Connected Nostr applications')}"></div>
         <div class="card">
-            <h1 style="font-size: 1.25rem; margin-bottom: 1rem;">Apps</h1>
             <p class="text-secondary">Apps will appear here.</p>
         </div>
     </div>

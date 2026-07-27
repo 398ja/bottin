@@ -5,9 +5,8 @@
 </head>
 <body>
     <div th:fragment="content" class="container">
+        <div th:replace="~{fragments/page-header :: header('Search Profiles', 'Find people on Nostr by name or NIP-05')}"></div>
         <div class="card">
-            <h1 style="font-size: 1.25rem; margin-bottom: 1rem;">Search Profiles</h1>
-
             <div class="form-group">
                 <input type="text" id="search-input" class="form-input" placeholder="Search by name or display name..."
                        autofocus autocomplete="off">

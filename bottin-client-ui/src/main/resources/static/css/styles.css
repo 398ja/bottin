@@ -210,6 +210,15 @@ p {
     font-size: 0.95rem;
 }
 
+/* Section heading inside a card — replaces per-page inline font sizing */
+.card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-text);
+    margin-bottom: 1rem;
+}
+
 .breadcrumbs {
     display: flex;
     flex-wrap: wrap;

@@ -5,9 +5,10 @@
 </head>
 <body>
     <div th:fragment="content" class="container-narrow">
+        <div th:replace="~{fragments/page-header :: header('Profile', 'Your public Nostr identity')}"></div>
         <div class="card text-center mb-2">
             <img src="/img/default-avatar.svg" alt="" class="avatar-lg mb-2" id="profile-preview-avatar">
-            <h1 style="font-size: 1.25rem;" id="profile-preview-name">Your profile</h1>
+            <div style="font-size:1.25rem;font-weight:600;" id="profile-preview-name">Your profile</div>
             <div class="text-xs text-secondary mb-1" id="profile-nip05-display"></div>
             <div class="flex-center gap-sm">
                 <button class="btn btn-sm btn-outline" id="profile-npub-copy">Copy npub</button>
@@ -15,7 +16,7 @@
         </div>
 
         <div class="card">
-            <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">Edit Profile</h2>
+            <h2 class="card-title">Edit Profile</h2>
 
             <div class="form-group">
                 <label class="form-label">Display name</label>
