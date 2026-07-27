@@ -20,18 +20,80 @@ document.addEventListener('DOMContentLoaded', function () {
     // Populate form and read-only fields from stored identity.
     el('profile-display-name').value = identity.displayName || '';
     el('profile-about').value = identity.about || '';
-    el('profile-picture').value = identity.picture || '';
-    el('profile-banner').value = identity.banner || '';
     el('profile-lud16').value = identity.lud16 || '';
     el('profile-website').value = identity.website || '';
     el('profile-nip05').value = identity.nip05 || '';
+
+    var pictureUrl = APP.safeImageUrl(identity.picture);
+    if (pictureUrl) el('profile-preview-avatar').src = pictureUrl;
+
+    var bannerUrl = APP.safeImageUrl(identity.banner);
+    var bannerPreview = el('profile-preview-banner');
+    if (bannerUrl) {
+        bannerPreview.src = bannerUrl;
+        bannerPreview.classList.remove('hidden');
+    }
+
+    var blossomUrl = (document.getElementById('blossom-url') || {}).textContent || '';
+
+    // The unlock modal may already be open for another action; reuse the same
+    // resolver so both image fields and the save button share one prompt.
+    function resolveSigner() {
+        return APP.ensureUnlocked(userId).then(function (hexKey) {
+            return function (unsigned) {
+                return NostrCrypto.signEvent(unsigned, hexKey);
+            };
+        });
+    }
+
+    function storeImageUrl(field, url) {
+        identity[field] = url;
+        APP.saveIdentity(identity);
+    }
+
+    ProfileImage.bind({
+        fileInputId: 'profile-picture',
+        previewId: 'profile-preview-avatar',
+        errorId: 'profile-error-picture',
+        blossomUrl: blossomUrl.trim(),
+        resolveSigner: resolveSigner,
+        onUploaded: function (url) { storeImageUrl('picture', url); }
+    });
+
+    ProfileImage.bind({
+        fileInputId: 'profile-banner',
+        previewId: 'profile-preview-banner',
+        errorId: 'profile-error-banner',
+        blossomUrl: blossomUrl.trim(),
+        resolveSigner: resolveSigner,
+        onUploaded: function (url) { storeImageUrl('banner', url); }
+    });
+
+    // Removing clears the stored URL only; the blob stays on the media server,
+    // where the user can delete it with their own key.
+    function bindRemove(buttonId, field, previewId, defaultSrc) {
+        el(buttonId).addEventListener('click', function () {
+            storeImageUrl(field, '');
+            var preview = el(previewId);
+            if (defaultSrc) {
+                preview.src = defaultSrc;
+            } else {
+                preview.removeAttribute('src');
+                preview.classList.add('hidden');
+            }
+            el('profile-' + field).value = '';
+        });
+    }
+
+    bindRemove('profile-picture-remove', 'picture', 'profile-preview-avatar', '/img/default-avatar.svg');
+    bindRemove('profile-banner-remove', 'banner', 'profile-preview-banner', null);
 
     function readFields() {
         return {
             display_name: el('profile-display-name').value.trim(),
             about: el('profile-about').value.trim(),
-            picture: el('profile-picture').value.trim(),
-            banner: el('profile-banner').value.trim(),
+            picture: identity.picture || '',
+            banner: identity.banner || '',
             lud16: el('profile-lud16').value.trim(),
             website: el('profile-website').value.trim(),
             nip05: el('profile-nip05').value.trim()
@@ -67,8 +129,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // Persist locally first so change never lost if publishing fails.
         identity.displayName = fields.display_name;
         identity.about = fields.about;
-        identity.picture = fields.picture;
-        identity.banner = fields.banner;
         identity.lud16 = fields.lud16;
         identity.website = fields.website;
         APP.saveIdentity(identity);

@@ -19,7 +19,6 @@ public class ProfileController {
     public String ownProfile(Model model) {
         model.addAttribute("title", "My Profile");
         model.addAttribute("content", "profile");
-        model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
         return "layout";
     }
 
@@ -27,6 +26,7 @@ public class ProfileController {
     public String editOwnProfile(Model model) {
         model.addAttribute("title", "Edit Profile");
         model.addAttribute("content", "profile-edit");
+        model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
         return "layout";
     }
 
@@ -38,7 +38,6 @@ public class ProfileController {
         model.addAttribute("title", "Profile");
         model.addAttribute("content", "profile");
         model.addAttribute("profilePubkey", pubkey);
-        model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
         return "layout";
     }
 }
