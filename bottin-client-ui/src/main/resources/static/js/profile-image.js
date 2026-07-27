@@ -57,9 +57,11 @@
                     URL.revokeObjectURL(objectUrl);
                     if (preview && previousSrc) preview.src = previousSrc;
                     input.value = '';
-                    var message = err && err.message ? err.message : String(err);
                     // A dismissed unlock prompt is a deliberate no-op, not a failure.
-                    if (message === 'cancelled') return;
+                    // app.js tags the cancellation error with this flag on purpose;
+                    // match profile.js rather than comparing the message text.
+                    if (err && err.cancelled) return;
+                    var message = err && err.message ? err.message : String(err);
                     APP.showToast('Upload failed: ' + message, 'error');
                 });
         });

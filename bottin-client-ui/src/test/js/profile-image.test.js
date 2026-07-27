@@ -12,7 +12,7 @@ function fakeFile(type, size) {
 // Renders the three elements a bound field needs and returns them.
 function renderField() {
   document.body.innerHTML =
-    '<img id="pic-preview" src="/img/default-avatar.svg">' +
+    '<img id="pic-preview" class="hidden" src="/img/default-avatar.svg">' +
     '<input type="file" id="pic-input">' +
     '<div class="form-error hidden" id="pic-error"></div>';
   return {
@@ -55,6 +55,7 @@ describe('ProfileImage.bind', () => {
     expect(error.textContent).toBe('Choose an image file.');
     expect(error.className).toBe('form-error');
     expect(upload).not.toHaveBeenCalled();
+    expect(input.value).toBe('');
   });
 
   // A successful upload repoints the preview at the stored URL and reports it back.
@@ -71,6 +72,7 @@ describe('ProfileImage.bind', () => {
 
     selectFile(input, fakeFile('image/png', 10));
     expect(preview.getAttribute('src')).toBe('blob:preview');
+    expect(preview.classList.contains('hidden')).toBe(false);
 
     await vi.waitFor(() => expect(onUploaded).toHaveBeenCalledWith(UPLOADED));
     expect(preview.getAttribute('src')).toBe(UPLOADED);
@@ -96,6 +98,8 @@ describe('ProfileImage.bind', () => {
     expect(preview.getAttribute('src')).toBe('/img/default-avatar.svg');
     expect(onUploaded).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledWith('Upload failed: Upload rejected: HTTP 413', 'error');
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
+    expect(input.value).toBe('');
   });
 
   // Dismissing the unlock modal is a deliberate no-op, so it raises no toast.
@@ -105,7 +109,13 @@ describe('ProfileImage.bind', () => {
     ProfileImage.bind({
       fileInputId: 'pic-input', previewId: 'pic-preview', errorId: 'pic-error',
       blossomUrl: 'http://blossom.test',
-      resolveSigner: () => Promise.reject(new Error('cancelled')),
+      resolveSigner: () => {
+        // Message text deliberately does not say "cancelled": the production
+        // code must key off err.cancelled, not the message, to reach this branch.
+        const cancellation = new Error('unlock dismissed');
+        cancellation.cancelled = true;
+        return Promise.reject(cancellation);
+      },
       onUploaded: () => {},
     });
 
@@ -113,6 +123,7 @@ describe('ProfileImage.bind', () => {
 
     await vi.waitFor(() => expect(preview.getAttribute('src')).toBe('/img/default-avatar.svg'));
     expect(toast).not.toHaveBeenCalled();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
   });
 
   // Binding a field the page does not render must not throw.
