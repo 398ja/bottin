@@ -43,7 +43,11 @@
             var objectUrl = URL.createObjectURL(file);
             setPreview(objectUrl);
 
-            config.resolveSigner()
+            // Wrapped so a signer that throws synchronously (e.g. onboarding's
+            // nsec decode) rejects the chain instead of escaping it uncaught.
+            Promise.resolve().then(function () {
+                return config.resolveSigner();
+            })
                 .then(function (signer) {
                     return BlossomUpload.upload(file, config.blossomUrl, signer);
                 })

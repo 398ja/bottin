@@ -126,6 +126,29 @@ describe('ProfileImage.bind', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
   });
 
+  // The onboarding signer decodes the nsec synchronously and throws on a
+  // malformed one, before ever returning a promise. That throw must still
+  // land in the same revoke + restore + toast path as an async rejection.
+  it('recovers when resolveSigner throws synchronously', async () => {
+    const { input, preview } = renderField();
+    const toast = vi.spyOn(window.APP, 'showToast').mockImplementation(() => {});
+    const onUploaded = vi.fn();
+    ProfileImage.bind({
+      fileInputId: 'pic-input', previewId: 'pic-preview', errorId: 'pic-error',
+      blossomUrl: 'http://blossom.test',
+      resolveSigner: () => { throw new Error('bad nsec'); },
+      onUploaded: onUploaded,
+    });
+
+    selectFile(input, fakeFile('image/png', 10));
+
+    await vi.waitFor(() => expect(toast).toHaveBeenCalled());
+    expect(preview.getAttribute('src')).toBe('/img/default-avatar.svg');
+    expect(onUploaded).not.toHaveBeenCalled();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
+    expect(toast).toHaveBeenCalledWith('Upload failed: bad nsec', 'error');
+  });
+
   // Binding a field the page does not render must not throw.
   it('is a no-op when the file input is absent', () => {
     document.body.innerHTML = '';
