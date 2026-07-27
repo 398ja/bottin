@@ -1,6 +1,7 @@
 package xyz.tcheeric.bottin.client.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -11,10 +12,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import xyz.tcheeric.bottin.client.config.ClientProperties;
 
 import java.util.Map;
 
 @Controller
+@RequiredArgsConstructor
 public class OnboardingController {
 
     private static final Map<String, String> STEP_TITLES = Map.of(
@@ -24,6 +27,8 @@ public class OnboardingController {
             "confirm", "Review",
             "import", "Import Identity"
     );
+
+    private final ClientProperties clientProperties;
 
     @Value("${bottin.client.domain:bottin.example.com}")
     private String bottinDomain;
@@ -45,6 +50,7 @@ public class OnboardingController {
         model.addAttribute("title", "Profile Setup");
         model.addAttribute("content", "onboarding/step-profile");
         model.addAttribute("bottinDomain", bottinDomain);
+        model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
         return "layout";
     }
 
@@ -84,6 +90,7 @@ public class OnboardingController {
         model.addAttribute("content", "onboarding/step-" + step);
         if ("profile".equals(step)) {
             model.addAttribute("bottinDomain", bottinDomain);
+            model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
         }
         return "layout";
     }

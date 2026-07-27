@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(OnboardingController.class)
+@org.springframework.context.annotation.Import(xyz.tcheeric.bottin.client.config.ClientProperties.class)
+@org.springframework.test.context.TestPropertySource(properties = "bottin.client.blossom-url=http://blossom.test:8888")
 class OnboardingControllerTest {
 
     @Autowired
@@ -104,5 +106,27 @@ class OnboardingControllerTest {
         mockMvc.perform(get("/api/v1/resolve/" + longUsername))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.available").value(false));
+    }
+
+    /**
+     * The onboarding profile step uploads avatars before any account exists, so
+     * it needs the Blossom URL on the model just like the profile page.
+     */
+    @Test
+    void shouldExposeBlossomUrlOnTheProfileStep() throws Exception {
+        mockMvc.perform(get("/onboarding/step/profile"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("blossomUrl", "http://blossom.test:8888"));
+    }
+
+    /**
+     * The profile step is also reached by posting the method step, which renders
+     * the same template and therefore needs the same attribute.
+     */
+    @Test
+    void shouldExposeBlossomUrlWhenPostingTheMethodStep() throws Exception {
+        mockMvc.perform(post("/onboarding/step-method").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("blossomUrl", "http://blossom.test:8888"));
     }
 }

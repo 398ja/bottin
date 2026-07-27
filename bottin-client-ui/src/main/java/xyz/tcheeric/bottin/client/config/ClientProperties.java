@@ -9,10 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Client-side configuration bound from the {@code bottin.client} prefix. Only the
- * default relay set is consumed today; it is provided by the
- * {@code BOTTIN_DEFAULT_RELAYS} environment variable as a comma-separated list of
- * {@code wss://} URLs.
+ * Client-side configuration bound to the {@code bottin.client} prefix: the
+ * default relay set, provided by {@code BOTTIN_DEFAULT_RELAYS} as a
+ * comma-separated list of {@code wss://} URLs, and the Blossom media server
+ * the browser uploads profile images to, provided by {@code BOTTIN_BLOSSOM_URL}.
  */
 @Component
 @ConfigurationProperties(prefix = "bottin.client")
@@ -21,4 +21,5 @@ import java.util.List;
 public class ClientProperties {
 
     private List<String> defaultRelays = new ArrayList<>();
+    private String blossomUrl;
 }

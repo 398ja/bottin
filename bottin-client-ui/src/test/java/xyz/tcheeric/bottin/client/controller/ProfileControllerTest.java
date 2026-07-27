@@ -12,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @WebMvcTest(ProfileController.class)
+@org.springframework.context.annotation.Import(xyz.tcheeric.bottin.client.config.ClientProperties.class)
+@org.springframework.test.context.TestPropertySource(properties = "bottin.client.blossom-url=http://blossom.test:8888")
 class ProfileControllerTest {
 
     @Autowired
@@ -93,5 +95,16 @@ class ProfileControllerTest {
                 .andExpect(content().string(containsString("id=\"profile-lud16\"")))
                 .andExpect(content().string(containsString("id=\"profile-website\"")))
                 .andExpect(content().string(containsString("id=\"profile-save-btn\"")));
+    }
+
+    /**
+     * The profile page uploads images straight to the Blossom server, so the
+     * configured URL has to reach the template.
+     */
+    @Test
+    void shouldExposeBlossomUrlToTheProfilePage() throws Exception {
+        mockMvc.perform(get("/profile"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("blossomUrl", "http://blossom.test:8888"));
     }
 }

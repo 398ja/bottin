@@ -1,19 +1,25 @@
 package xyz.tcheeric.bottin.client.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import xyz.tcheeric.bottin.client.config.ClientProperties;
 
 @Controller
 @RequestMapping("/profile")
+@RequiredArgsConstructor
 public class ProfileController {
+
+    private final ClientProperties clientProperties;
 
     @GetMapping
     public String ownProfile(Model model) {
         model.addAttribute("title", "My Profile");
         model.addAttribute("content", "profile");
+        model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
         return "layout";
     }
 
@@ -32,6 +38,7 @@ public class ProfileController {
         model.addAttribute("title", "Profile");
         model.addAttribute("content", "profile");
         model.addAttribute("profilePubkey", pubkey);
+        model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
         return "layout";
     }
 }
