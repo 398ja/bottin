@@ -124,6 +124,7 @@ class ProfileControllerTest {
                 .andExpect(content().string(containsString("id=\"profile-preview-banner\"")))
                 .andExpect(content().string(containsString("id=\"profile-picture-remove\"")))
                 .andExpect(content().string(containsString("id=\"profile-banner-remove\"")))
-                .andExpect(content().string(containsString("id=\"blossom-url\"")));
+                .andExpect(content().string(containsString("id=\"blossom-url\"")))
+                .andExpect(content().string(containsString("http://blossom.test:8888")));
     }
 }
