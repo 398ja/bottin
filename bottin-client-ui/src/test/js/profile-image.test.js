@@ -147,6 +147,29 @@ describe('ProfileImage.bind', () => {
     expect(toast).toHaveBeenCalledWith('Upload failed: bad nsec', 'error');
   });
 
+  // Blossom's response is a string from a third-party server, not one the
+  // user typed, so it must pass the same scheme check as every other image
+  // sink (APP.safeImageUrl) before it is trusted as a preview/src source.
+  it('treats an unsafe returned URL as an upload failure', async () => {
+    const { input, preview } = renderField();
+    vi.spyOn(window.BlossomUpload, 'upload').mockResolvedValue({ url: 'javascript:alert(1)' });
+    const onUploaded = vi.fn();
+    const toast = vi.spyOn(window.APP, 'showToast').mockImplementation(() => {});
+    ProfileImage.bind({
+      fileInputId: 'pic-input', previewId: 'pic-preview', errorId: 'pic-error',
+      blossomUrl: 'http://blossom.test',
+      resolveSigner: () => Promise.resolve(signer),
+      onUploaded: onUploaded,
+    });
+
+    selectFile(input, fakeFile('image/png', 10));
+
+    await vi.waitFor(() => expect(toast).toHaveBeenCalled());
+    expect(preview.getAttribute('src')).toBe('/img/default-avatar.svg');
+    expect(onUploaded).not.toHaveBeenCalled();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
+  });
+
   // Binding a field the page does not render must not throw.
   it('is a no-op when the file input is absent', () => {
     document.body.innerHTML = '';

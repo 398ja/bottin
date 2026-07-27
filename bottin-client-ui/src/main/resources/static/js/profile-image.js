@@ -27,6 +27,24 @@
             preview.classList.remove('hidden');
         }
 
+        // APP is a global loaded by app.js; guard it the way this file's own
+        // IIFE guards window/module, so the field still works, minus toasts
+        // and URL validation, wherever app.js was not loaded first.
+        function hasApp() {
+            return typeof APP !== 'undefined' && !!APP;
+        }
+
+        // Blossom's response is a string a third-party server returned, not one
+        // the user typed, so it gets the same scheme check every other image
+        // sink applies before it is trusted as a src.
+        function validatedUrl(url) {
+            return hasApp() && APP.safeImageUrl ? APP.safeImageUrl(url) : url;
+        }
+
+        function toast(message, type) {
+            if (hasApp() && APP.showToast) APP.showToast(message, type);
+        }
+
         input.addEventListener('change', function () {
             var file = input.files && input.files[0];
             if (!file) return;
@@ -52,10 +70,12 @@
                     return BlossomUpload.upload(file, config.blossomUrl, signer);
                 })
                 .then(function (blob) {
+                    var safeUrl = validatedUrl(blob.url);
+                    if (!safeUrl) throw new Error('Upload returned an unusable URL.');
                     URL.revokeObjectURL(objectUrl);
-                    setPreview(blob.url);
-                    config.onUploaded(blob.url);
-                    APP.showToast('Image uploaded', 'success');
+                    setPreview(safeUrl);
+                    config.onUploaded(safeUrl);
+                    toast('Image uploaded', 'success');
                 })
                 .catch(function (err) {
                     URL.revokeObjectURL(objectUrl);
@@ -66,7 +86,7 @@
                     // match profile.js rather than comparing the message text.
                     if (err && err.cancelled) return;
                     var message = err && err.message ? err.message : String(err);
-                    APP.showToast('Upload failed: ' + message, 'error');
+                    toast('Upload failed: ' + message, 'error');
                 });
         });
     }
