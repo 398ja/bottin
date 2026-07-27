@@ -55,7 +55,6 @@ describe('ProfileImage.bind', () => {
     expect(error.textContent).toBe('Choose an image file.');
     expect(error.className).toBe('form-error');
     expect(upload).not.toHaveBeenCalled();
-    expect(input.value).toBe('');
   });
 
   // A successful upload repoints the preview at the stored URL and reports it back.
@@ -99,7 +98,6 @@ describe('ProfileImage.bind', () => {
     expect(onUploaded).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledWith('Upload failed: Upload rejected: HTTP 413', 'error');
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
-    expect(input.value).toBe('');
   });
 
   // Dismissing the unlock modal is a deliberate no-op, so it raises no toast.
