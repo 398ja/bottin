@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -128,5 +129,22 @@ class OnboardingControllerTest {
         mockMvc.perform(post("/onboarding/step-method").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("blossomUrl", "http://blossom.test:8888"));
+    }
+
+    /**
+     * The onboarding profile step now takes images from the device, so it must
+     * render file pickers, the hidden fields the uploaded URLs land in, and the
+     * Blossom URL the uploader reads.
+     */
+    @Test
+    void shouldRenderImageFilePickersOnTheProfileStep() throws Exception {
+        mockMvc.perform(get("/onboarding/step/profile"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"onboarding-picture-file\"")))
+                .andExpect(content().string(containsString("id=\"onboarding-banner-file\"")))
+                .andExpect(content().string(containsString("name=\"picture\"")))
+                .andExpect(content().string(containsString("name=\"banner\"")))
+                .andExpect(content().string(containsString("id=\"blossom-url\"")))
+                .andExpect(content().string(containsString("http://blossom.test:8888")));
     }
 }
