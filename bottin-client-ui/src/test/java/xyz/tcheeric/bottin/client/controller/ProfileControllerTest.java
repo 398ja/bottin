@@ -98,13 +98,32 @@ class ProfileControllerTest {
     }
 
     /**
-     * The profile page uploads images straight to the Blossom server, so the
-     * configured URL has to reach the template.
+     * The edit page uploads images straight to the Blossom server, so the
+     * configured URL has to reach that template. The read-only profile view
+     * never uploads, so it carries no such attribute.
      */
     @Test
-    void shouldExposeBlossomUrlToTheProfilePage() throws Exception {
-        mockMvc.perform(get("/profile"))
+    void shouldExposeBlossomUrlToTheProfileEditPage() throws Exception {
+        mockMvc.perform(get("/profile/edit"))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("blossomUrl", "http://blossom.test:8888"));
+    }
+
+    /**
+     * Avatar and banner are chosen from the device now, so the page must render
+     * file inputs and the Blossom URL the uploader reads, not URL text boxes.
+     */
+    @Test
+    void shouldRenderImageFilePickersAndBlossomUrl() throws Exception {
+        mockMvc.perform(get("/profile/edit"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("blossomUrl", "http://blossom.test:8888"))
+                .andExpect(content().string(containsString("id=\"profile-picture\" type=\"file\"")))
+                .andExpect(content().string(containsString("id=\"profile-banner\" type=\"file\"")))
+                .andExpect(content().string(containsString("id=\"profile-preview-avatar\"")))
+                .andExpect(content().string(containsString("id=\"profile-preview-banner\"")))
+                .andExpect(content().string(containsString("id=\"profile-picture-remove\"")))
+                .andExpect(content().string(containsString("id=\"profile-banner-remove\"")))
+                .andExpect(content().string(containsString("id=\"blossom-url\"")));
     }
 }
