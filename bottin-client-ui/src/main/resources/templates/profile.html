@@ -6,66 +6,30 @@
 <body>
     <div th:fragment="content" class="container-narrow">
         <div th:replace="~{fragments/page-header :: header('Profile', 'Your public Nostr identity')}"></div>
-        <div class="card text-center mb-2">
-            <img src="/img/default-avatar.svg" alt="" class="avatar-lg mb-2" id="profile-preview-avatar">
-            <div style="font-size:1.25rem;font-weight:600;" id="profile-preview-name">Your profile</div>
-            <div class="text-xs text-secondary mb-1" id="profile-nip05-display"></div>
-            <div class="flex-center gap-sm">
-                <button class="btn btn-sm btn-outline" id="profile-npub-copy">Copy npub</button>
-            </div>
-        </div>
-
         <div class="card">
-            <h2 class="card-title">Edit Profile</h2>
-
-            <div class="form-group">
-                <label class="form-label">Display name</label>
-                <input type="text" id="profile-display-name" class="form-input">
-                <div class="form-error hidden" id="profile-error-display-name"></div>
+            <img src="" alt="" class="profile-banner hidden" id="profile-banner-image">
+            <div class="text-center">
+                <img src="/img/default-avatar.svg" alt="" class="avatar-lg mb-2" id="profile-avatar">
+                <div style="font-size:1.25rem;font-weight:600;" id="profile-name">Your profile</div>
+                <div class="text-xs text-secondary form-input-mono" id="profile-nip05"></div>
+                <p class="mt-2 text-pretty hidden" id="profile-about"></p>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">About</label>
-                <textarea id="profile-about" class="form-input" rows="3"></textarea>
-            </div>
+            <dl class="profile-details">
+                <div class="profile-detail hidden" id="profile-website-row">
+                    <dt class="eyebrow">Website</dt>
+                    <dd><a href="#" id="profile-website" rel="noopener noreferrer"></a></dd>
+                </div>
+                <div class="profile-detail hidden" id="profile-lud16-row">
+                    <dt class="eyebrow">Lightning</dt>
+                    <dd id="profile-lud16"></dd>
+                </div>
+            </dl>
 
-            <div class="form-group">
-                <label class="form-label">Picture URL</label>
-                <input type="text" id="profile-picture" class="form-input" placeholder="https://...">
-                <div class="form-error hidden" id="profile-error-picture"></div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Banner URL</label>
-                <input type="text" id="profile-banner" class="form-input" placeholder="https://...">
-                <div class="form-error hidden" id="profile-error-banner"></div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Lightning (lud16)</label>
-                <input type="text" id="profile-lud16" class="form-input" placeholder="name@domain">
-                <div class="form-error hidden" id="profile-error-lud16"></div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Website</label>
-                <input type="text" id="profile-website" class="form-input" placeholder="https://...">
-                <div class="form-error hidden" id="profile-error-website"></div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">NIP-05 (read-only)</label>
-                <input type="text" id="profile-nip05" class="form-input" readonly>
-            </div>
-
-            <input type="hidden" id="profile-npub">
-
-            <button class="btn btn-primary btn-full" id="profile-save-btn">Save &amp; Publish</button>
+            <a href="/profile/edit" class="btn btn-outline btn-full mt-3">Edit profile</a>
         </div>
     </div>
 
-    <script src="/js/nostr-publish.js" defer></script>
-    <script src="/js/nostr-validate.js" defer></script>
-    <script src="/js/profile.js" defer></script>
+    <script src="/js/profile-view.js" defer></script>
 </body>
 </html>

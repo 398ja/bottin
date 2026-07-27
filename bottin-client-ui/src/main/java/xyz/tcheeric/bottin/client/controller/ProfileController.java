@@ -17,6 +17,13 @@ public class ProfileController {
         return "layout";
     }
 
+    @GetMapping("/edit")
+    public String editOwnProfile(Model model) {
+        model.addAttribute("title", "Edit Profile");
+        model.addAttribute("content", "profile-edit");
+        return "layout";
+    }
+
     @GetMapping("/{pubkey}")
     public String userProfile(@PathVariable String pubkey, Model model) {
         if (pubkey == null || !pubkey.matches("[0-9a-f]{64}")) {

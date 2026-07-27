@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Edit Profile</title>
+</head>
+<body>
+    <div th:fragment="content" class="container-narrow">
+        <div th:replace="~{fragments/page-header :: headerUnder('Profile', '/profile', 'Edit', 'Update and publish your public profile')}"></div>
+
+        <div class="card">
+            <div class="form-group">
+                <label class="form-label">Display name</label>
+                <input type="text" id="profile-display-name" class="form-input">
+                <div class="form-error hidden" id="profile-error-display-name"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">About</label>
+                <textarea id="profile-about" class="form-input" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Picture URL</label>
+                <input type="text" id="profile-picture" class="form-input" placeholder="https://...">
+                <div class="form-error hidden" id="profile-error-picture"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Banner URL</label>
+                <input type="text" id="profile-banner" class="form-input" placeholder="https://...">
+                <div class="form-error hidden" id="profile-error-banner"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Lightning (lud16)</label>
+                <input type="text" id="profile-lud16" class="form-input" placeholder="name@domain">
+                <div class="form-error hidden" id="profile-error-lud16"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Website</label>
+                <input type="text" id="profile-website" class="form-input" placeholder="https://...">
+                <div class="form-error hidden" id="profile-error-website"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">NIP-05 (read-only)</label>
+                <input type="text" id="profile-nip05" class="form-input form-input-mono" readonly>
+            </div>
+
+            <button class="btn btn-primary btn-full" id="profile-save-btn">Save &amp; Publish</button>
+            <a href="/profile" class="btn btn-outline btn-full mt-2">&lsaquo; Back to profile</a>
+        </div>
+    </div>
+
+    <script src="/js/nostr-publish.js" defer></script>
+    <script src="/js/nostr-validate.js" defer></script>
+    <script src="/js/profile.js" defer></script>
+</body>
+</html>

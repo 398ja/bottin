@@ -25,23 +25,6 @@ document.addEventListener('DOMContentLoaded', function () {
     el('profile-lud16').value = identity.lud16 || '';
     el('profile-website').value = identity.website || '';
     el('profile-nip05').value = identity.nip05 || '';
-    el('profile-npub').value = identity.npub || '';
-    el('profile-preview-name').textContent = identity.displayName || identity.npub || '';
-    el('profile-nip05-display').textContent = identity.nip05 || '';
-
-    var pictureUrl = APP.safeImageUrl(identity.picture);
-    var avatar = el('profile-preview-avatar');
-    avatar.onerror = function () { this.src = '/img/default-avatar.svg'; };
-    if (pictureUrl) avatar.src = pictureUrl;
-
-    el('profile-npub-copy').addEventListener('click', function () {
-        var npub = el('profile-npub').value;
-        if (!npub) return;
-        var btn = this;
-        navigator.clipboard.writeText(npub);
-        btn.textContent = 'Copied!';
-        setTimeout(function () { btn.textContent = 'Copy npub'; }, 2000);
-    });
 
     function readFields() {
         return {
