@@ -2,7 +2,10 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
     <nav th:fragment="nav" class="nav">
-        <a th:href="@{/}" class="nav-brand">Bottin</a>
+        <a th:href="@{/}" class="nav-brand">
+            <span class="nav-brand-mark">Bottin</span>
+            <span class="nav-brand-sub">nostr directory</span>
+        </a>
         <div class="nav-spacer"></div>
         <div id="nav-authed" class="hidden">
             <a th:href="@{/search}" class="nav-link">Search</a>

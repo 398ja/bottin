@@ -414,22 +414,38 @@ textarea.form-input {
 .nav {
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
-    padding: 0 1rem;
+    padding: 0 1.5rem;
     height: 56px;
     display: flex;
     align-items: center;
     gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 50;
 }
 
 .nav-brand {
-    font-weight: 700;
-    font-size: 1.125rem;
-    color: var(--color-text);
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
     text-decoration: none;
 }
 
 .nav-brand:hover {
     text-decoration: none;
+}
+
+.nav-brand-mark {
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text);
+}
+
+.nav-brand-sub {
+    font-size: 0.78rem;
+    color: var(--color-faint);
 }
 
 .nav-spacer {
@@ -446,7 +462,8 @@ textarea.form-input {
 }
 
 .nav-link:hover {
-    background: var(--color-bg);
+    background: var(--color-border-soft);
+    color: var(--color-text);
     text-decoration: none;
 }
 
@@ -455,7 +472,7 @@ textarea.form-input {
     height: 32px;
     border-radius: 50%;
     object-fit: cover;
-    box-shadow: 0 0 0 1px oklch(0 0 0 / 0.08);
+    box-shadow: 0 0 0 1px var(--color-border);
 }
 
 .skeleton {
@@ -568,7 +585,7 @@ textarea.form-input {
     height: 64px;
     border-radius: 50%;
     object-fit: cover;
-    box-shadow: 0 0 0 1px oklch(0 0 0 / 0.08);
+    box-shadow: 0 0 0 1px var(--color-border);
 }
 
 .avatar-sm {
@@ -576,7 +593,7 @@ textarea.form-input {
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
-    box-shadow: 0 0 0 1px oklch(0 0 0 / 0.08);
+    box-shadow: 0 0 0 1px var(--color-border);
 }
 
 .avatar-lg {
@@ -584,7 +601,7 @@ textarea.form-input {
     height: 96px;
     border-radius: 50%;
     object-fit: cover;
-    box-shadow: 0 0 0 1px oklch(0 0 0 / 0.08);
+    box-shadow: 0 0 0 1px var(--color-border);
 }
 
 .search-result {
@@ -796,6 +813,9 @@ textarea.form-input {
     .nav {
         padding: 0 0.75rem;
     }
+    .nav-brand-sub {
+        display: none;
+    }
 }
 
 .nav-dropdown {
@@ -820,7 +840,7 @@ textarea.form-input {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
-    box-shadow: 0 4px 12px oklch(0 0 0 / 0.12);
+    box-shadow: var(--shadow-lg);
     z-index: 100;
     overflow: hidden;
 }
@@ -840,7 +860,7 @@ textarea.form-input {
 }
 
 .nav-dropdown-item:hover {
-    background: var(--color-bg);
+    background: var(--color-border-soft);
     text-decoration: none;
 }
 
