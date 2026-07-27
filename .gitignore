@@ -55,3 +55,7 @@ logs/
 /.playwright-mcp/
 /.opencode/
 /.specify/
+
+# graphify knowledge graph (regenerated locally)
+graphify-out/
+graph.json
