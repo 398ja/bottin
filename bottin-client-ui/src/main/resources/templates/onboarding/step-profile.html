@@ -55,13 +55,23 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Avatar URL</label>
-                    <input type="url" name="picture" class="form-input" placeholder="https://example.com/avatar.png">
+                    <label class="form-label">Avatar</label>
+                    <img id="onboarding-preview-picture" class="hidden avatar-lg" alt=""
+                         style="display:block;margin-bottom:0.5rem;">
+                    <input id="onboarding-picture-file" type="file" accept="image/*" class="form-input">
+                    <input type="hidden" name="picture">
+                    <div class="form-hint">Uploaded to your media server. Up to 5 MB.</div>
+                    <div class="form-error hidden" id="onboarding-error-picture"></div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Banner URL</label>
-                    <input type="url" name="banner" class="form-input" placeholder="https://example.com/banner.png">
+                    <label class="form-label">Banner</label>
+                    <img id="onboarding-preview-banner" class="hidden" alt=""
+                         style="width:100%;max-height:120px;object-fit:cover;border-radius:var(--radius);margin-bottom:0.5rem;">
+                    <input id="onboarding-banner-file" type="file" accept="image/*" class="form-input">
+                    <input type="hidden" name="banner">
+                    <div class="form-hint">Shown at the top of your profile. Up to 5 MB.</div>
+                    <div class="form-error hidden" id="onboarding-error-banner"></div>
                 </div>
 
                 <div class="form-group">
@@ -82,8 +92,12 @@
                 </div>
             </form>
         </div>
+
+        <span id="blossom-url" th:text="${blossomUrl}" hidden></span>
     </div>
 
+    <script src="/js/blossom.js"></script>
+    <script src="/js/profile-image.js"></script>
     <script>
         function saveProfileData() {
             var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
@@ -93,6 +107,37 @@
                 }
             });
             sessionStorage.setItem('onboarding-data', JSON.stringify(data));
+        }
+
+        // Uploads must be signed, but on the "generate new key" path no key
+        // exists until the confirm step. The key is therefore minted here on
+        // first use and stashed as generatedNsec; the confirm step adopts it
+        // so the identity is built from that very key.
+        function resolveOnboardingSigner() {
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            var nsec;
+            if (data.method === 'import') {
+                nsec = (data.nsec || '').trim();
+                if (!nsec) {
+                    return Promise.reject(new Error('Enter your nsec on the previous step first.'));
+                }
+            } else {
+                nsec = data.generatedNsec;
+                if (!nsec) {
+                    nsec = NostrTools.nip19.nsecEncode(NostrTools.generateSecretKey());
+                    data.generatedNsec = nsec;
+                    sessionStorage.setItem('onboarding-data', JSON.stringify(data));
+                }
+            }
+            var hexKey = NostrCrypto.nsecToHex(nsec);
+            return Promise.resolve(function(unsigned) {
+                return NostrCrypto.signEvent(unsigned, hexKey);
+            });
+        }
+
+        function storeUploadedUrl(field, url) {
+            document.querySelector('[name="' + field + '"]').value = url;
+            saveProfileData();
         }
 
         (function() {
@@ -106,6 +151,25 @@
                 if (el.name !== 'method' && el.name !== 'nsec' && data[el.name]) {
                     el.value = data[el.name];
                 }
+            });
+            ['picture', 'banner'].forEach(function(field) {
+                var img = document.getElementById('onboarding-preview-' + field);
+                if (img && data[field]) {
+                    img.src = data[field];
+                    img.classList.remove('hidden');
+                }
+            });
+
+            var blossomUrl = ((document.getElementById('blossom-url') || {}).textContent || '').trim();
+            ['picture', 'banner'].forEach(function(field) {
+                ProfileImage.bind({
+                    fileInputId: 'onboarding-' + field + '-file',
+                    previewId: 'onboarding-preview-' + field,
+                    errorId: 'onboarding-error-' + field,
+                    blossomUrl: blossomUrl,
+                    resolveSigner: resolveOnboardingSigner,
+                    onUploaded: function(url) { storeUploadedUrl(field, url); }
+                });
             });
         })();
     </script>
