@@ -195,7 +195,13 @@ window.APP = {
                         error.className = 'form-error mt-1';
                     });
             };
-            cancelBtn.onclick = function() { cleanup(); reject(new Error('cancelled')); };
+            cancelBtn.onclick = function() {
+                cleanup();
+                // Tagged so callers can tell a deliberate cancellation from a failure.
+                var cancellation = new Error('cancelled');
+                cancellation.cancelled = true;
+                reject(cancellation);
+            };
         });
     },
 

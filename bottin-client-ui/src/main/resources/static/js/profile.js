@@ -112,6 +112,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }).catch(function (err) {
+            // Cancelling the unlock is a deliberate no-op: the local save is retained.
+            if (err && err.cancelled) return;
             APP.showToast('Publish failed: ' + (err && err.message ? err.message : err), 'error');
         });
     });
