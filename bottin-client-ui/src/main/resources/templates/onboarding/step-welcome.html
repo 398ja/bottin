@@ -7,12 +7,12 @@
     <div th:fragment="content" class="container-narrow">
         <div class="card text-center">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🎉</div>
-            <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Your Nostr Identity is Ready!</h1>
+            <h1 class="page-title" style="margin-bottom: 0.5rem;">Your Nostr Identity is Ready!</h1>
             <p class="text-secondary text-sm mb-3">
                 Your key has been generated and encrypted locally. Save your backup key below.
             </p>
 
-            <div class="card card-warning" style="text-align: left;">
+            <div class="callout callout-warning" style="text-align: left;">
                 <strong class="text-sm">Your Backup Key (nsec)</strong>
                 <p class="text-2xs" style="color: var(--color-warning); margin-bottom: 0.5rem;">
                     This is the only way to recover your identity. Save it somewhere safe.
