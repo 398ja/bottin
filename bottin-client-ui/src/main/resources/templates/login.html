@@ -5,9 +5,8 @@
 </head>
 <body>
     <div th:fragment="content" class="container-narrow">
-        <div class="card mt-3">
-            <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Sign In</h1>
-
+        <div th:replace="~{fragments/page-header :: header('Sign In', 'Access your Nostr identity')}"></div>
+        <div class="card">
             <div id="unlock-form" class="hidden">
                 <div style="text-align: center; margin-bottom: 1rem;">
                     <div id="recognition-banner"
