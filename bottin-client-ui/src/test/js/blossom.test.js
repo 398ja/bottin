@@ -133,4 +133,25 @@ describe('upload', () => {
       .rejects.toThrow('Image must be 5 MB or smaller.');
     expect(global.fetch).not.toHaveBeenCalled();
   });
+
+  // The auth event's `x` tag is the security-load-bearing seam: it must be the
+  // SHA-256 of the exact bytes sent as the request body, not just some hash.
+  // sha256Hex and buildAuthEvent each pass in isolation; this proves they are
+  // actually wired together correctly on the upload path.
+  it('binds the auth event x tag to the SHA-256 of the uploaded body', async () => {
+    global.fetch = vi.fn(() => Promise.resolve({
+      ok: true, status: 201, headers: { get: () => null }, json: () => Promise.resolve({}),
+    }));
+
+    const file = fakeFile('image/png', 3, [1, 2, 3]);
+    await Blossom.upload(file, 'http://blossom.test', signer);
+
+    const [, init] = global.fetch.mock.calls[0];
+    const header = init.headers.Authorization;
+    const signedEvent = JSON.parse(atob(header.slice('Nostr '.length)));
+    const xTag = signedEvent.tags.find((t) => t[0] === 'x')[1];
+    const actualBodyHash = await Blossom.sha256Hex(init.body);
+
+    expect(xTag).toBe(actualBodyHash);
+  });
 });
