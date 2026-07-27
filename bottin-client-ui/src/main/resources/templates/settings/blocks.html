@@ -5,7 +5,7 @@
 </head>
 <body>
     <div th:fragment="content" class="container" style="max-width: 480px;">
-        <h1 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Blocked Users</h1>
+        <div th:replace="~{fragments/page-header :: headerUnder('Settings', '/settings', 'Blocked Users', 'People you have blocked')}"></div>
 
         <div class="card">
             <div class="empty-state">

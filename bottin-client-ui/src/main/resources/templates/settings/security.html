@@ -5,10 +5,10 @@
 </head>
 <body>
     <div th:fragment="content" class="container-narrow">
-        <h1 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Security Settings</h1>
+        <div th:replace="~{fragments/page-header :: headerUnder('Settings', '/settings', 'Security', 'Manage your passphrase and identity export')}"></div>
 
         <div class="card">
-            <h2 style="font-size: 1.125rem; margin-bottom: 1rem;">Change Passphrase</h2>
+            <h2 class="card-title">Change Passphrase</h2>
 
             <div class="form-group">
                 <label class="form-label">Current Passphrase</label>
@@ -36,10 +36,10 @@
         </div>
 
         <div class="card mt-2">
-            <h2 style="font-size: 1.125rem; margin-bottom: 1rem;">Export Identity</h2>
-            <p class="text-secondary text-sm mb-2">
-                Reveal your nsec private key. You will need to enter your passphrase to confirm.
-            </p>
+            <h2 class="card-title">Export Identity</h2>
+            <div class="callout callout-warning mb-2">
+                <p>Reveal your nsec private key. Anyone with your nsec has full control of your identity — never share it. You will need to enter your passphrase to confirm.</p>
+            </div>
             <button class="btn btn-outline btn-full" onclick="showNsecModal()">
                 Reveal nsec
             </button>

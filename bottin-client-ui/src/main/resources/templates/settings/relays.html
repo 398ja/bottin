@@ -5,10 +5,10 @@
 </head>
 <body>
     <div th:fragment="content" class="container" style="max-width: 600px;">
-        <h1 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Relay Management</h1>
+        <div th:replace="~{fragments/page-header :: headerUnder('Settings', '/settings', 'Relays', 'Manage your Nostr relay connections')}"></div>
 
         <div class="card">
-            <h2 style="font-size: 1.125rem; margin-bottom: 0.75rem;">Read Relays</h2>
+            <h2 class="card-title">Read Relays</h2>
             <div id="read-relays">
                 <div class="empty-state" style="padding: 1rem;">
                     <p style="font-size: 0.875rem;">No read relays configured</p>
@@ -17,7 +17,7 @@
         </div>
 
         <div class="card" style="margin-top: 1rem;">
-            <h2 style="font-size: 1.125rem; margin-bottom: 0.75rem;">Write Relays</h2>
+            <h2 class="card-title">Write Relays</h2>
             <div id="write-relays">
                 <div class="empty-state" style="padding: 1rem;">
                     <p style="font-size: 0.875rem;">No write relays configured</p>
@@ -26,7 +26,7 @@
         </div>
 
         <div class="card" style="margin-top: 1rem;">
-            <h2 style="font-size: 1.125rem; margin-bottom: 0.75rem;">Add Relay</h2>
+            <h2 class="card-title">Add Relay</h2>
             <div class="form-group">
                 <label class="form-label">Relay URL</label>
                 <input type="text" id="relay-url" class="form-input" placeholder="wss://relay.example.com">
