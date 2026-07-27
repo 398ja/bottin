@@ -96,18 +96,23 @@ window.APP = {
         localStorage.setItem(this.relaysKey(userId), JSON.stringify(relays));
     },
 
-    // Seeds the relay list from the server-configured defaults on first use only.
-    // A stored list is authoritative and is returned untouched.
+    // Seeds the relay list from the server-configured defaults whenever the stored
+    // list has no write relay, so an identity with no NIP-65 list still publishes.
+    // Stored entries are kept; a default is added only when its URL is not listed.
     ensureRelaysSeeded: function(userId) {
         var existing = this.loadRelays(userId);
-        if (existing.length) return Promise.resolve(existing);
+        if (existing.some(function(r) { return r.write; })) return Promise.resolve(existing);
         var self = this;
         return fetch('/api/v1/relays/defaults', { credentials: 'same-origin' })
-            .then(function(r) { return r.json(); })
+            .then(function(r) { return r.ok ? r.json() : null; })
             .then(function(data) {
-                var relays = (data && data.relays) || [];
-                self.saveRelays(userId, relays);
-                return relays;
+                var missing = ((data && data.relays) || []).filter(function(d) {
+                    return !existing.some(function(r) { return r.url === d.url; });
+                });
+                if (!missing.length) return existing;
+                var merged = existing.concat(missing);
+                self.saveRelays(userId, merged);
+                return merged;
             });
     },
 
