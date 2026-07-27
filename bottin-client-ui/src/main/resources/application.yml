@@ -31,6 +31,6 @@ nap:
 bottin:
   client:
     domain: bottin.example.com
-    blossom-url: ${BOTTIN_BLOSSOM_URL:https://localhost:8888}
+    blossom-url: ${BOTTIN_BLOSSOM_URL:http://localhost:8888}
     # Comma-separated wss:// URLs seeded read+write for a user's initial relay list.
     default-relays: ${BOTTIN_DEFAULT_RELAYS:}
