@@ -170,6 +170,40 @@ describe('ProfileImage.bind', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
   });
 
+  // Picking a second file while the first upload is still in flight must not
+  // capture the first pick's live blob: URL as the restore target (it may
+  // already be revoked by the time the second upload fails), and the first
+  // pick's object URL must be revoked rather than left leaked.
+  it('recovers cleanly when a second pick starts before the first upload settles', async () => {
+    const { input, preview } = renderField();
+    let created = 0;
+    URL.createObjectURL = vi.fn(() => 'blob:pick-' + (++created));
+    const upload = vi.spyOn(window.BlossomUpload, 'upload');
+    upload.mockImplementationOnce(() => new Promise(() => {})); // first upload never settles
+    upload.mockImplementationOnce(() => Promise.reject(new Error('second failed')));
+    const toast = vi.spyOn(window.APP, 'showToast').mockImplementation(() => {});
+    const onUploaded = vi.fn();
+
+    ProfileImage.bind({
+      fileInputId: 'pic-input', previewId: 'pic-preview', errorId: 'pic-error',
+      blossomUrl: 'http://blossom.test',
+      resolveSigner: () => Promise.resolve(signer),
+      onUploaded: onUploaded,
+    });
+
+    selectFile(input, fakeFile('image/png', 10));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    selectFile(input, fakeFile('image/png', 10));
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:pick-1');
+
+    await vi.waitFor(() => expect(toast).toHaveBeenCalled());
+    expect(preview.getAttribute('src')).toBe('/img/default-avatar.svg');
+    expect(onUploaded).not.toHaveBeenCalled();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:pick-2');
+  });
+
   // Binding a field the page does not render must not throw.
   it('is a no-op when the file input is absent', () => {
     document.body.innerHTML = '';

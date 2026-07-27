@@ -45,6 +45,16 @@
             if (hasApp() && APP.showToast) APP.showToast(message, type);
         }
 
+        // The last src known to be good (never a blob: URL): the field's initial
+        // src, or the previous successful upload. A failed upload restores to
+        // this, not to whatever the preview currently shows, so a rapid re-pick
+        // never restores an in-flight pick's already-revoked object URL.
+        var settledSrc = preview ? preview.getAttribute('src') : null;
+
+        // The object URL of a pick whose upload has not yet settled, so a second
+        // pick can revoke it immediately instead of leaking it.
+        var pendingObjectUrl = null;
+
         input.addEventListener('change', function () {
             var file = input.files && input.files[0];
             if (!file) return;
@@ -57,9 +67,18 @@
                 return;
             }
 
-            var previousSrc = preview ? preview.getAttribute('src') : null;
+            if (pendingObjectUrl) {
+                URL.revokeObjectURL(pendingObjectUrl);
+            }
+            var restoreSrc = settledSrc;
             var objectUrl = URL.createObjectURL(file);
+            pendingObjectUrl = objectUrl;
             setPreview(objectUrl);
+
+            function releaseObjectUrl() {
+                URL.revokeObjectURL(objectUrl);
+                if (pendingObjectUrl === objectUrl) pendingObjectUrl = null;
+            }
 
             // Wrapped so a signer that throws synchronously (e.g. onboarding's
             // nsec decode) rejects the chain instead of escaping it uncaught.
@@ -72,14 +91,15 @@
                 .then(function (blob) {
                     var safeUrl = validatedUrl(blob.url);
                     if (!safeUrl) throw new Error('Upload returned an unusable URL.');
-                    URL.revokeObjectURL(objectUrl);
+                    releaseObjectUrl();
+                    settledSrc = safeUrl;
                     setPreview(safeUrl);
                     config.onUploaded(safeUrl);
                     toast('Image uploaded', 'success');
                 })
                 .catch(function (err) {
-                    URL.revokeObjectURL(objectUrl);
-                    if (preview && previousSrc) preview.src = previousSrc;
+                    releaseObjectUrl();
+                    if (preview && restoreSrc) preview.src = restoreSrc;
                     input.value = '';
                     // A dismissed unlock prompt is a deliberate no-op, not a failure.
                     // app.js tags the cancellation error with this flag on purpose;
