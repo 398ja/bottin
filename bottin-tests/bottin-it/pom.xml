@@ -35,7 +35,7 @@
         </dependency>
         <dependency>
             <groupId>xyz.tcheeric</groupId>
-            <artifactId>bottin-web</artifactId>
+            <artifactId>bottin-api</artifactId>
         </dependency>
         <dependency>
             <groupId>xyz.tcheeric</groupId>

@@ -1,27 +1,31 @@
-package xyz.tcheeric.bottin.it;
+package xyz.tcheeric.bottin.api.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Test application for integration tests.
- * Enables component scanning for all bottin packages.
+ * Main entry point for the Bottin REST API service.
+ * Provides NIP-05 identity resolution and management endpoints.
  */
-@SpringBootApplication(scanBasePackages = {
+@SpringBootApplication
+@EnableScheduling
+@ComponentScan(basePackages = {
         "xyz.tcheeric.bottin.core",
         "xyz.tcheeric.bottin.persistence",
         "xyz.tcheeric.bottin.service",
         "xyz.tcheeric.bottin.verification",
-        "xyz.tcheeric.bottin.api",
-        "xyz.tcheeric.bottin.starter"
+        "xyz.tcheeric.bottin.reach",
+        "xyz.tcheeric.bottin.api"
 })
 @EntityScan(basePackages = "xyz.tcheeric.bottin.persistence.entity")
 @EnableJpaRepositories(basePackages = "xyz.tcheeric.bottin.persistence.repository")
-public class TestApplication {
+public class BottinApiApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(TestApplication.class, args);
+        SpringApplication.run(BottinApiApplication.class, args);
     }
 }

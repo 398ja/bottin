@@ -4,16 +4,16 @@ Technical reference for all Docker Compose services, environment variables, and 
 
 ## Services
 
-### bottin-web
+### bottin-api
 
 The REST API service for NIP-05 identity resolution and management.
 
 | Property | Value |
 |----------|-------|
-| Dockerfile | `Dockerfile.web` |
+| Dockerfile | `Dockerfile.api` |
 | Default Port | 8080 |
 | Health Check | `/actuator/health` |
-| Container Name | `bottin-web` |
+| Container Name | `bottin-api` |
 
 ### bottin-admin
 
@@ -90,7 +90,7 @@ PostgreSQL database for persistent storage.
 
 All services include health checks for container orchestration:
 
-### bottin-web / bottin-admin
+### bottin-api / bottin-admin
 
 ```yaml
 healthcheck:
@@ -113,7 +113,7 @@ healthcheck:
 
 ## Dockerfiles
 
-### Dockerfile.web
+### Dockerfile.api
 
 Multi-stage build for the REST API service:
 - Builder stage: Eclipse Temurin JDK 21 Alpine
@@ -131,14 +131,14 @@ Multi-stage build for the Admin Dashboard service:
 
 ### Dockerfile (default)
 
-Alias for `Dockerfile.web`, maintained for backward compatibility.
+Alias for `Dockerfile.api`, maintained for backward compatibility.
 
 ## Dependencies
 
 Service startup order is managed via `depends_on` with health checks:
 
 ```
-postgres (healthy) -> bottin-web
+postgres (healthy) -> bottin-api
 postgres (healthy) -> bottin-admin
 ```
 

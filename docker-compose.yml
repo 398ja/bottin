@@ -1,11 +1,11 @@
 services:
-  bottin-web:
-    image: docker.398ja.xyz/bottin-web:latest
+  bottin-api:
+    image: docker.398ja.xyz/bottin-api:latest
     # To build locally instead, uncomment:
     # build:
     #   context: .
-    #   dockerfile: Dockerfile.web
-    container_name: bottin-web
+    #   dockerfile: Dockerfile.api
+    container_name: bottin-api
     ports:
       - "${BOTTIN_PORT:-8080}:8080"
     environment:
@@ -73,8 +73,8 @@ services:
       - NAP_ENABLED=true
       - BOTTIN_CLIENT_DOMAIN=${BOTTIN_CLIENT_DOMAIN:-${BOTTIN_DOMAIN:-bottin.example.com}}
       # Directory API used to register onboarded handles. Reached over the
-      # compose network, with the same credentials bottin-web is started with.
-      - BOTTIN_DIRECTORY_URL=${BOTTIN_DIRECTORY_URL:-http://bottin-web:8080}
+      # compose network, with the same credentials bottin-api is started with.
+      - BOTTIN_DIRECTORY_URL=${BOTTIN_DIRECTORY_URL:-http://bottin-api:8080}
       - BOTTIN_API_USER=${BOTTIN_ADMIN_USER:-admin}
       - BOTTIN_API_PASSWORD=${BOTTIN_ADMIN_PASSWORD:-changeme}
       # Browser-facing URLs: the relay/blossom services below are reached from the

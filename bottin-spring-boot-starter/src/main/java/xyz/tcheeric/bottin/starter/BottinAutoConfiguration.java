@@ -35,7 +35,7 @@ import xyz.tcheeric.bottin.persistence.repository.Nip05RecordRepository;
         "xyz.tcheeric.bottin.service",
         "xyz.tcheeric.bottin.verification",
         "xyz.tcheeric.bottin.reach",
-        "xyz.tcheeric.bottin.web"
+        "xyz.tcheeric.bottin.api"
 })
 public class BottinAutoConfiguration {
 

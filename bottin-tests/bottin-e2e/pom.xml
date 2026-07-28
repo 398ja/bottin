@@ -35,7 +35,7 @@
         </dependency>
         <dependency>
             <groupId>xyz.tcheeric</groupId>
-            <artifactId>bottin-web</artifactId>
+            <artifactId>bottin-api</artifactId>
         </dependency>
         <!-- Note: bottin-admin-ui excluded to avoid security config conflicts -->
         <dependency>

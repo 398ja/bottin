@@ -39,7 +39,7 @@
         <module>bottin-core</module>
         <module>bottin-persistence</module>
         <module>bottin-service</module>
-        <module>bottin-web</module>
+        <module>bottin-api</module>
         <module>bottin-verification</module>
         <module>bottin-reach</module>
         <module>bottin-admin-ui</module>
@@ -139,7 +139,7 @@
             </dependency>
             <dependency>
                 <groupId>xyz.tcheeric</groupId>
-                <artifactId>bottin-web</artifactId>
+                <artifactId>bottin-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -420,8 +420,8 @@
         <!--
             Docker Profile: Build and push Docker images
             Usage:
-              Build to local Docker: mvn -Pdocker jib:dockerBuild -pl bottin-web,bottin-admin-ui
-              Push to registry:      mvn -Pdocker jib:build -pl bottin-web,bottin-admin-ui
+              Build to local Docker: mvn -Pdocker jib:dockerBuild -pl bottin-api,bottin-admin-ui
+              Push to registry:      mvn -Pdocker jib:build -pl bottin-api,bottin-admin-ui
         -->
         <profile>
             <id>docker</id>

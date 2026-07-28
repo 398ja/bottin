@@ -1,14 +1,11 @@
-package xyz.tcheeric.bottin.e2e;
+package xyz.tcheeric.bottin.api.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -22,33 +19,33 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Security configuration for E2E tests.
- * Mirrors the production SecurityConfig to ensure consistent behavior.
+ * Security configuration for Bottin REST API.
  *
- * <p>This configuration is needed because the SecurityConfig from bottin-api
- * may conflict with Spring Security auto-configuration during tests.
- * By defining it explicitly with @Primary beans, we ensure the correct
- * security filter chains are used.</p>
+ * <p>Defines three security filter chains:
+ * <ul>
+ *   <li>Public endpoints (no auth): /.well-known/**, /api/v1/verify, swagger-ui</li>
+ *   <li>REST API (Basic Auth): /api/**</li>
+ *   <li>Admin UI (future): /admin/** with form login</li>
+ * </ul>
  */
 @Configuration
 @EnableWebSecurity
-public class TestSecurityConfig {
+@Profile("!e2e")
+public class SecurityConfig {
 
     @Value("${bottin.admin.username:admin}")
     private String adminUsername;
 
-    @Value("${bottin.admin.password:e2e-test-password}")
+    @Value("${bottin.admin.password:#{T(java.util.UUID).randomUUID().toString()}}")
     private String adminPassword;
 
     @Bean
-    @Primary
-    public PasswordEncoder testPasswordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    @Primary
-    public UserDetailsService testUserDetailsService(PasswordEncoder passwordEncoder) {
+    public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
         UserDetails admin = User.builder()
                 .username(adminUsername)
                 .password(passwordEncoder.encode(adminPassword))
@@ -64,41 +61,22 @@ public class TestSecurityConfig {
         return new InMemoryUserDetailsManager(admin, apiUser);
     }
 
-    @Bean
-    @Primary
-    public DaoAuthenticationProvider testAuthenticationProvider(
-            UserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder);
-        return provider;
-    }
-
-    @Bean
-    @Primary
-    public AuthenticationManager testAuthenticationManager(
-            AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
-
     /**
      * Public endpoints - no authentication required.
      * Highest priority (order 1).
-     * Note: /error is included to allow error pages for public endpoints.
      */
     @Bean
     @Order(1)
-    public SecurityFilterChain testPublicFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain publicFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher(
                         "/.well-known/**",
                         "/api/v1/verify",
+                        "/api/v1/profiles/*/reach",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
-                        "/actuator/health",
-                        "/error"
+                        "/actuator/health"
                 )
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .csrf(AbstractHttpConfigurer::disable)
@@ -112,7 +90,7 @@ public class TestSecurityConfig {
      */
     @Bean
     @Order(2)
-    public SecurityFilterChain testApiFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
@@ -123,7 +101,10 @@ public class TestSecurityConfig {
                 .httpBasic(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .cors(Customizer.withDefaults())
+                // CORS is handled by the edge proxy (nginx), not Spring. Removing
+                // the Spring CORS filter avoids double-setting Access-Control-*
+                // headers which browsers reject as "Multiple CORS header not allowed".
+                .cors(AbstractHttpConfigurer::disable)
                 .build();
     }
 
@@ -133,7 +114,7 @@ public class TestSecurityConfig {
      */
     @Bean
     @Order(3)
-    public SecurityFilterChain testDefaultFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain defaultFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().authenticated()

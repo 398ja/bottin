@@ -48,7 +48,7 @@ docker-compose up -d
 
 2. Run with H2 database:
 ```bash
-mvn spring-boot:run -pl bottin-web
+mvn spring-boot:run -pl bottin-api
 ```
 
 3. Access H2 Console at http://localhost:8080/h2-console
@@ -137,7 +137,7 @@ bottin/
 ├── bottin-core/                 # Domain models, interfaces, exceptions
 ├── bottin-persistence/          # JPA entities, repositories
 ├── bottin-service/              # Business logic
-├── bottin-web/                  # REST controllers, well-known endpoint
+├── bottin-api/                  # REST controllers, well-known endpoint
 ├── bottin-admin-ui/             # Admin dashboard (Thymeleaf)
 ├── bottin-verification/         # Domain & external NIP-05 verification
 ├── bottin-spring-boot-starter/  # Auto-configuration for embedding
@@ -180,17 +180,17 @@ Build Docker images using [Jib](https://github.com/GoogleContainerTools/jib):
 
 ```bash
 # Build to local Docker daemon
-mvn jib:dockerBuild -pl bottin-web,bottin-admin-ui
+mvn jib:dockerBuild -pl bottin-api,bottin-admin-ui
 
 # Deploy to Maven repo and push Docker images to registry
 mvn deploy
 
 # Push to registry without deploying Maven artifacts
-mvn jib:build -pl bottin-web,bottin-admin-ui
+mvn jib:build -pl bottin-api,bottin-admin-ui
 ```
 
 Images are published to `docker.398ja.xyz`:
-- `docker.398ja.xyz/bottin-web:0.1.0` / `latest`
+- `docker.398ja.xyz/bottin-api:0.1.0` / `latest`
 - `docker.398ja.xyz/bottin-admin-ui:0.1.0` / `latest`
 
 ## License
