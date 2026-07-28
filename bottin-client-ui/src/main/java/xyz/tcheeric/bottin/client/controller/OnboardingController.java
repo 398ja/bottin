@@ -153,8 +153,13 @@ public class OnboardingController {
             this.message = message;
         }
 
+        /**
+         * The badge carries the outcome as {@code data-available} so the form can
+         * gate its Continue button on it without reading the message text.
+         */
         private String badge() {
-            return "<span style=\"color: " + colour + "; font-size: 0.875rem;\">" + message + "</span>";
+            return "<span data-available=\"" + available + "\""
+                    + " style=\"color: " + colour + "; font-size: 0.875rem;\">" + message + "</span>";
         }
     }
 }

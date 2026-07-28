@@ -154,7 +154,7 @@ class OnboardingControllerTest {
 
     /**
      * Tests that the inline badge the onboarding form swaps in names the taken
-     * handle rather than repeating the character rules.
+     * handle and carries the state the form gates its Continue button on.
      */
     @Test
     void shouldRenderTakenBadgeForHtmxRequests() throws Exception {
@@ -163,9 +163,26 @@ class OnboardingControllerTest {
 
         // When: the form asks over HTMX
         mockMvc.perform(get("/api/v1/resolve").param("username", "alice").header("HX-Request", "true"))
-                // Then: the badge says the handle is taken
+                // Then: the badge says the handle is taken and marks it unavailable
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Already taken")));
+                .andExpect(content().string(containsString("Already taken")))
+                .andExpect(content().string(containsString("data-available=\"false\"")));
+    }
+
+    /**
+     * Tests that a free handle's badge marks it available, which is what re-enables
+     * the Continue button after a taken handle was corrected.
+     */
+    @Test
+    void shouldRenderAvailableBadgeForHtmxRequests() throws Exception {
+        // Given: a handle no one holds
+        when(registrationService.isTaken("alice")).thenReturn(false);
+
+        // When: the form asks over HTMX
+        mockMvc.perform(get("/api/v1/resolve").param("username", "alice").header("HX-Request", "true"))
+                // Then: the badge marks the handle available
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-available=\"true\"")));
     }
 
     /**

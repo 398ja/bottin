@@ -88,7 +88,8 @@
                     <button type="button" class="btn btn-outline" style="flex: 1;"
                             hx-get="/onboarding/step/method" hx-target="body" hx-push-url="false"
                             hx-params="none" hx-on::before-request="saveProfileData()">Back</button>
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">Continue</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;"
+                            id="profile-continue-btn">Continue</button>
                 </div>
             </form>
         </div>
@@ -99,6 +100,24 @@
     <script src="/js/blossom.js"></script>
     <script src="/js/profile-image.js"></script>
     <script>
+        // The availability badge is swapped into #username-hint by htmx; Continue
+        // follows it, so a handle the directory already holds cannot be carried
+        // into key generation only to be rejected at registration. The button is
+        // also held while a check is in flight, since the badge on screen then
+        // describes the previous handle.
+        (function() {
+            var continueBtn = document.getElementById('profile-continue-btn');
+            var hint = document.getElementById('username-hint');
+
+            document.querySelector('input[name="username"]')
+                .addEventListener('htmx:beforeRequest', function() { continueBtn.disabled = true; });
+
+            hint.addEventListener('htmx:afterSwap', function() {
+                var badge = hint.querySelector('[data-available]');
+                continueBtn.disabled = !!badge && badge.getAttribute('data-available') === 'false';
+            });
+        })();
+
         function saveProfileData() {
             var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
             document.querySelectorAll('[name]').forEach(function(el) {
