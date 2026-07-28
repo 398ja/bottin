@@ -232,6 +232,28 @@ handle can only be claimed for the key that signed in.
 `409 USERNAME_TAKEN`, `404 DOMAIN_NOT_FOUND` (the handle suffix has no domain
 record yet), `502 DIRECTORY_UNAVAILABLE`.
 
+### GET /api/v1/resolve?username={username}
+
+Checks whether a handle can still be claimed, during onboarding. Requires no
+authentication.
+
+**Response:**
+
+```json
+{
+  "available": true,
+  "status": "available"
+}
+```
+
+`status` is `available`, `taken` (the directory holds a record for it),
+`invalid` (outside `[a-z0-9_-]{1,64}`), or `unknown` (the directory could not be
+reached). Only `available` leaves `available` true, so a handle is never offered
+on the strength of a failed check.
+
+With an `HX-Request` header the same check returns the inline status badge as
+HTML instead of JSON.
+
 ## Error Responses
 
 All errors follow this format:

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
@@ -63,6 +64,27 @@ public class DirectoryRegistrationService {
 
         log.info("nip05_registration_created nip05={}@{} pubkey={}", username, domain, pubkey);
         return username + "@" + domain;
+    }
+
+    /**
+     * Whether the directory already holds a record for {@code username@domain}.
+     * A handle is only free if the directory says so, so an unreachable directory
+     * raises rather than reporting the handle as available.
+     */
+    public boolean isTaken(String username) {
+        try {
+            restClient.get()
+                    .uri("/api/v1/records/by-nip05/{nip05}", username + "@" + domain)
+                    .retrieve()
+                    .toBodilessEntity();
+            return true;
+        } catch (HttpClientErrorException.NotFound e) {
+            return false;
+        } catch (RestClientException e) {
+            log.warn("nip05_availability_check_failed nip05={}@{} error={}", username, domain, e.getMessage());
+            throw new DirectoryRegistrationException(DirectoryRegistrationException.DIRECTORY_UNAVAILABLE,
+                    "Could not reach the bottin directory to check " + username + "@" + domain, e);
+        }
     }
 
     private DirectoryRegistrationException registrationFailure(String username, String pubkey,

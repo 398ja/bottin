@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import xyz.tcheeric.bottin.client.config.ClientProperties;
+import xyz.tcheeric.bottin.client.service.DirectoryRegistrationException;
+import xyz.tcheeric.bottin.client.service.DirectoryRegistrationService;
 
 import java.util.Map;
 
@@ -27,7 +29,10 @@ public class OnboardingController {
             "import", "Import Identity"
     );
 
+    private static final String USERNAME_PATTERN = "[a-z0-9_-]{1,64}";
+
     private final ClientProperties clientProperties;
+    private final DirectoryRegistrationService registrationService;
 
     @GetMapping("/")
     public String root() {
@@ -94,24 +99,62 @@ public class OnboardingController {
     @GetMapping(value = "/api/v1/resolve/{username}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public Map<String, Object> resolveUsername(@PathVariable String username) {
-        return resolve(username);
+        return asJson(resolve(username));
     }
 
     @GetMapping("/api/v1/resolve")
     @ResponseBody
     public ResponseEntity<?> resolveByQuery(@RequestParam String username, HttpServletRequest request) {
-        boolean available = username != null && username.matches("[a-z0-9_-]{1,64}");
+        Availability availability = resolve(username);
         if (request.getHeader("HX-Request") != null) {
-            String message = available
-                    ? "<span style=\"color: var(--color-success, #22c55e); font-size: 0.875rem;\">\u2713 Available</span>"
-                    : "<span style=\"color: var(--color-error, #ef4444); font-size: 0.875rem;\">\u2717 Not available (lowercase letters, numbers, hyphens, underscores only)</span>";
-            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(message);
+            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(availability.badge());
         }
-        return ResponseEntity.ok(Map.of("available", available));
+        return ResponseEntity.ok(asJson(availability));
     }
 
-    private Map<String, Object> resolve(String username) {
-        boolean available = username != null && username.matches("[a-z0-9_-]{1,64}");
-        return Map.of("available", available);
+    /**
+     * A handle is only offered when it passes the character rules and the directory
+     * holds no record for it, so onboarding cannot end on a name that registration
+     * will reject. An unreachable directory is reported as such rather than as a
+     * free handle.
+     */
+    private Availability resolve(String username) {
+        if (username == null || !username.matches(USERNAME_PATTERN)) {
+            return Availability.INVALID;
+        }
+        try {
+            return registrationService.isTaken(username) ? Availability.TAKEN : Availability.AVAILABLE;
+        } catch (DirectoryRegistrationException e) {
+            // The service logs the failure; the badge asks the user to try again.
+            return Availability.UNKNOWN;
+        }
+    }
+
+    private Map<String, Object> asJson(Availability availability) {
+        return Map.of("available", availability.available, "status", availability.name().toLowerCase());
+    }
+
+    /**
+     * Outcome of a handle check together with the badge the onboarding form shows.
+     */
+    private enum Availability {
+        AVAILABLE(true, "#22c55e", "\u2713 Available"),
+        TAKEN(false, "#ef4444", "\u2717 Already taken"),
+        INVALID(false, "#ef4444", "\u2717 Not available (lowercase letters, numbers, hyphens, underscores only)"),
+        UNKNOWN(false, "#f59e0b", "Could not check availability \u2014 try again");
+
+        private final boolean available;
+        private final String colour;
+        private final String message;
+
+        Availability(boolean available, String colour, String message) {
+            this.available = available;
+            this.colour = colour;
+            this.message = message;
+        }
+
+        private String badge() {
+            return "<span style=\"color: " + colour + "; font-size: 0.875rem;\">" + message + "</span>";
+        }
     }
 }

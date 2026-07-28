@@ -3,9 +3,13 @@ package xyz.tcheeric.bottin.client.controller;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import xyz.tcheeric.bottin.client.service.DirectoryRegistrationException;
+import xyz.tcheeric.bottin.client.service.DirectoryRegistrationService;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,6 +22,9 @@ class OnboardingControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private DirectoryRegistrationService registrationService;
 
     @Test
     void shouldRenderClientRouterAtRoot() throws Exception {
@@ -107,6 +114,58 @@ class OnboardingControllerTest {
         mockMvc.perform(get("/api/v1/resolve/" + longUsername))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.available").value(false));
+    }
+
+    /**
+     * Tests that a handle the directory already holds is reported as unavailable,
+     * so onboarding cannot end on a name registration would reject.
+     */
+    @Test
+    void shouldMarkUnavailableWhenTheDirectoryHoldsTheHandle() throws Exception {
+        // Given: the directory already has a record for this handle
+        when(registrationService.isTaken("alice")).thenReturn(true);
+
+        // When: availability is checked
+        mockMvc.perform(get("/api/v1/resolve/alice"))
+                // Then: the handle is not offered
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(false))
+                .andExpect(jsonPath("$.status").value("taken"));
+    }
+
+    /**
+     * Tests that an unreachable directory is reported as an unknown result rather
+     * than as a free handle, which would only fail later at registration.
+     */
+    @Test
+    void shouldNotOfferHandleWhenTheDirectoryCannotBeReached() throws Exception {
+        // Given: the directory cannot be reached
+        when(registrationService.isTaken("alice"))
+                .thenThrow(new DirectoryRegistrationException(
+                        DirectoryRegistrationException.DIRECTORY_UNAVAILABLE, "unreachable", null));
+
+        // When: availability is checked
+        mockMvc.perform(get("/api/v1/resolve/alice"))
+                // Then: the handle is withheld and the state says why
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(false))
+                .andExpect(jsonPath("$.status").value("unknown"));
+    }
+
+    /**
+     * Tests that the inline badge the onboarding form swaps in names the taken
+     * handle rather than repeating the character rules.
+     */
+    @Test
+    void shouldRenderTakenBadgeForHtmxRequests() throws Exception {
+        // Given: a handle that is already registered
+        when(registrationService.isTaken("alice")).thenReturn(true);
+
+        // When: the form asks over HTMX
+        mockMvc.perform(get("/api/v1/resolve").param("username", "alice").header("HX-Request", "true"))
+                // Then: the badge says the handle is taken
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Already taken")));
     }
 
     /**
