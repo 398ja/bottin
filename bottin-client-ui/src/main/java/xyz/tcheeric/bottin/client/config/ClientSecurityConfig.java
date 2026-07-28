@@ -11,14 +11,11 @@ import xyz.tcheeric.nap.spring.filter.NapServletFilter;
 import xyz.tcheeric.nap.spring.filter.NapSessionFilter;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.stream.Stream;
 
 @Configuration
 public class ClientSecurityConfig {
-
-    private static final String[] PROTECTED_URL_PATTERNS = {
-            "/api/v1/follow/*", "/api/v1/block/*", "/api/v1/relays/*",
-            "/api/v1/publish-contact-list"
-    };
 
     private static final String NAP_COMPLETE_PATH = "/api/v1/auth/complete";
 
@@ -75,7 +72,7 @@ public class ClientSecurityConfig {
                 napProperties.protectedPathPrefixes(),
                 Duration.ofSeconds(napProperties.aclRefreshIntervalSeconds())
         ));
-        registrationBean.addUrlPatterns(PROTECTED_URL_PATTERNS);
+        registrationBean.addUrlPatterns(urlPatternsFor(napProperties.protectedPathPrefixes()));
         registrationBean.setOrder(1);
         return registrationBean;
     }
@@ -97,17 +94,31 @@ public class ClientSecurityConfig {
     ) {
         FilterRegistrationBean<RequireNapAuthenticationFilter> registrationBean = new FilterRegistrationBean<>();
 
+        NapProperties napProperties = napPropertiesProvider.getIfAvailable();
         boolean napPresent = sessionStoreProvider.getIfAvailable() != null
                 && aclResolverProvider.getIfAvailable() != null
-                && napPropertiesProvider.getIfAvailable() != null;
+                && napProperties != null;
         if (!napPresent) {
             registrationBean.setEnabled(false);
             return registrationBean;
         }
 
         registrationBean.setFilter(new RequireNapAuthenticationFilter());
-        registrationBean.addUrlPatterns(PROTECTED_URL_PATTERNS);
+        registrationBean.addUrlPatterns(urlPatternsFor(napProperties.protectedPathPrefixes()));
         registrationBean.setOrder(2);
         return registrationBean;
+    }
+
+    /**
+     * Servlet URL patterns covering each configured prefix and everything beneath it.
+     *
+     * <p>Derived from {@code nap.protected-path-prefixes} rather than listed separately:
+     * a hand-maintained second copy silently leaves a new endpoint outside both NAP
+     * filters, which reads as an unauthenticated caller rather than as a misconfiguration.
+     */
+    private String[] urlPatternsFor(List<String> protectedPathPrefixes) {
+        return protectedPathPrefixes.stream()
+                .flatMap(prefix -> Stream.of(prefix, prefix + "/*"))
+                .toArray(String[]::new);
     }
 }
