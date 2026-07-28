@@ -73,6 +73,7 @@ window.APP = {
         localStorage.removeItem(this.identityKey(userId));
         localStorage.removeItem(this.followsKey(userId));
         localStorage.removeItem(this.blocksKey(userId));
+        localStorage.removeItem(this.relaysKey(userId));
     },
 
     getIdentityUserId: function() {
@@ -265,14 +266,16 @@ window.APP = {
             .catch(function() { /* no session established: leave nav hidden */ });
     },
 
-    // Ends the NAP session server-side, then performs a real navigation to the
-    // login page. The stored identity is retained on purpose: the private key
-    // is held encrypted, so the returning user can unlock with their passphrase.
-    // Logout ends the session; it does not forget the device.
+    // Ends the NAP session server-side, erases every trace of the key from this
+    // browser (the encrypted identity in localStorage, the unlocked key and any
+    // half-finished onboarding nsec in sessionStorage), then performs a real
+    // navigation to the login page. Signing in again requires the nsec, so the
+    // confirmation warns before anything is removed.
     logout: function() {
-        if (!window.confirm('This will clear your session.')) return;
+        if (!window.confirm('This logs you out and erases your key from this browser. You will need your nsec to sign in again.')) return;
         var userId = this.getIdentityUserId();
-        if (userId) this.lockSession(userId);
+        if (userId) this.clearAll(userId);
+        sessionStorage.clear();
         var goToLogin = function() { window.location.href = '/login'; };
         fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'same-origin' })
             .then(goToLogin)

@@ -65,6 +65,42 @@ describe('ensureRelaysSeeded', () => {
   });
 });
 
+describe('logout', () => {
+  function stubConfirm(answer) {
+    vi.spyOn(window, 'confirm').mockReturnValue(answer);
+    // A pending request keeps the redirect from firing, which jsdom cannot follow.
+    global.fetch = vi.fn(() => new Promise(() => {}));
+  }
+
+  // Logging out must leave no key material behind in this browser: neither the
+  // encrypted identity, the unlocked session key, nor a half-finished onboarding nsec.
+  it('erases the stored key material', () => {
+    APP.saveIdentity({ userId: USER, privateKeyEncrypted: 'cipher' });
+    APP.saveRelays(USER, [{ url: 'wss://a', read: true, write: true }]);
+    APP.setSessionKey(USER, 'deadbeef');
+    sessionStorage.setItem('onboarding-nsec', 'nsec1plaintext');
+    stubConfirm(true);
+
+    APP.logout();
+
+    expect(localStorage.getItem(APP.identityKey(USER))).toBeNull();
+    expect(localStorage.getItem(APP.relaysKey(USER))).toBeNull();
+    expect(APP.getSessionKey(USER)).toBeNull();
+    expect(sessionStorage.getItem('onboarding-nsec')).toBeNull();
+  });
+
+  // Declining the confirmation is not a logout, so the key must survive it.
+  it('keeps the stored identity when the confirmation is declined', () => {
+    APP.saveIdentity({ userId: USER, privateKeyEncrypted: 'cipher' });
+    stubConfirm(false);
+
+    APP.logout();
+
+    expect(APP.loadIdentity(USER)).not.toBeNull();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+});
+
 describe('session key', () => {
   // A stored key reads back until it expires, then getSessionKey returns null.
   it('stores, reads, expires and locks', () => {

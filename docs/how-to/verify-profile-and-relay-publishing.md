@@ -98,15 +98,18 @@ nak req -k 10002 -a <your-hex-pubkey> --limit 1 wss://relay.damus.io
 Each command should return the event you just published, with a `created_at` matching
 the time of the publish.
 
-## Confirm Logout Clears the Session Key
+## Confirm Logout Erases the Key From the Browser
 
-Open the avatar dropdown and click **Logout**. After redirect to `/login`, check that
-the in-memory key is gone:
+Open the avatar dropdown and click **Logout**, then accept the confirmation warning it
+shows. After the redirect to `/login`, check that no key material is left behind:
 
 ```bash
 # In the browser devtools console, before logging back in:
-sessionStorage.getItem('imani.session.<your-user-id>')  // -> null
+sessionStorage.getItem('imani.session.<your-user-id>')   // -> null
+localStorage.getItem('imani.identity.<your-user-id>')    // -> null
 ```
 
-The stored identity itself is retained (encrypted), so the same user can unlock again
-with their passphrase on a future sign-in.
+Logout forgets the device: the encrypted identity is removed along with the session, so
+`/login` offers the nsec paste form rather than the passphrase unlock. Signing in again
+requires the nsec — from a password manager or the backup file taken on the
+**Settings → Security** page.

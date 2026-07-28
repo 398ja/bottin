@@ -47,12 +47,7 @@
 
         <div class="card card-danger mt-2">
             <h2 class="text-sm mb-1" style="color: var(--color-danger);">Danger Zone</h2>
-            <button class="btn btn-danger btn-full"
-                    onclick="handleLogout()"
-                    hx-post="/api/v1/auth/logout"
-                    hx-confirm="This will clear your session."
-                    hx-target="body"
-                    hx-push-url="/login">
+            <button class="btn btn-danger btn-full" onclick="APP.logout()">
                 Logout
             </button>
         </div>
@@ -87,8 +82,6 @@
 
     <script>
         var revealedNsec = null;
-
-        function handleLogout() { }
 
         document.getElementById('new-password').addEventListener('input', function() {
             var score = 0;
