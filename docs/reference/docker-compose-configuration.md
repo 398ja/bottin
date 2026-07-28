@@ -53,6 +53,16 @@ PostgreSQL database for persistent storage.
 |----------|-------------|---------|
 | `BOTTIN_ADMIN_USER` | Admin username | `admin` |
 | `BOTTIN_ADMIN_PASSWORD` | Admin password | `changeme` |
+| `BOTTIN_API_USER` | Username machine callers present to the API | `api` |
+| `BOTTIN_API_PASSWORD` | Password for that user, on both `bottin-api` and `bottin-client` | `changeme-api` |
+
+The `api` user holds API access without admin rights, and its password is separate
+from the admin one: `bottin-client` needs it to register onboarded handles, and
+handing it out must not hand out the admin credential. Both services read
+`BOTTIN_API_PASSWORD`, so the two must be set to the same value. Under the `prod`
+profile `bottin-api` refuses to start unless `BOTTIN_ADMIN_PASSWORD` and
+`BOTTIN_API_PASSWORD` are both set — unset, they fall back to a random password
+that changes on every restart.
 
 ### Service Ports
 

@@ -21,6 +21,10 @@ import org.springframework.security.web.SecurityFilterChain;
 /**
  * Security configuration for Bottin REST API.
  *
+ * <p>Two users are provisioned in memory: the admin, who holds both roles, and
+ * {@code api}, who holds API access only. They are given separate passwords so a
+ * credential issued to a machine caller cannot be replayed as the admin.
+ *
  * <p>Defines three security filter chains:
  * <ul>
  *   <li>Public endpoints (no auth): /.well-known/**, /api/v1/verify, swagger-ui</li>
@@ -33,11 +37,22 @@ import org.springframework.security.web.SecurityFilterChain;
 @Profile("!e2e")
 public class SecurityConfig {
 
+    /**
+     * Machine callers (the client UI registering handles, scripts, integrations)
+     * authenticate as this user, which holds API access but not admin rights. Its
+     * password is configured separately from the admin one so handing it out never
+     * hands out the admin credential.
+     */
+    static final String API_USERNAME = "api";
+
     @Value("${bottin.admin.username:admin}")
     private String adminUsername;
 
     @Value("${bottin.admin.password:#{T(java.util.UUID).randomUUID().toString()}}")
     private String adminPassword;
+
+    @Value("${bottin.api.password:#{T(java.util.UUID).randomUUID().toString()}}")
+    private String apiPassword;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -53,8 +68,8 @@ public class SecurityConfig {
                 .build();
 
         UserDetails apiUser = User.builder()
-                .username("api")
-                .password(passwordEncoder.encode(adminPassword))
+                .username(API_USERNAME)
+                .password(passwordEncoder.encode(apiPassword))
                 .roles("API")
                 .build();
 

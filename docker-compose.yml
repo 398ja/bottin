@@ -15,6 +15,9 @@ services:
       - BOTTIN_DATABASE_PASSWORD=${BOTTIN_DATABASE_PASSWORD:-bottin}
       - BOTTIN_ADMIN_USER=${BOTTIN_ADMIN_USER:-admin}
       - BOTTIN_ADMIN_PASSWORD=${BOTTIN_ADMIN_PASSWORD:-changeme}
+      # Credential for machine callers such as bottin-client. Separate from the
+      # admin one so a service holding it cannot act as the admin.
+      - BOTTIN_API_PASSWORD=${BOTTIN_API_PASSWORD:-changeme-api}
       - BOTTIN_DEFAULT_DOMAIN=${BOTTIN_DEFAULT_DOMAIN:-${BOTTIN_DOMAIN:-}}
       - BOTTIN_API_DOCS_ENABLED=${BOTTIN_API_DOCS_ENABLED:-false}
       - BOTTIN_SWAGGER_ENABLED=${BOTTIN_SWAGGER_ENABLED:-false}
@@ -72,11 +75,13 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - NAP_ENABLED=true
       - BOTTIN_CLIENT_DOMAIN=${BOTTIN_CLIENT_DOMAIN:-${BOTTIN_DOMAIN:-bottin.example.com}}
-      # Directory API used to register onboarded handles. Reached over the
-      # compose network, with the same credentials bottin-api is started with.
+      # Directory API used to register onboarded handles. Reached over the compose
+      # network as the api user, whose credential must match the one bottin-api is
+      # started with. Not the admin credential: this container only needs to write
+      # NIP-05 records.
       - BOTTIN_DIRECTORY_URL=${BOTTIN_DIRECTORY_URL:-http://bottin-api:8080}
-      - BOTTIN_API_USER=${BOTTIN_ADMIN_USER:-admin}
-      - BOTTIN_API_PASSWORD=${BOTTIN_ADMIN_PASSWORD:-changeme}
+      - BOTTIN_API_USER=${BOTTIN_API_USER:-api}
+      - BOTTIN_API_PASSWORD=${BOTTIN_API_PASSWORD:-changeme-api}
       # Browser-facing URLs: the relay/blossom services below are reached from the
       # host, not over bottin-network, so these must be host-published addresses.
       - BOTTIN_BLOSSOM_URL=${BOTTIN_BLOSSOM_URL:-http://localhost:${BOTTIN_BLOSSOM_PORT:-8888}}

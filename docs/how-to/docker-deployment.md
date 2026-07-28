@@ -50,6 +50,10 @@ BOTTIN_DATABASE_PASSWORD=your-secure-password
 BOTTIN_ADMIN_USER=admin
 BOTTIN_ADMIN_PASSWORD=your-admin-password
 
+# Credential for machine callers (bottin-client registering handles). Separate
+# from the admin one, and required in production.
+BOTTIN_API_PASSWORD=your-api-password
+
 # Ports (optional)
 BOTTIN_PORT=8080
 BOTTIN_ADMIN_PORT=8081

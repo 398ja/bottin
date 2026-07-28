@@ -38,5 +38,5 @@ bottin:
     # /api/v1/records endpoint requires Basic auth, so the credentials stay here
     # rather than in the browser.
     directory-url: ${BOTTIN_DIRECTORY_URL:http://localhost:8080}
-    directory-username: ${BOTTIN_API_USER:admin}
-    directory-password: ${BOTTIN_API_PASSWORD:changeme}
+    directory-username: ${BOTTIN_API_USER:api}
+    directory-password: ${BOTTIN_API_PASSWORD:changeme-api}

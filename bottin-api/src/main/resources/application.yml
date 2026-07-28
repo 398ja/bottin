@@ -39,6 +39,11 @@ bottin:
     username: admin
     # password: Set via BOTTIN_ADMIN_PASSWORD environment variable
 
+  # Credential for machine callers (the client UI, scripts): API access, no admin
+  # rights. Kept separate from the admin password so issuing it to a service does
+  # not issue the admin credential.
+  # api.password: Set via BOTTIN_API_PASSWORD environment variable
+
   # API documentation
   api:
     title: Bottin NIP-05 Registry API
