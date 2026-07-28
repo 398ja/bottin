@@ -2,7 +2,6 @@ package xyz.tcheeric.bottin.client.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -30,9 +29,6 @@ public class OnboardingController {
 
     private final ClientProperties clientProperties;
 
-    @Value("${bottin.client.domain:bottin.example.com}")
-    private String bottinDomain;
-
     @GetMapping("/")
     public String root() {
         return "router";
@@ -49,7 +45,7 @@ public class OnboardingController {
     public String postStepMethod(Model model) {
         model.addAttribute("title", "Profile Setup");
         model.addAttribute("content", "onboarding/step-profile");
-        model.addAttribute("bottinDomain", bottinDomain);
+        model.addAttribute("bottinDomain", clientProperties.getDomain());
         model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
         return "layout";
     }
@@ -89,7 +85,7 @@ public class OnboardingController {
         model.addAttribute("title", title);
         model.addAttribute("content", "onboarding/step-" + step);
         if ("profile".equals(step)) {
-            model.addAttribute("bottinDomain", bottinDomain);
+            model.addAttribute("bottinDomain", clientProperties.getDomain());
             model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
         }
         return "layout";
