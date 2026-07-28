@@ -72,6 +72,11 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - NAP_ENABLED=true
       - BOTTIN_CLIENT_DOMAIN=${BOTTIN_CLIENT_DOMAIN:-${BOTTIN_DOMAIN:-bottin.example.com}}
+      # Directory API used to register onboarded handles. Reached over the
+      # compose network, with the same credentials bottin-web is started with.
+      - BOTTIN_DIRECTORY_URL=${BOTTIN_DIRECTORY_URL:-http://bottin-web:8080}
+      - BOTTIN_API_USER=${BOTTIN_ADMIN_USER:-admin}
+      - BOTTIN_API_PASSWORD=${BOTTIN_ADMIN_PASSWORD:-changeme}
       # Browser-facing URLs: the relay/blossom services below are reached from the
       # host, not over bottin-network, so these must be host-published addresses.
       - BOTTIN_BLOSSOM_URL=${BOTTIN_BLOSSOM_URL:-http://localhost:${BOTTIN_BLOSSOM_PORT:-8888}}
