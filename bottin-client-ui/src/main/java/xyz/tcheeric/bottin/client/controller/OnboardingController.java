@@ -26,7 +26,7 @@ public class OnboardingController {
             "profile", "Profile Setup",
             "security", "Set Password",
             "confirm", "Review",
-            "import", "Import Identity"
+            "import", "Login"
     );
 
     private static final String USERNAME_PATTERN = "[a-z0-9_-]{1,64}";

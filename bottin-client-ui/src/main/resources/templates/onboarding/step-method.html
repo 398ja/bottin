@@ -31,9 +31,10 @@
                     <div class="flex-row-gap-sm">
                         <input type="radio" name="method" id="method-create" value="create" checked style="margin-top: 0.25rem;">
                         <div>
-                            <strong>Create New Key</strong>
+                            <strong>Register</strong>
                             <p class="text-secondary text-xs mt-1">
-                                Generate a fresh Nostr keypair. Your nsec will be encrypted and stored locally.
+                                Create a new identity. A fresh key is generated here, encrypted with a
+                                passphrase and stored in this browser.
                             </p>
                         </div>
                     </div>
@@ -43,9 +44,10 @@
                     <div class="flex-row-gap-sm">
                         <input type="radio" name="method" id="method-import" value="import" style="margin-top: 0.25rem;">
                         <div>
-                            <strong>Import Existing Key</strong>
+                            <strong>Login</strong>
                             <p class="text-secondary text-xs mt-1">
-                                Import an existing nsec. It will be used only in your browser and never transmitted.
+                                Sign in with an identity you already have. Your nsec is used only in this
+                                browser and never transmitted.
                             </p>
                         </div>
                     </div>

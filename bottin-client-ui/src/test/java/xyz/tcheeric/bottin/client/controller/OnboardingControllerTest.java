@@ -187,6 +187,23 @@ class OnboardingControllerTest {
     }
 
     /**
+     * Tests that the entry page offers Register and Login, naming what the visitor
+     * is doing rather than the key material involved.
+     */
+    @Test
+    void shouldOfferRegisterAndLoginOnTheEntryPage() throws Exception {
+        // Given: the entry step
+        // When: it is rendered
+        mockMvc.perform(get("/onboarding"))
+                // Then: the options are named for the visitor's intent
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<strong>Register</strong>")))
+                .andExpect(content().string(containsString("<strong>Login</strong>")))
+                .andExpect(content().string(not(containsString("Create New Key"))))
+                .andExpect(content().string(not(containsString("Import Existing Key"))));
+    }
+
+    /**
      * Tests that each method choice is a label wrapping its radio, so clicking
      * anywhere on the card selects it through the browser. Selecting it from an
      * onclick handler sets the property without firing a change event, which left
