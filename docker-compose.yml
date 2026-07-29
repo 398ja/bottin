@@ -19,6 +19,9 @@ services:
       # admin one so a service holding it cannot act as the admin.
       - BOTTIN_API_PASSWORD=${BOTTIN_API_PASSWORD:-changeme-api}
       - BOTTIN_DEFAULT_DOMAIN=${BOTTIN_DEFAULT_DOMAIN:-${BOTTIN_DOMAIN:-}}
+      # Regex matching the proxy allowed to set X-Forwarded-For. Empty means no
+      # peer is trusted, so the rate limiter keys on the actual connection.
+      - BOTTIN_TRUSTED_PROXIES=${BOTTIN_TRUSTED_PROXIES:-}
       - BOTTIN_API_DOCS_ENABLED=${BOTTIN_API_DOCS_ENABLED:-false}
       - BOTTIN_SWAGGER_ENABLED=${BOTTIN_SWAGGER_ENABLED:-false}
     depends_on:

@@ -1,3 +1,21 @@
+# Tomcat's RemoteIpValve applies X-Forwarded-For, but only when the immediate peer
+# matches internal-proxies. That list is empty here, so by default nothing is
+# trusted to state the caller's address and a direct caller cannot mint a fresh
+# identity per request to walk past the rate limiter.
+#
+# Tomcat's own default trusts every private range, which is not safe for this
+# deployment: with the port published from Docker the peer is the bridge gateway,
+# a private address, so any caller reaching the port would be trusted.
+#
+# Behind a real proxy, set BOTTIN_TRUSTED_PROXIES to a regex matching it (e.g.
+# "10\.0\.0\.5" or "172\.18\.\d{1,3}\.\d{1,3}"). Until you do, every client shares
+# one rate-limit bucket keyed on the proxy's address.
+server:
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      internal-proxies: ${BOTTIN_TRUSTED_PROXIES:}
+
 spring:
   application:
     name: bottin

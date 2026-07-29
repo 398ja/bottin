@@ -55,6 +55,7 @@ PostgreSQL database for persistent storage.
 | `BOTTIN_ADMIN_PASSWORD` | Admin password | `changeme` |
 | `BOTTIN_API_USER` | Username machine callers present to the API | `api` |
 | `BOTTIN_API_PASSWORD` | Password for that user, on both `bottin-api` and `bottin-client` | `changeme-api` |
+| `BOTTIN_TRUSTED_PROXIES` | Regex of proxy addresses allowed to set `X-Forwarded-For` | empty (trust none) |
 
 The `api` user holds API access without admin rights, and its password is separate
 from the admin one: `bottin-client` needs it to register onboarded handles, and
@@ -63,6 +64,13 @@ handing it out must not hand out the admin credential. Both services read
 profile `bottin-api` refuses to start unless `BOTTIN_ADMIN_PASSWORD` and
 `BOTTIN_API_PASSWORD` are both set — unset, they fall back to a random password
 that changes on every restart.
+
+`BOTTIN_TRUSTED_PROXIES` governs which peer may state the caller's address. It is
+empty by default, so `X-Forwarded-For` is ignored and the rate limiters key on the
+connection itself — otherwise any caller could rotate the header and bypass them.
+Set it to a regex matching your edge proxy (for example `10\.0\.0\.5`) when one
+is in front of the API; until then every client behind that proxy shares a single
+rate-limit bucket keyed on the proxy's address.
 
 ### Service Ports
 
