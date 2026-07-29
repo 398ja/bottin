@@ -15,14 +15,14 @@ class HomePageIT extends BaseClientIT {
     void shouldRedirectRootToOnboarding() {
         var response = rest.getForEntity("/", String.class);
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-        assertThat(response.getBody()).contains("Create Account");
+        assertThat(response.getBody()).contains("Get Started");
     }
 
     @Test
     void shouldReturnOnboardingPage() {
         var response = rest.getForEntity("/onboarding", String.class);
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-        assertThat(response.getBody()).contains("Create Your Nostr Identity");
+        assertThat(response.getBody()).contains("Welcome to Bottin");
     }
 
     @Test

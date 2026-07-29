@@ -22,7 +22,7 @@ import java.util.Map;
 public class OnboardingController {
 
     private static final Map<String, String> STEP_TITLES = Map.of(
-            "method", "Create Account",
+            "method", "Get Started",
             "profile", "Profile Setup",
             "security", "Set Password",
             "confirm", "Review",
@@ -41,7 +41,7 @@ public class OnboardingController {
 
     @GetMapping("/onboarding")
     public String stepMethod(Model model) {
-        model.addAttribute("title", "Create Account");
+        model.addAttribute("title", "Get Started");
         model.addAttribute("content", "onboarding/step-method");
         return "layout";
     }
