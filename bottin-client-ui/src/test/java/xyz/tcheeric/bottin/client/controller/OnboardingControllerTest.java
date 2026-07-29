@@ -9,6 +9,7 @@ import xyz.tcheeric.bottin.client.service.DirectoryRegistrationException;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationService;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -183,6 +184,24 @@ class OnboardingControllerTest {
                 // Then: the badge marks the handle available
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-available=\"true\"")));
+    }
+
+    /**
+     * Tests that each method choice is a label wrapping its radio, so clicking
+     * anywhere on the card selects it through the browser. Selecting it from an
+     * onclick handler sets the property without firing a change event, which left
+     * the nsec field hidden until the page was reloaded.
+     */
+    @Test
+    void shouldMakeEachMethodCardALabelForItsRadio() throws Exception {
+        // Given: the entry step where the visitor picks create or import
+        // When: it is rendered
+        mockMvc.perform(get("/onboarding"))
+                // Then: the cards are labels and nothing selects a radio from script
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<label class=\"card-radio\">")))
+                .andExpect(content().string(containsString("<label class=\"card-radio mt-2\">")))
+                .andExpect(content().string(not(containsString("checked=true"))));
     }
 
     /**

@@ -22,8 +22,12 @@
             </p>
 
             <form onsubmit="return false;">
-                <div class="card-radio" onclick="document.getElementById('method-create').checked=true">
-                    <label class="flex-row-gap-sm" style="cursor: pointer;">
+                <!-- The whole card is the label, so a click anywhere in it selects the
+                     radio through the browser and fires the change event the reveal
+                     below listens for. Selecting it from script instead would set the
+                     property silently and leave the form half-updated. -->
+                <label class="card-radio">
+                    <div class="flex-row-gap-sm">
                         <input type="radio" name="method" id="method-create" value="create" checked style="margin-top: 0.25rem;">
                         <div>
                             <strong>Create New Key</strong>
@@ -31,11 +35,11 @@
                                 Generate a fresh Nostr keypair. Your nsec will be encrypted and stored locally.
                             </p>
                         </div>
-                    </label>
-                </div>
+                    </div>
+                </label>
 
-                <div class="card-radio mt-2" onclick="document.getElementById('method-import').checked=true">
-                    <label class="flex-row-gap-sm" style="cursor: pointer;">
+                <label class="card-radio mt-2">
+                    <div class="flex-row-gap-sm">
                         <input type="radio" name="method" id="method-import" value="import" style="margin-top: 0.25rem;">
                         <div>
                             <strong>Import Existing Key</strong>
@@ -43,8 +47,8 @@
                                 Import an existing nsec. It will be used only in your browser and never transmitted.
                             </p>
                         </div>
-                    </label>
-                </div>
+                    </div>
+                </label>
 
                 <div id="import-section" class="hidden mt-2">
                     <div class="form-group">

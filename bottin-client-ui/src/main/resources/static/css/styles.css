@@ -334,6 +334,9 @@ p {
 }
 
 .card-radio {
+    /* Carried by a <label> so the whole card selects its radio natively; a label
+       is inline by default and would collapse the card without this. */
+    display: block;
     cursor: pointer;
     border: 2px solid var(--color-border);
     border-radius: var(--radius-lg);
