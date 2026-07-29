@@ -42,7 +42,16 @@ window.APP = {
         });
     },
 
+    // One identity per browser. Everything reads "the" identity through
+    // getIdentityUserId(), which returns whichever record storage enumerates
+    // first, so a leftover record would make the active identity arbitrary and
+    // would let logout wipe one identity while leaving the other signed in.
+    // Signing in as someone else therefore replaces rather than accumulates.
     saveIdentity: function(identity) {
+        var self = this;
+        this.storedIdentityUserIds().forEach(function(stored) {
+            if (stored !== identity.userId) self.clearAll(stored);
+        });
         localStorage.setItem(this.identityKey(identity.userId), JSON.stringify(identity));
     },
 
@@ -69,21 +78,31 @@ window.APP = {
         return data ? JSON.parse(data) : [];
     },
 
+    // Forgets a user entirely: their stored data and any key still unlocked for
+    // them in this tab.
     clearAll: function(userId) {
         localStorage.removeItem(this.identityKey(userId));
         localStorage.removeItem(this.followsKey(userId));
         localStorage.removeItem(this.blocksKey(userId));
         localStorage.removeItem(this.relaysKey(userId));
+        this.lockSession(userId);
+    },
+
+    storedIdentityUserIds: function() {
+        var prefix = 'imani.identity.';
+        var userIds = [];
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.startsWith(prefix)) {
+                userIds.push(key.substring(prefix.length));
+            }
+        }
+        return userIds;
     },
 
     getIdentityUserId: function() {
-        for (var i = 0; i < localStorage.length; i++) {
-            var key = localStorage.key(i);
-            if (key && key.startsWith('imani.identity.')) {
-                return key.substring('imani.identity.'.length);
-            }
-        }
-        return null;
+        var userIds = this.storedIdentityUserIds();
+        return userIds.length ? userIds[0] : null;
     },
 
     relaysKey: function(userId) { return 'imani.relays.' + userId; },
@@ -274,8 +293,11 @@ window.APP = {
     // the confirmation warns before anything is removed.
     logout: function() {
         if (!window.confirm('This logs you out and erases your key from this browser. You will need your nsec to sign in again.')) return;
-        var userId = this.getIdentityUserId();
-        if (userId) this.clearAll(userId);
+        var self = this;
+        // Every stored identity, not just the active one: a browser from before
+        // identities were made exclusive may still hold a second record, and
+        // leaving it would sign the next visitor in as someone.
+        this.storedIdentityUserIds().forEach(function(userId) { self.clearAll(userId); });
         sessionStorage.clear();
         var goToEntry = function() { window.location.href = '/onboarding'; };
         fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'same-origin' })

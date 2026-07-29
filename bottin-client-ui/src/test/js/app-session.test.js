@@ -65,6 +65,41 @@ describe('ensureRelaysSeeded', () => {
   });
 });
 
+describe('single identity per browser', () => {
+  const OTHER = 'npub1other';
+
+  // Everything resolves "the" identity through getIdentityUserId(), which returns
+  // whichever record storage enumerates first. A second one would make the active
+  // identity arbitrary, so signing in as someone else replaces rather than adds.
+  it('evicts the previous identity and its data when another is saved', () => {
+    APP.saveIdentity({ userId: OTHER, privateKeyEncrypted: 'old' });
+    APP.saveFollowList(OTHER, ['npub1friend']);
+    APP.saveBlockList(OTHER, ['npub1blocked']);
+    APP.saveRelays(OTHER, [{ url: 'wss://old', read: true, write: true }]);
+    APP.setSessionKey(OTHER, 'deadbeef');
+
+    APP.saveIdentity({ userId: USER, privateKeyEncrypted: 'new' });
+
+    expect(APP.storedIdentityUserIds()).toEqual([USER]);
+    expect(APP.loadIdentity(OTHER)).toBeNull();
+    expect(APP.loadFollowList(OTHER)).toEqual([]);
+    expect(APP.loadBlockList(OTHER)).toEqual([]);
+    expect(localStorage.getItem(APP.relaysKey(OTHER))).toBeNull();
+    expect(APP.getSessionKey(OTHER)).toBeNull();
+  });
+
+  // Saving a profile edit must not wipe the editor's own follow list.
+  it('keeps its own data when the same identity is saved again', () => {
+    APP.saveIdentity({ userId: USER, displayName: 'First' });
+    APP.saveFollowList(USER, ['npub1friend']);
+
+    APP.saveIdentity({ userId: USER, displayName: 'Second' });
+
+    expect(APP.loadIdentity(USER).displayName).toBe('Second');
+    expect(APP.loadFollowList(USER)).toEqual(['npub1friend']);
+  });
+});
+
 describe('logout', () => {
   function stubConfirm(answer) {
     vi.spyOn(window, 'confirm').mockReturnValue(answer);
