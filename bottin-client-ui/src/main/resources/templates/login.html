@@ -28,21 +28,8 @@
                     Unlock &amp; Sign In
                 </button>
                 <div class="text-center mt-2 text-sm">
-                    <a href="#" onclick="showPasteMode(event)">Use a different key</a>
+                    <a href="/onboarding">Use a different identity</a>
                 </div>
-            </div>
-
-            <div id="paste-form" class="hidden">
-                <div class="callout callout-info mb-3">
-                    <p>Paste your nsec to sign in. Your key is encrypted and stays in your browser — it is never sent to any server.</p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Your nsec (private key)</label>
-                    <textarea id="nsec-input" class="form-input form-input-mono" rows="2" placeholder="nsec1..." autocomplete="off"></textarea>
-                </div>
-                <button id="signin-btn" class="btn btn-primary btn-full" onclick="handleLogin()">
-                    Sign In
-                </button>
             </div>
 
             <div id="login-error" class="form-error text-center mt-2 hidden"></div>
@@ -65,36 +52,8 @@
 
         function setBusy(busy) {
             document.getElementById('login-loading').style.display = busy ? 'block' : 'none';
-            var unlockBtn = document.getElementById('unlock-btn');
-            var signinBtn = document.getElementById('signin-btn');
-            if (unlockBtn) unlockBtn.disabled = busy;
-            if (signinBtn) signinBtn.disabled = busy;
+            document.getElementById('unlock-btn').disabled = busy;
             if (busy) document.getElementById('login-error').style.display = 'none';
-        }
-
-        // Signing in with a pasted nsec hands over to the Login step of the entry
-        // flow rather than authenticating here. That step encrypts the key under a
-        // passphrase, stores the identity and pulls the published profile in;
-        // authenticating here established a session against an empty browser, so
-        // the app rendered with no name, avatar or bio anywhere.
-        function handleLogin() {
-            var nsec = document.getElementById('nsec-input').value.trim();
-            if (!nsec) {
-                showError('Please enter your nsec');
-                return;
-            }
-            try {
-                NostrCrypto.nsecToNpub(nsec);
-            } catch (err) {
-                showError('Invalid nsec format');
-                return;
-            }
-            setBusy(true);
-            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
-            data.method = 'import';
-            data.nsec = nsec;
-            sessionStorage.setItem('onboarding-data', JSON.stringify(data));
-            window.location.href = '/onboarding/step/import';
         }
 
         async function handleUnlock() {
@@ -124,14 +83,6 @@
                 showError(err.message);
                 setBusy(false);
             }
-        }
-
-        function showPasteMode(event) {
-            if (event) event.preventDefault();
-            document.getElementById('unlock-form').className = 'hidden';
-            document.getElementById('paste-form').className = '';
-            document.getElementById('login-error').style.display = 'none';
-            document.getElementById('nsec-input').focus();
         }
 
         function renderRecognition(identity) {
@@ -173,16 +124,18 @@
             return null;
         }
 
+        // This page unlocks an identity this browser already holds. With none
+        // stored there is nothing to unlock, and entering a key belongs to the
+        // entry flow, which encrypts and stores it rather than only signing in.
         (function() {
             var userId = APP.getIdentityUserId();
-            if (userId) {
-                renderRecognition(APP.loadIdentity(userId) || {});
-                document.getElementById('unlock-form').className = '';
-                document.getElementById('passphrase-input').focus();
-            } else {
-                document.getElementById('paste-form').className = '';
-                document.getElementById('nsec-input').focus();
+            if (!userId) {
+                window.location.replace('/onboarding');
+                return;
             }
+            renderRecognition(APP.loadIdentity(userId) || {});
+            document.getElementById('unlock-form').className = '';
+            document.getElementById('passphrase-input').focus();
         })();
     </script>
 </body>

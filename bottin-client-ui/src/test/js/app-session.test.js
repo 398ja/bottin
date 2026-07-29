@@ -72,6 +72,13 @@ describe('logout', () => {
     global.fetch = vi.fn(() => new Promise(() => {}));
   }
 
+  // Logout wipes the stored identity, so the unlock screen would have nothing to
+  // unlock; the entry page is where signing in starts again.
+  it('sends the user to the entry page, not the unlock screen', () => {
+    expect(APP.logout.toString()).toContain("'/onboarding'");
+    expect(APP.logout.toString()).not.toContain("'/login'");
+  });
+
   // Logging out must leave no key material behind in this browser: neither the
   // encrypted identity, the unlocked session key, nor a half-finished onboarding nsec.
   it('erases the stored key material', () => {

@@ -269,17 +269,18 @@ window.APP = {
     // Ends the NAP session server-side, erases every trace of the key from this
     // browser (the encrypted identity in localStorage, the unlocked key and any
     // half-finished onboarding nsec in sessionStorage), then performs a real
-    // navigation to the login page. Signing in again requires the nsec, so the
-    // confirmation warns before anything is removed.
+    // navigation to the entry page: the stored identity is gone, so the unlock
+    // screen would have nothing to unlock. Signing in again requires the nsec, so
+    // the confirmation warns before anything is removed.
     logout: function() {
         if (!window.confirm('This logs you out and erases your key from this browser. You will need your nsec to sign in again.')) return;
         var userId = this.getIdentityUserId();
         if (userId) this.clearAll(userId);
         sessionStorage.clear();
-        var goToLogin = function() { window.location.href = '/login'; };
+        var goToEntry = function() { window.location.href = '/onboarding'; };
         fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'same-origin' })
-            .then(goToLogin)
-            .catch(goToLogin);
+            .then(goToEntry)
+            .catch(goToEntry);
     }
 };
 }
