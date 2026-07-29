@@ -46,11 +46,22 @@
         </div>
     </div>
 
+    <span id="configured-relays" th:text="${defaultRelays}" hidden></span>
+
     <script>
-        var DEFAULT_RELAYS = [
+        // Public discovery relays, plus whatever this deployment configures: a key
+        // imported from elsewhere published its profile out there, while one that
+        // registered here published it to the local set.
+        var DISCOVERY_RELAYS = [
             'wss://relay.damus.io', 'wss://nos.lol',
             'wss://relay.primal.net', 'wss://relay.nostr.band'
         ];
+        var DEFAULT_RELAYS = DISCOVERY_RELAYS.concat(
+            ((document.getElementById('configured-relays') || {}).textContent || '')
+                .split(',')
+                .map(function(url) { return url.trim(); })
+                .filter(function(url) { return url.length > 0 && DISCOVERY_RELAYS.indexOf(url) === -1; })
+        );
 
         function showImportStatus(message) {
             var loading = document.getElementById('import-loading');
@@ -65,24 +76,14 @@
             document.getElementById('import-btn').disabled = false;
         }
 
-        // Best-effort kind-0 profile lookup for an imported key. Returns null on
-        // timeout or when nothing is found so import never blocks on relays.
+        // Best-effort kind-0 lookup on the public discovery relays: an imported key
+        // published its profile wherever its owner was before, not on this
+        // deployment's configured relays. Returns null on timeout or when nothing
+        // is found, so import never blocks on a relay.
         async function fetchProfile(pubkeyHex) {
             var pool = new NostrTools.SimplePool();
             try {
-                var events = await pool.querySync(
-                    DEFAULT_RELAYS, { kinds: [0], authors: [pubkeyHex] }, { maxWait: 4000 });
-                if (!events || !events.length) return null;
-                events.sort(function(a, b) { return b.created_at - a.created_at; });
-                var meta = JSON.parse(events[0].content || '{}');
-                return {
-                    displayName: meta.display_name || meta.name || null,
-                    picture: meta.picture || null,
-                    banner: meta.banner || null,
-                    nip05: meta.nip05 || null
-                };
-            } catch (e) {
-                return null;
+                return await ProfileFetch.fetch(pool, DEFAULT_RELAYS, pubkeyHex);
             } finally {
                 try { pool.close(DEFAULT_RELAYS); } catch (ignored) {}
             }
@@ -109,13 +110,7 @@
                 var identity = await NostrCrypto.buildEncryptedIdentity(nsec, pw);
 
                 showImportStatus('Looking up your profile...');
-                var profile = await fetchProfile(identity.pubkeyHex);
-                if (profile) {
-                    if (profile.displayName) identity.displayName = profile.displayName;
-                    if (profile.picture) identity.picture = profile.picture;
-                    if (profile.banner) identity.banner = profile.banner;
-                    if (profile.nip05) identity.nip05 = profile.nip05;
-                }
+                ProfileFetch.applyTo(identity, await fetchProfile(identity.pubkeyHex));
                 APP.saveIdentity(identity);
 
                 showImportStatus('Signing you in...');

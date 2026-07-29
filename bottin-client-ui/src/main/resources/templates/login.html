@@ -72,24 +72,29 @@
             if (busy) document.getElementById('login-error').style.display = 'none';
         }
 
+        // Signing in with a pasted nsec hands over to the Login step of the entry
+        // flow rather than authenticating here. That step encrypts the key under a
+        // passphrase, stores the identity and pulls the published profile in;
+        // authenticating here established a session against an empty browser, so
+        // the app rendered with no name, avatar or bio anywhere.
         function handleLogin() {
             var nsec = document.getElementById('nsec-input').value.trim();
             if (!nsec) {
                 showError('Please enter your nsec');
                 return;
             }
-            var npub, hexKey;
             try {
-                npub = NostrCrypto.nsecToNpub(nsec);
-                hexKey = NostrCrypto.nsecToHex(nsec);
+                NostrCrypto.nsecToNpub(nsec);
             } catch (err) {
                 showError('Invalid nsec format');
                 return;
             }
             setBusy(true);
-            APP.napLogin(hexKey, npub)
-                .then(function() { window.location.href = '/apps'; })
-                .catch(function(err) { showError(err.message); setBusy(false); });
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            data.method = 'import';
+            data.nsec = nsec;
+            sessionStorage.setItem('onboarding-data', JSON.stringify(data));
+            window.location.href = '/onboarding/step/import';
         }
 
         async function handleUnlock() {
@@ -111,6 +116,9 @@
                     identity.privateKeyEncrypted, identity.privateKeyIv, identity.privateKeySalt, passphrase);
 
                 await APP.napLogin(hexKey, identity.npub);
+                // Pull the published profile back in: it may have been edited from
+                // another client since this browser last stored it.
+                await ProfileFetch.refresh(APP.getIdentityUserId());
                 window.location.href = '/apps';
             } catch (err) {
                 showError(err.message);

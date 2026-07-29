@@ -93,6 +93,11 @@ public class OnboardingController {
             model.addAttribute("bottinDomain", clientProperties.getDomain());
             model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
         }
+        if ("import".equals(step)) {
+            // The key being imported may have published its profile to this
+            // deployment's relays rather than to the public discovery set.
+            model.addAttribute("defaultRelays", String.join(",", clientProperties.getDefaultRelays()));
+        }
         return "layout";
     }
 
