@@ -200,10 +200,15 @@ error as `bottin-web` vs `bottin-api`.
 |---|---|
 | Settings row missing | Cannot happen; the migration inserts it. `SettingsService` throws rather than inventing defaults if it ever does |
 | API unreachable from the client | Serve last cached values; if none, serve unconfigured. Never fall back to a guess |
-| `blossom_url` empty | Upload controls disabled with a stated reason |
+| `blossom_url` empty | Upload controls disabled with a stated reason; the rest of onboarding proceeds |
 | System relays empty | Publish uses the user's own relays; the welcome screen already reports "no write relay configured" when there are none |
 | Discovery relays empty | Login profile lookup finds nothing and proceeds; sign-in never blocks on relays |
 | Invalid relay scheme submitted | Rejected by form validation with the offending line named |
+
+An unconfigured media server **degrades**: uploads are disabled with a stated reason and
+the rest of onboarding proceeds normally. Refusing onboarding outright was considered
+and declined — a visitor cannot fix the deployment's configuration, so blocking them
+turns an operator's omission into a dead end for someone who came to register.
 
 ## Testing
 
