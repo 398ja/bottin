@@ -2,8 +2,8 @@
 
 Move deployment configuration that is really *data* out of environment variables and
 into the database, edited in the bottin admin UI and read by the client through the
-API. Covers the media server (Blossom) URL, the system relay set, the profile
-discovery relays, and the API rate limit.
+API. Covers the media server (Blossom) URL, the system relays, the profile discovery
+relays, and the API rate limit.
 
 ## Problem
 
@@ -21,8 +21,8 @@ Three kinds of configuration are tangled together in `docker-compose.yml` today:
    compose and recreating containers.
 
 Only the third kind moves. Two of those values are worse than inconvenient: the
-default relay set is copied into each browser's `localStorage` at first use, so
-changing it never reaches anyone who already onboarded, and the discovery relays are
+default relays are copied into each browser's `localStorage` at first use, so
+changing them never reaches anyone who already onboarded, and the discovery relays are
 hardcoded in `bottin-client-ui/src/main/resources/templates/onboarding/step-import.html`,
 where changing them means rebuilding the client image.
 
@@ -32,13 +32,18 @@ where changing them means rebuilding the client image.
 |---|---|---|
 | Scope | One global settings record | Mirrors the current env model; a nullable `domain_id` can be added later without breaking readers |
 | Client access | Client server fetches from the API and serves the browser | `BOTTIN_DIRECTORY_URL` is an internal compose hostname the browser cannot resolve; keeps CORS out of it |
-| System relay | Applied implicitly at use time, never stored per user | Cannot appear in Settings because it was never in the user's list; admin changes reach everyone at once |
-| Outward lists | System relay **is** included in kind-10002 and the NIP-05 record | Events land there; excluding it would make them unfindable. "Not viewable" means "not yours to edit", not "secret" |
+| System relays | Applied implicitly at use time, never stored per user | Cannot appear in Settings because they were never in the user's list; admin changes reach everyone at once |
+| Outward lists | System relays **are** included in kind-10002 and the NIP-05 record | Events land there; excluding them would make those events unfindable. "Not viewable" means "not yours to edit", not "secret" |
 | Precedence | Database only; the env vars are deleted | One source of truth from the first line of code |
 | Storage shape | Singleton row, typed columns | Constraints do real work; relay lists as JSON text matches `nip05_records.relays_json` |
 | Media server | Required by the admin form | An unconfigured media server is a broken deployment, not a mode |
 
-Settings in scope: media server URL, system relays, discovery relays, rate limit.
+Settings in scope: media server URL, system relays, discovery relays, rate limit. A
+deployment may run several system relays; they are stored as a plain list of URLs and
+every one of them is both published to and searched. Per-relay read/write flags were
+considered and declined: the JSON is already a document, so flags can be added later
+when a write-only archive or read-only mirror is an actual requirement rather than a
+guess.
 
 Explicitly **not** moved, with reasons, so this is not revisited by accident:
 
@@ -78,7 +83,9 @@ database level to represent the window between first boot and the admin's first 
 the form will not save it blank.
 
 Relay lists are JSON text rather than a child table: they are short, always read and
-written whole, and no query ever selects an individual relay.
+written whole, and no query ever selects an individual relay. Both lists hold plain URL
+strings — `["ws://relay-a:7777", "wss://relay-b.example"]` — not objects with read/write
+flags. Every system relay is published to and searched.
 
 ## Components
 
@@ -118,9 +125,9 @@ users within a minute. On a cold start with the API unreachable the client serve
 
 ### System relays
 
-`APP.ensureRelaysSeeded()` is removed. It copied the default relay into each browser at
-first use, which froze the value per browser and put the system relay in the user's own
-list where Settings would render it.
+`APP.ensureRelaysSeeded()` is removed. It copied the default relays into each browser at
+first use, which froze them per browser and put them in the user's own list, where
+Settings would render them.
 
 ```
 GET /api/v1/relays/system      served by bottin-client-ui, NAP session required
@@ -135,8 +142,8 @@ NAP protection, and it is only needed at publish time, which always follows sign
 
 Every publish path uses the union: profile save, the onboarding kind-0, the kind-10002
 relay list, and the relay array sent with the NIP-05 registration.
-`settings-relays.js` renders only the user's own list, so the system relay cannot appear
-there — it was never in it.
+`settings-relays.js` renders only the user's own list, so system relays cannot appear
+there — they were never in it.
 
 The endpoint is renamed because `defaults` now describes the opposite of what happens:
 these relays are applied on every publish, not copied once as a starting point.
@@ -156,7 +163,7 @@ to an empty URL, which today produces an opaque network error.
 
 `step-import.html` stops hardcoding the public relay list. Profile lookup at login
 queries the admin's discovery relays **plus** the system relays, because a user who
-registered on this deployment published their profile to the latter.
+registered on this deployment published their profile to those.
 
 ## Admin UI
 
@@ -176,7 +183,7 @@ Bean validation lives on `SettingsForm`; the relay-scheme rule lives in
 The page states three things the operator would otherwise have to discover:
 
 - **Empty-state warnings.** "No media server set — image uploads are disabled for all
-  users" and "No system relay set — user events publish only to relays each user adds
+  users" and "No system relays set — user events publish only to relays each user adds
   themselves". A fresh install reaches these states by design.
 - **"Takes effect within a minute"** beside the save button, because the client caches
   for 60 seconds and an instant reload would otherwise look like a failed save.
@@ -233,12 +240,12 @@ step (4) small.
 ## Accepted limitations
 
 - **Leftover seeded relays.** Users who onboarded before this change still have the old
-  default relay in their personal list, where Settings will now show it as theirs to
-  remove. It is the same URL the system applies anyway, so the union dedupes it.
+  default relays in their personal list, where Settings will now show them as theirs to
+  remove. They are the same URLs the system applies anyway, so the union dedupes them.
   Cleaning it would mean deleting something from a user's storage that they cannot
   distinguish from a relay they added themselves.
 - **Empty relay page for new users.** A new user sees "no relays added yet" while
-  publishing works, because the system relay is invisible. This follows from the "not
+  publishing works, because the system relays are invisible. This follows from the "not
   viewable" requirement; the locked-row alternative was considered and declined.
 - **60-second propagation.** An admin change is not instant in the client. The UI says
   so.
