@@ -47,8 +47,8 @@ which is the property the spec's rollout was already built around.
 
 **Purpose**: Establish a green baseline and confirm no build-file changes are needed.
 
-- [ ] T001 Record a green baseline: run `mvn -q verify` from the repository root and `npm test` in `bottin-client-ui/`, and confirm `bottin-persistence/src/main/resources/db/migration/` still has `V3__profile_reach.sql` as its head so the `V4` slot is free
-- [ ] T002 [P] Confirm no POM changes are required for this feature: `bottin-api/pom.xml` and `bottin-admin-ui/pom.xml` already declare `bottin-service`, and `bottin-client-ui/pom.xml` declares `bottin-core` only — record in the commit message that the client's lack of a persistence dependency is what forces the HTTP path in US3
+- [x] T001 Record a green baseline: run `mvn -q verify` from the repository root and `npm test` in `bottin-client-ui/`, and confirm `bottin-persistence/src/main/resources/db/migration/` still has `V3__profile_reach.sql` as its head so the `V4` slot is free
+- [x] T002 [P] Confirm no POM changes are required for this feature: `bottin-api/pom.xml` and `bottin-admin-ui/pom.xml` already declare `bottin-service`, and `bottin-client-ui/pom.xml` declares `bottin-core` only — record in the commit message that the client's lack of a persistence dependency is what forces the HTTP path in US3
 
 ---
 
