@@ -244,15 +244,22 @@ which is the property the spec's rollout was already built around.
 
 ### Tests for User Story 6
 
-- [ ] T045 [US6] Add a test to `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/OnboardingControllerTest.java` asserting that `GET /onboarding/step/import` exposes a `discoveryRelays` model attribute holding the discovery relays unioned with the system relays, and an empty value when neither is configured; confirm it FAILS
+- [x] T045 [US6] Add a test to `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/OnboardingControllerTest.java` asserting that `GET /onboarding/step/import` exposes a `discoveryRelays` model attribute holding the discovery relays unioned with the system relays, and an empty value when neither is configured; confirm it FAILS
 
 ### Implementation for User Story 6
 
-- [ ] T046 [US6] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/OnboardingController.java:96-100` — replace the `defaultRelays` model attribute with `discoveryRelays`, built from `DirectorySettingsClient` as discovery relays unioned with system relays, de-duplicated; server-side injection is required because this step runs before any NAP session exists (research.md R8) (depends on T045)
-- [ ] T047 [US6] Modify `bottin-client-ui/src/main/resources/templates/onboarding/step-import.html` — delete the hardcoded `DISCOVERY_RELAYS` constant (lines 55–58) and the `DEFAULT_RELAYS` concatenation (lines 59–64), rename the span at line 49 from `configured-relays` to `discovery-relays` bound to `${discoveryRelays}`, and read the relay list straight from it; update the surrounding comments, which currently describe the deleted public-relay behaviour (depends on T046)
-- [ ] T048 [US6] Run `mvn -q verify`, confirm PASS, and commit as `feat(client-ui): take profile discovery relays from admin settings` (depends on T047)
+- [x] T046 [US6] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/OnboardingController.java:96-100` — replace the `defaultRelays` model attribute with `discoveryRelays`, built from `DirectorySettingsClient` as discovery relays unioned with system relays, de-duplicated; server-side injection is required because this step runs before any NAP session exists (research.md R8) (depends on T045)
+- [x] T047 [US6] Modify `bottin-client-ui/src/main/resources/templates/onboarding/step-import.html` — delete the hardcoded `DISCOVERY_RELAYS` constant (lines 55–58) and the `DEFAULT_RELAYS` concatenation (lines 59–64), rename the span at line 49 from `configured-relays` to `discovery-relays` bound to `${discoveryRelays}`, and read the relay list straight from it; update the surrounding comments, which currently describe the deleted public-relay behaviour (depends on T046)
+- [x] T048 [US6] Run `mvn -q verify`, confirm PASS, and commit as `feat(client-ui): take profile discovery relays from admin settings` (depends on T047)
 
 **Checkpoint**: All six stories are functional. Every consumer now reads settings; the environment variables are dead but still present.
+
+**US6 implementation notes**:
+
+- The four relays previously compiled into `step-import.html` (`relay.damus.io`, `nos.lol`, `relay.primal.net`, `relay.nostr.band`) are gone entirely rather than kept as a fallback. Keeping a compiled-in list while deleting the environment fallback would have been inconsistent, and it is exactly what forced a client rebuild to change. They live on as the suggested seed values in the new how-to.
+- Discovery and system relays are unioned server-side, discovery first, de-duplicated. Injection has to be server-side: `/onboarding/step/import` runs before any NAP session exists, so it cannot read the NAP-protected `/api/v1/relays/system`.
+- `ClientProperties.getDefaultRelays()` has no callers left. The remaining `getDefaultRelays()` hits in the repo are `Nip05RecordProperties` and `ReachProperties` — different classes, out of scope.
+- Java 304 → 307.
 
 ---
 

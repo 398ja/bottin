@@ -46,22 +46,18 @@
         </div>
     </div>
 
-    <span id="configured-relays" th:text="${defaultRelays}" hidden></span>
+    <span id="discovery-relays" th:text="${discoveryRelays}" hidden></span>
 
     <script>
-        // Public discovery relays, plus whatever this deployment configures: a key
-        // imported from elsewhere published its profile out there, while one that
-        // registered here published it to the local set.
-        var DISCOVERY_RELAYS = [
-            'wss://relay.damus.io', 'wss://nos.lol',
-            'wss://relay.primal.net', 'wss://relay.nostr.band'
-        ];
-        var DEFAULT_RELAYS = DISCOVERY_RELAYS.concat(
-            ((document.getElementById('configured-relays') || {}).textContent || '')
+        // Where to look for this key's already-published profile: the relays an
+        // administrator configured, which the server has already combined with the
+        // deployment's own. Nothing is hardcoded here, so changing the set is an
+        // admin edit rather than a client rebuild.
+        var DISCOVERY_RELAYS =
+            ((document.getElementById('discovery-relays') || {}).textContent || '')
                 .split(',')
                 .map(function(url) { return url.trim(); })
-                .filter(function(url) { return url.length > 0 && DISCOVERY_RELAYS.indexOf(url) === -1; })
-        );
+                .filter(function(url) { return url.length > 0; });
 
         function showImportStatus(message) {
             var loading = document.getElementById('import-loading');
@@ -76,16 +72,17 @@
             document.getElementById('import-btn').disabled = false;
         }
 
-        // Best-effort kind-0 lookup on the public discovery relays: an imported key
-        // published its profile wherever its owner was before, not on this
-        // deployment's configured relays. Returns null on timeout or when nothing
-        // is found, so import never blocks on a relay.
+        // Best-effort kind-0 lookup on the configured discovery relays: an imported
+        // key published its profile wherever its owner was before, and one that
+        // registered here published to this deployment's own relays. Returns null on
+        // timeout, when nothing is found, and when no relays are configured at all,
+        // so signing in never blocks on a relay.
         async function fetchProfile(pubkeyHex) {
             var pool = new NostrTools.SimplePool();
             try {
-                return await ProfileFetch.fetch(pool, DEFAULT_RELAYS, pubkeyHex);
+                return await ProfileFetch.fetch(pool, DISCOVERY_RELAYS, pubkeyHex);
             } finally {
-                try { pool.close(DEFAULT_RELAYS); } catch (ignored) {}
+                try { pool.close(DISCOVERY_RELAYS); } catch (ignored) {}
             }
         }
 

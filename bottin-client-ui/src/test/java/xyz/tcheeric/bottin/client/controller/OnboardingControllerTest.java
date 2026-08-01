@@ -273,4 +273,58 @@ class OnboardingControllerTest {
                 .andExpect(content().string(containsString("id=\"blossom-url\"")))
                 .andExpect(content().string(containsString(MEDIA_SERVER)));
     }
+    /**
+     * Tests that the import step is handed the relays to search for an existing
+     * profile: the administrator's discovery relays followed by the deployment's
+     * system relays, because a key that registered here published its profile to
+     * the latter while one created elsewhere published to the former.
+     */
+    @Test
+    void shouldExposeDiscoveryRelaysOnTheImportStep() throws Exception {
+        // Arrange
+        when(settingsClient.current()).thenReturn(new DirectorySettings(
+                MEDIA_SERVER,
+                List.of("ws://relay-a:7777"),
+                List.of("wss://relay.damus.io", "wss://nos.lol")));
+
+        // Act & Assert
+        mockMvc.perform(get("/onboarding/step/import"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("discoveryRelays",
+                        "wss://relay.damus.io,wss://nos.lol,ws://relay-a:7777"));
+    }
+
+    /**
+     * Tests that a relay serving as both a discovery and a system relay is
+     * queried once rather than twice.
+     */
+    @Test
+    void shouldNotRepeatARelayListedAsBothDiscoveryAndSystem() throws Exception {
+        // Arrange
+        when(settingsClient.current()).thenReturn(new DirectorySettings(
+                MEDIA_SERVER,
+                List.of("wss://shared.example"),
+                List.of("wss://shared.example")));
+
+        // Act & Assert
+        mockMvc.perform(get("/onboarding/step/import"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("discoveryRelays", "wss://shared.example"));
+    }
+
+    /**
+     * Tests that an unconfigured deployment still renders the import step. The
+     * profile lookup then finds nothing and sign-in proceeds, since signing in
+     * must never hinge on a relay being configured.
+     */
+    @Test
+    void shouldRenderTheImportStepWhenNoRelaysAreConfigured() throws Exception {
+        // Arrange
+        when(settingsClient.current()).thenReturn(DirectorySettings.unconfigured());
+
+        // Act & Assert
+        mockMvc.perform(get("/onboarding/step/import"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("discoveryRelays", ""));
+    }
 }
