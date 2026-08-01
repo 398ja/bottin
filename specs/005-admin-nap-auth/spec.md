@@ -28,29 +28,35 @@ own specification so it can be scheduled, reviewed, and delivered independently 
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - An administrator signs in with their key (Priority: P1) 🎯 MVP
+### User Story 1 - An administrator signs in for the first time (Priority: P1) 🎯 MVP
 
-An administrator opens the admin dashboard and is asked to prove control of their Nostr key
-rather than to type a username and password. They authorise the request with their key, and the
-dashboard opens.
+An administrator opens the admin dashboard for the first time on a device. Instead of a username
+and password, they are asked for their Nostr key and for a passphrase to protect it. The key is
+kept on their own device in encrypted form, they prove control of it, and the dashboard opens.
+
+There is no sign-up: the administrator brings a key they already have, and the deployment already
+knows which public key it will accept.
 
 **Why this priority**: This is the feature. Nothing else here has value without it, and it is the
 only story that delivers a usable dashboard on its own.
 
-**Independent Test**: Configure a deployment with a known administrator public key, sign in with
-the matching private key, and confirm the dashboard and every admin page are reachable.
+**Independent Test**: Configure a deployment with a known administrator public key, sign in on a
+fresh browser with the matching private key and a passphrase, and confirm the dashboard and every
+admin page are reachable.
 
 **Acceptance Scenarios**:
 
 1. **Given** a deployment configured with an administrator public key, **When** the administrator
-   proves control of the matching private key, **Then** they reach the dashboard and can use every
-   admin page.
+   supplies the matching private key and a passphrase, **Then** they reach the dashboard and can
+   use every admin page.
 2. **Given** an administrator who has signed in, **When** they navigate between admin pages,
    **Then** they are not asked to authorise again.
 3. **Given** an administrator on the sign-in page, **When** the page is displayed, **Then** it
-   offers no username or password field.
+   offers no username or password field and no way to create an account.
 4. **Given** an administrator signing in, **When** the exchange completes, **Then** their private
    key has not been transmitted to the deployment at any point.
+5. **Given** an administrator who has supplied their key, **When** it is retained for later use,
+   **Then** it is retained only on their own device and only in a form that the passphrase unlocks.
 
 ---
 
@@ -102,22 +108,53 @@ sign in with any key, and confirm refusal plus a diagnostic an operator can act 
 
 ---
 
-### User Story 4 - Sessions end (Priority: P4)
+### User Story 4 - A returning administrator unlocks with a passphrase (Priority: P4)
 
-An administrator signs out when finished, and a session left unattended stops working on its own.
+Having signed in once, the administrator returns — or their session expires while they are still
+working. They are asked only for their passphrase, not for their key again.
 
-**Why this priority**: Valuable but not what makes the feature work. A session that never ends
-undermines the security gain, so it belongs in scope — just after the paths above.
+**Why this priority**: This is the everyday path; the first sign-in happens once. Without it an
+administrator handles a raw private key every session, which is exactly the habit that gets keys
+pasted somewhere they should not be.
 
-**Independent Test**: Sign in, sign out, and confirm admin pages require authorising again; then
-sign in, leave the session beyond its lifetime, and confirm the same.
+**Independent Test**: Sign in once, let the session expire, then confirm the administrator is
+asked for a passphrase and regains access without re-entering the key.
+
+**Acceptance Scenarios**:
+
+1. **Given** an administrator who has signed in before and not signed out, **When** they return to
+   the dashboard, **Then** they are asked for their passphrase and not for their key.
+2. **Given** a session that has expired, **When** the administrator continues working, **Then**
+   they are asked for their passphrase and, on giving it, resume without re-entering their key.
+3. **Given** an administrator entering the wrong passphrase, **When** they submit it, **Then**
+   access is refused, the stored key stays intact and unusable, and they may try again.
+4. **Given** an administrator who has forgotten their passphrase, **When** they say so, **Then**
+   they can discard the stored key and start again from their key, since the passphrase cannot be
+   recovered.
+
+---
+
+### User Story 5 - Signing out removes the key from the device (Priority: P5)
+
+An administrator signs out. Their session ends and the stored key is erased from that device, so
+the machine no longer holds anything that could be unlocked.
+
+**Why this priority**: Required scope rather than optional polish — without it the key stays on
+the device indefinitely and "signing out" would be a false reassurance. It comes last only because
+it cannot be demonstrated until the storing behaviour exists.
+
+**Independent Test**: Sign in, sign out, and confirm both that admin pages require authorising
+again and that the next sign-in asks for the key rather than a passphrase.
 
 **Acceptance Scenarios**:
 
 1. **Given** a signed-in administrator, **When** they sign out, **Then** their session ends
    immediately and admin pages require authorising again.
-2. **Given** a session older than the configured lifetime, **When** the administrator requests an
-   admin page, **Then** they are sent to the sign-in page.
+2. **Given** an administrator who has signed out, **When** they return, **Then** they are asked for
+   their key and a new passphrase, because nothing remains stored on the device.
+3. **Given** a session older than the configured lifetime, **When** the administrator requests an
+   admin page, **Then** they are sent to the sign-in page — but the stored key remains, so the
+   passphrase is enough to resume.
 
 ---
 
@@ -138,8 +175,19 @@ sign in, leave the session beyond its lifetime, and confirm the same.
   key at all must be reported as misconfiguration rather than silently refusing everyone.
 - **The administrator has no key on the device they are using.** They must be told what they need
   rather than shown a form that cannot succeed.
-- **Two browser sessions.** Signing out in one place should not silently leave another usable
-  beyond its own lifetime.
+- **The passphrase is forgotten.** Nothing can recover it, because nothing the deployment holds
+  can decrypt the key. The only route back is discarding the stored key and starting again from
+  the private key, which must be offered rather than left for the administrator to work out.
+- **The private key is supplied but does not match the configured public key.** This must be
+  refused at first sign-in, before anything is stored, so a wrong key is never left encrypted on
+  the device waiting to fail later.
+- **Browser storage is cleared, or the administrator uses a second device.** Each device is a
+  first sign-in of its own: key plus passphrase. There is no syncing between devices.
+- **Two browser sessions on the same device.** Signing out in one erases the shared stored key, so
+  the other cannot be unlocked again even if its session has not yet expired.
+- **The device is shared or public.** Because the key rests on the device until sign-out, an
+  administrator who walks away without signing out leaves an encrypted key behind. The sign-out
+  affordance must be prominent enough to be used.
 - **Plain HTTP in local development.** Sign-in must stay usable on a local stack without weakening
   the protections that matter in production.
 
@@ -174,14 +222,23 @@ sign in, leave the session beyond its lifetime, and confirm the same.
 - **FR-013**: An operator MUST be able to set the administrator public key through the same
   deployment configuration mechanism used for other bootstrap values, and changing it MUST take
   effect on restart.
-- **FR-015**: The system MUST support [NEEDS CLARIFICATION: one administrator key, or several? The
-  description names "the npub", singular. With one, a deployment run by two operators has to share
-  a private key, which reintroduces the shared secret this feature removes.]
-- **FR-016**: An administrator MUST make their key available to the dashboard by [NEEDS
-  CLARIFICATION: storing an encrypted key in the dashboard and unlocking it with a passphrase, as
-  the client does, or providing the key afresh for each sign-in? The dashboard is a separate
-  application from the client and inherits nothing it holds. This changes both the administrator's
-  experience and how much key material rests on the machine.]
+- **FR-015**: The system MUST recognise exactly one administrator public key per deployment.
+- **FR-016**: On first sign-in on a device, the system MUST ask the administrator for their
+  private key and for a passphrase, and MUST NOT offer any form of account creation or sign-up.
+- **FR-017**: The system MUST retain the administrator's private key only on the administrator's
+  own device, and only in a form that cannot be used without the passphrase.
+- **FR-018**: The passphrase MUST NOT be transmitted to, stored by, or logged by the deployment,
+  and MUST NOT be recoverable from anything the deployment holds.
+- **FR-019**: On a device that already holds the key, the system MUST ask only for the passphrase
+  and MUST NOT ask for the private key again.
+- **FR-020**: When a session expires, the system MUST let the administrator resume by supplying
+  the passphrase alone, without re-entering the private key.
+- **FR-021**: A wrong passphrase MUST refuse access, MUST leave the stored key intact and
+  unusable, and MUST allow another attempt.
+- **FR-022**: Signing out MUST end the session **and** erase the stored key from the device, so
+  that the next sign-in on that device requires the private key again.
+- **FR-023**: An administrator who has forgotten their passphrase MUST be able to discard the
+  stored key and start again from their private key, since no passphrase recovery is possible.
 - **FR-014**: The sign-in page MUST tell an administrator what they need in order to sign in,
   including when the deployment is unconfigured and when their device holds no usable key.
 
@@ -212,11 +269,26 @@ sign in, leave the session beyond its lifetime, and confirm the same.
   afterwards, with none newly reachable while signed out.
 - **SC-007**: 100% of administrator sign-in attempts, successful or not, appear in the security
   log.
+- **SC-008**: A returning administrator resumes with the passphrase alone in under 10 seconds, and
+  is never asked for their private key while the device still holds it.
+- **SC-009**: After signing out, zero key material remains on the device, verifiable by inspecting
+  browser storage.
+- **SC-010**: The passphrase appears in zero requests reaching the deployment and in zero log
+  entries.
 
 ## Assumptions
 
+- **One administrator key per deployment.** Taken from the request naming "the npub" and "the
+  master nsec", both singular. A deployment run by two operators would have them share one private
+  key, which reintroduces the shared secret this feature removes — so if that is a real situation,
+  it needs a follow-up feature rather than a change here.
 - **The key is created elsewhere.** Administrators already have a Nostr key. This feature does not
-  generate one, back one up, or teach an administrator what a key is.
+  generate one, back one up, or teach an administrator what a key is, and offers no sign-up.
+- **Sign-out is a deliberate erase, not just a session end.** Ending the session and removing the
+  key are one action, matching the client, where signing out already erases the stored key.
+- **The passphrase protects the key at rest, not the sign-in.** What proves the administrator's
+  identity to the deployment is control of the key; the passphrase only unlocks it locally. The
+  deployment never sees it and cannot check it.
 - **No recovery flow.** Losing the key means an operator changes the configured public key and
   restarts. This follows from removing the shared secret and is accepted rather than solved.
 - **Session lifetime follows the existing convention.** The deployment already runs bounded

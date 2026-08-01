@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,27 +31,36 @@
 
 ## Notes
 
-**Iteration 1 findings and fixes**
+**All items pass.** 5 user stories, 23 functional requirements, 10 success criteria.
 
-- *No implementation details*: initial draft named the authentication protocol and the signed
-  event kind in requirements. Reworded to "prove control of a Nostr private key" so the spec
-  states the outcome, not the mechanism. The protocol name survives only in the feature title and
-  the verbatim Input line, both of which are the user's own words.
+**Iteration 1 — content quality fixes**
+
+- *No implementation details*: the first draft named the authentication protocol and the signed
+  event kind in requirements. Reworded to "prove control of a Nostr private key", so the spec
+  states the outcome rather than the mechanism. The protocol name survives only in the feature
+  title and the verbatim Input line, both the user's own words.
 - *Scope is clearly bounded*: the request contained two efforts. The documentation effort is now
-  explicitly excluded in an "Out of scope" section rather than silently dropped, and recorded
-  again in Assumptions.
+  excluded in an explicit "Out of scope" section rather than silently dropped, and recorded again
+  in Assumptions.
 - *Success criteria are technology-agnostic*: SC-004 originally referenced request payloads and
   header names. Rewritten as "appears in zero requests reaching the deployment and in zero log
-  entries", which is verifiable without knowing the transport.
+  entries", verifiable without knowing the transport.
 
-**Open items**
+**Iteration 2 — both clarifications resolved**
 
-Two clarifications remain, both raised to the user. Neither has a defensible default:
+- *Key storage (was FR-016)*: answered — the key is supplied once per device, held encrypted on
+  that device, and unlocked by a passphrase thereafter. This added US4 (returning administrator),
+  US5 (sign-out erases the key), FR-016 through FR-023, and SC-008 through SC-010.
+- *Number of administrators (was FR-015)*: resolved to exactly one key per deployment, taken from
+  "the npub" and "the master nsec", both singular in the request. Recorded in Assumptions with its
+  consequence stated: two operators would have to share a private key, which is the shared secret
+  this feature exists to remove, so a multi-administrator deployment needs a follow-up feature.
 
-1. Whether one administrator key is sufficient or several must be supported — affects scope and,
-   if answered "one", pushes multi-operator deployments back toward sharing a private key.
-2. How the administrator's key becomes available in the browser — affects both the administrator's
-   experience and how much key material rests on the machine.
+**Consequences worth carrying into planning**
 
-The checklist item "No [NEEDS CLARIFICATION] markers remain" stays unchecked until these are
-answered and folded into the spec.
+- Sign-out is a deliberate erase, not merely a session end. FR-022 makes ending the session and
+  removing the key one action, matching the client where signing out already erases the stored key.
+- The passphrase protects the key at rest and nothing else. The deployment never sees it and cannot
+  check it, so it is not a second authentication factor and must not be described as one.
+- Session expiry and sign-out differ deliberately: expiry leaves the key in place so the passphrase
+  is enough to resume, while sign-out removes it so the key is needed again.
