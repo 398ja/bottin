@@ -104,7 +104,7 @@ which is the property the spec's rollout was already built around.
 - [x] T014 [US1] Create `bottin-admin-ui/src/main/resources/templates/admin/settings.html` — Tailwind form matching `admin/domains.html` conventions, `head`/`navigation`/`alerts`/`footer` fragments from `fragments/layout.html`, four bound inputs with field-level error rendering, and labels saying **system relays** rather than "default relays" (depends on T013)
 - [x] T015 [US1] Add the operator guidance to `bottin-admin-ui/src/main/resources/templates/admin/settings.html`: the two empty-state warnings ("No media server set — image uploads are disabled for all users" and "No system relays set — user events publish only to relays each user adds themselves"), the "Takes effect within a minute" note beside the save button, the rendered `updatedAt`, and the hint that the media server URL must be reachable **from the browser**, not over the compose network (depends on T014)
 - [x] T016 [P] [US1] Add a `Settings` nav link after `Domains` in `bottin-admin-ui/src/main/resources/templates/fragments/layout.html`, matching the existing anchor styling
-- [ ] T017 [US1] Run `mvn -q verify -pl bottin-admin-ui -am`, confirm `AdminSettingsControllerTest` PASSES, and commit as `feat(admin-ui): add admin-maintained settings page` (depends on T011–T016)
+- [x] T017 [US1] Run `mvn -q verify -pl bottin-admin-ui -am`, confirm `AdminSettingsControllerTest` PASSES, and commit as `feat(admin-ui): add admin-maintained settings page` (depends on T011–T016)
 
 **Checkpoint**: Settings are editable end to end. Nothing consumes them yet, so this is deployable on its own.
 
