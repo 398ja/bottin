@@ -280,7 +280,7 @@ which is the property the spec's rollout was already built around.
 - [x] T059 [P] Update `docs/how-to/verify-profile-and-relay-publishing.md:24`, `:31`, and `:42` to configure system relays in `/admin/settings` rather than via `BOTTIN_DEFAULT_RELAYS`
 - [x] T060 Run the full [quickstart.md](./quickstart.md) developer verification — `mvn -q verify`, `npm test`, the two `curl` checks, the rate-limit `429` check, and the degradation check with `bottin-api` stopped (depends on T053)
 - [x] T061 Bump the project version in the parent `pom.xml` per semantic versioning and add the `CHANGELOG.md` entry derived from this branch's Conventional Commits, then run `graphify update .` to refresh the knowledge graph (depends on T060)
-- [ ] T062 Update the task's card on the kan `bottin` board with the commit ids and a note, per the `kan-tracking` skill (depends on T061)
+- [x] T062 Update the task's card on the kan `bottin` board with the commit ids and a note, per the `kan-tracking` skill (depends on T061)
 
 ---
 
