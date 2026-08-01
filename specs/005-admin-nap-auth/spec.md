@@ -280,8 +280,15 @@ again and that the next sign-in asks for the key rather than a passphrase.
 
 - **One administrator key per deployment.** Taken from the request naming "the npub" and "the
   master nsec", both singular. A deployment run by two operators would have them share one private
-  key, which reintroduces the shared secret this feature removes — so if that is a real situation,
-  it needs a follow-up feature rather than a change here.
+  key, which reintroduces the shared secret this feature removes.
+
+  That gap is now tracked as its own feature — additional administrator npubs added in
+  `/admin/settings`, each signing in exactly as the master key does (board card `367swx4lb8gb`).
+  It depends on this feature and follows it. The split it assumes is worth knowing while planning
+  this one: the master key stays in deployment configuration, because it is what admits an
+  operator when the database is empty, wrong, or freshly restored; only the additional keys become
+  editable data. Nothing here should make that split harder to add later — in particular, the
+  check "is this the administrator?" should be one decision point rather than scattered.
 - **The key is created elsewhere.** Administrators already have a Nostr key. This feature does not
   generate one, back one up, or teach an administrator what a key is, and offers no sign-up.
 - **Sign-out is a deliberate erase, not just a session end.** Ending the session and removing the
