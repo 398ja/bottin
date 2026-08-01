@@ -222,7 +222,15 @@ again and that the next sign-in asks for the key rather than a passphrase.
 - **FR-013**: An operator MUST be able to set the administrator public key through the same
   deployment configuration mechanism used for other bootstrap values, and changing it MUST take
   effect on restart.
-- **FR-015**: The system MUST recognise exactly one administrator public key per deployment.
+- **FR-015**: The system MUST recognise exactly one administrator public key per deployment, and
+  MUST treat the administrator it admits as holding a distinct **super administrator** role rather
+  than as merely "authenticated".
+
+  The follow-up feature adds a second role that may use every admin page but may not manage the
+  administrator list. Establishing the super administrator role now, while it is the only one,
+  makes that a matter of adding a role; deferring it makes it a matter of introducing
+  authorization across every protected path. The check "which administrator is this, and what may
+  they do?" MUST therefore be one decision point rather than scattered.
 - **FR-016**: On first sign-in on a device, the system MUST ask the administrator for their
   private key and for a passphrase, and MUST NOT offer any form of account creation or sign-up.
 - **FR-017**: The system MUST retain the administrator's private key only on the administrator's
@@ -287,8 +295,9 @@ again and that the next sign-in asks for the key rather than a passphrase.
   It depends on this feature and follows it. The split it assumes is worth knowing while planning
   this one: the master key stays in deployment configuration, because it is what admits an
   operator when the database is empty, wrong, or freshly restored; only the additional keys become
-  editable data. Nothing here should make that split harder to add later — in particular, the
-  check "is this the administrator?" should be one decision point rather than scattered.
+  editable data.
+
+  **That follow-up has settled on two roles**, which places one requirement on this feature.
 - **The key is created elsewhere.** Administrators already have a Nostr key. This feature does not
   generate one, back one up, or teach an administrator what a key is, and offers no sign-up.
 - **Sign-out is a deliberate erase, not just a session end.** Ending the session and removing the
