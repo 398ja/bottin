@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-01
+
+### Added
+- Admin-maintained deployment settings at `/admin/settings`: the media server (Blossom) URL,
+  the system relays, the profile discovery relays, and the API rate limit are now stored in a
+  singleton `settings` row (Flyway `V4`) and edited in the admin UI, with validation on both the
+  form and the service so no path can store an unusable value.
+- `GET /api/v1/settings` (API role) serving the media server and relay topology to the client
+  server. The rate limit is deliberately excluded: the API is its only consumer.
+- `GET /api/v1/relays/system` on the client server, replacing `GET /api/v1/relays/defaults`.
+
+### Changed
+- **The API rate limit applies without a restart.** `RateLimitService` reads its allowance from
+  the settings row rather than a startup property.
+- **System relays now reach every user, including those who signed up earlier.** They are applied
+  as a union at publish and read time instead of being copied into each browser's storage on first
+  use, which froze the relay set per browser and put relays the user never chose into the list the
+  settings page offers them to remove. The relay settings page now shows only relays the user added;
+  the published kind-10002 and the NIP-05 registration still include the system relays, since events
+  land there.
+- An unconfigured media server disables the image pickers with "Media server not configured" instead
+  of posting to an empty URL and surfacing an opaque network error. Onboarding proceeds regardless.
+- Profile discovery at sign-in uses the administrator's relays plus the system relays instead of a
+  list compiled into the client image.
+
+### Removed
+- **BREAKING (deployment):** `BOTTIN_BLOSSOM_URL` and `BOTTIN_DEFAULT_RELAYS` no longer have any
+  effect and are removed from `docker-compose.yml`, `.env`, and `ClientProperties`. So is
+  `bottin.ratelimit.requests-per-minute`. There is no environment fallback: a deployment comes up
+  unconfigured by design, and the values must be set once at `/admin/settings` after deploying. See
+  `docs/how-to/configure-deployment-settings.md`.
+- The four public relays previously hardcoded in the onboarding import step.
+
+### Fixed
+- **The `bottin-it` integration tests run again.** Every test in that module had failed to load its
+  Spring context since before this release; all 38 now pass. `BottinAutoConfiguration` was
+  component-scanning `xyz.tcheeric.bottin.api` from an `@AutoConfiguration` class, which registered
+  every repository twice and introduced a security filter chain too late for
+  `@ConditionalOnDefaultWebSecurity` to stand down. The module also ran `ddl-auto: create-drop`
+  against PostgreSQL, where Hibernate's generated `enum` DDL is invalid; it now runs the Flyway
+  migrations instead, so the tests exercise the schema production uses.
+
+### Changed (starter)
+- `bottin-spring-boot-starter` no longer component-scans `xyz.tcheeric.bottin.api`. Adding the
+  starter previously grafted bottin's REST controllers and an "any request" security filter chain
+  into the consuming application, which broke context startup. An application that wants the REST
+  layer now scans that package explicitly, as `BottinApiApplication` does. No module in this
+  repository relied on the old behaviour.
+
 ## [0.3.0] - 2026-06-25
 
 ### Removed

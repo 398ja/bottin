@@ -21,9 +21,22 @@ import xyz.tcheeric.bottin.persistence.repository.Nip05RecordRepository;
  *   <li>Database-backed NIP-05 record management</li>
  *   <li>Domain verification services</li>
  *   <li>External NIP-05 verification with caching</li>
- *   <li>REST API endpoints</li>
- *   <li>Admin dashboard (if enabled)</li>
+ *   <li>Profile reach calculation</li>
  * </ul>
+ *
+ * <p>The delivery layer ({@code xyz.tcheeric.bottin.api}) is deliberately
+ * <em>not</em> scanned. Scanning it from an auto-configuration grafted bottin's
+ * REST controllers and, worse, its "any request" security filter chain into
+ * every application that merely put this starter on the classpath. Because
+ * auto-configuration runs after user configuration, that chain arrived too late
+ * for {@code @ConditionalOnDefaultWebSecurity} to stand down, and the context
+ * failed to start with two chains matching every request. The same scan pulled
+ * in {@code BottinApiApplication} — itself a {@code @SpringBootApplication} with
+ * its own {@code @EnableJpaRepositories} — registering every repository twice.
+ *
+ * <p>An application that wants the REST layer declares it explicitly, as
+ * {@code BottinApiApplication} does. A starter should offer services, not decide
+ * how its consumer is secured.
  */
 @AutoConfiguration
 @ConditionalOnClass(Nip05RecordRepository.class)
@@ -34,8 +47,7 @@ import xyz.tcheeric.bottin.persistence.repository.Nip05RecordRepository;
         "xyz.tcheeric.bottin.persistence",
         "xyz.tcheeric.bottin.service",
         "xyz.tcheeric.bottin.verification",
-        "xyz.tcheeric.bottin.reach",
-        "xyz.tcheeric.bottin.api"
+        "xyz.tcheeric.bottin.reach"
 })
 public class BottinAutoConfiguration {
 

@@ -12,9 +12,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import xyz.tcheeric.bottin.client.config.ClientProperties;
+import xyz.tcheeric.bottin.client.dto.DirectorySettings;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationException;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationService;
+import xyz.tcheeric.bottin.client.service.DirectorySettingsClient;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -33,6 +37,7 @@ public class OnboardingController {
 
     private final ClientProperties clientProperties;
     private final DirectoryRegistrationService registrationService;
+    private final DirectorySettingsClient settingsClient;
 
     @GetMapping("/")
     public String root() {
@@ -51,7 +56,7 @@ public class OnboardingController {
         model.addAttribute("title", "Profile Setup");
         model.addAttribute("content", "onboarding/step-profile");
         model.addAttribute("bottinDomain", clientProperties.getDomain());
-        model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
+        model.addAttribute("blossomUrl", settingsClient.current().blossomUrl());
         return "layout";
     }
 
@@ -91,14 +96,28 @@ public class OnboardingController {
         model.addAttribute("content", "onboarding/step-" + step);
         if ("profile".equals(step)) {
             model.addAttribute("bottinDomain", clientProperties.getDomain());
-            model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
+            model.addAttribute("blossomUrl", settingsClient.current().blossomUrl());
         }
         if ("import".equals(step)) {
-            // The key being imported may have published its profile to this
-            // deployment's relays rather than to the public discovery set.
-            model.addAttribute("defaultRelays", String.join(",", clientProperties.getDefaultRelays()));
+            model.addAttribute("discoveryRelays", String.join(",", discoveryRelays()));
         }
         return "layout";
+    }
+
+    /**
+     * Where to look for the already-published profile of a key being imported:
+     * the administrator's discovery relays, then the deployment's system relays.
+     *
+     * <p>A key created elsewhere published its profile out on the discovery set,
+     * while one that registered here published to the system set, so both are
+     * searched. Injected server-side because this step runs before any NAP
+     * session exists and so cannot read a protected endpoint.
+     */
+    private List<String> discoveryRelays() {
+        DirectorySettings settings = settingsClient.current();
+        LinkedHashSet<String> relays = new LinkedHashSet<>(settings.discoveryRelays());
+        relays.addAll(settings.defaultRelays());
+        return List.copyOf(relays);
     }
 
     @GetMapping(value = "/api/v1/resolve/{username}", produces = MediaType.APPLICATION_JSON_VALUE)

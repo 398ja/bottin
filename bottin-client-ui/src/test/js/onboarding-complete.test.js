@@ -14,19 +14,18 @@ const identity = {
   about: 'hello'
 };
 
-let relays;
+// The URLs APP.effectiveWriteRelays resolves to: the user's own write relays
+// unioned with the deployment's system relays, already filtered and flattened.
+let writeRelayUrls;
 
 beforeEach(() => {
-  relays = [
-    { url: 'wss://write.one', read: true, write: true },
-    { url: 'wss://read.only', read: true, write: false }
-  ];
+  writeRelayUrls = ['wss://write.one'];
 
   window.APP = {
     getIdentityUserId: () => USER,
     loadIdentity: () => identity,
     napLogin: vi.fn(() => Promise.resolve()),
-    ensureRelaysSeeded: vi.fn(() => Promise.resolve(relays))
+    effectiveWriteRelays: vi.fn(() => Promise.resolve(writeRelayUrls))
   };
   window.NostrCrypto = {
     nsecToHex: () => HEX_KEY,
@@ -72,7 +71,7 @@ describe('OnboardingComplete.run', () => {
   // With no write relay there is nothing to publish to, and saying so is more
   // useful than reporting a successful publish to zero relays.
   it('reports a missing write relay instead of publishing', async () => {
-    relays = [{ url: 'wss://read.only', read: true, write: false }];
+    writeRelayUrls = [];
 
     const summary = await window.OnboardingComplete.run(NSEC);
 

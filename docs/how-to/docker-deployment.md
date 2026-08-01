@@ -66,6 +66,21 @@ BOTTIN_API_DOCS_ENABLED=false
 BOTTIN_SWAGGER_ENABLED=false
 ```
 
+The media server, the relay sets, and the API rate limit are **not** set here.
+They are edited in the admin UI after the stack is up; see the next section.
+
+## Configure Deployment Settings
+
+A fresh deployment comes up unconfigured by design: until you set them, image
+uploads are disabled and user events publish only to relays each user adds
+themselves. There is no environment fallback, so this is a required post-deploy
+step rather than an optional one.
+
+Open `/admin/settings` and set the media server, the system relays, the profile
+discovery relays, and the rate limit. Full guidance, including the
+browser-reachability requirement for the media server URL, is in
+[Configure Deployment Settings](configure-deployment-settings.md).
+
 ## Verify Deployment
 
 Check service health:

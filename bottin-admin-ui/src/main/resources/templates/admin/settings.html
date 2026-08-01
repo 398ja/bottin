@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Settings')}"></head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <nav th:replace="~{fragments/layout :: navigation}"></nav>
+
+    <main class="flex-grow">
+        <div class="mx-auto max-w-3xl py-6 sm:px-6 lg:px-8">
+            <div class="px-4 py-6 sm:px-0">
+                <div class="mb-6">
+                    <h1 class="text-2xl font-semibold text-gray-900">Settings</h1>
+                    <p class="mt-1 text-sm text-gray-600">
+                        Deployment configuration shared by every user. Database credentials, the API
+                        URL, and the trusted-proxy range stay in the environment and are not editable here.
+                    </p>
+                </div>
+
+                <div th:replace="~{fragments/layout :: alerts}"></div>
+
+                <!-- Empty states a fresh install reaches by design, so they inform rather than alarm. -->
+                <div th:if="${#strings.isEmpty(settingsForm.blossomUrl)}"
+                     class="rounded-md bg-yellow-50 p-4 mb-4">
+                    <p class="text-sm text-yellow-800">
+                        No media server set &mdash; image uploads are disabled for all users.
+                    </p>
+                </div>
+                <div th:if="${#strings.isEmpty(settingsForm.defaultRelays)}"
+                     class="rounded-md bg-yellow-50 p-4 mb-4">
+                    <p class="text-sm text-yellow-800">
+                        No system relays set &mdash; user events publish only to relays each user adds themselves.
+                    </p>
+                </div>
+
+                <form th:action="@{/admin/settings}" th:object="${settingsForm}" method="post"
+                      class="bg-white shadow rounded-lg p-6 space-y-6">
+
+                    <div>
+                        <label for="blossomUrl" class="block text-sm font-medium text-gray-700">
+                            Media server (Blossom)
+                        </label>
+                        <input type="text" id="blossomUrl" th:field="*{blossomUrl}"
+                               placeholder="https://blossom.example.com"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        <p class="mt-1 text-xs text-gray-500">
+                            Must be reachable <strong>from the browser</strong>, not over the internal
+                            container network. A compose service name such as <code>blossom</code> resolves
+                            on the server and fails for every user.
+                        </p>
+                        <p th:if="${#fields.hasErrors('blossomUrl')}" th:errors="*{blossomUrl}"
+                           class="mt-1 text-sm text-red-600">Error</p>
+                    </div>
+
+                    <div>
+                        <label for="defaultRelays" class="block text-sm font-medium text-gray-700">
+                            System relays
+                        </label>
+                        <textarea id="defaultRelays" th:field="*{defaultRelays}" rows="4"
+                                  placeholder="ws://localhost:8086"
+                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"></textarea>
+                        <p class="mt-1 text-xs text-gray-500">
+                            One <code>ws://</code> or <code>wss://</code> URL per line. Every user's events
+                            are published to all of these and read back from them. They are applied
+                            automatically and do not appear in any user's own relay list.
+                        </p>
+                        <p th:if="${#fields.hasErrors('defaultRelays')}" th:errors="*{defaultRelays}"
+                           class="mt-1 text-sm text-red-600">Error</p>
+                    </div>
+
+                    <div>
+                        <label for="discoveryRelays" class="block text-sm font-medium text-gray-700">
+                            Profile discovery relays
+                        </label>
+                        <textarea id="discoveryRelays" th:field="*{discoveryRelays}" rows="4"
+                                  placeholder="wss://relay.damus.io&#10;wss://nos.lol"
+                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"></textarea>
+                        <p class="mt-1 text-xs text-gray-500">
+                            One URL per line. Searched for an existing profile when someone signs in with a
+                            key created elsewhere. The system relays above are searched as well.
+                        </p>
+                        <p th:if="${#fields.hasErrors('discoveryRelays')}" th:errors="*{discoveryRelays}"
+                           class="mt-1 text-sm text-red-600">Error</p>
+                    </div>
+
+                    <div>
+                        <label for="rateLimitPerMinute" class="block text-sm font-medium text-gray-700">
+                            Rate limit per minute
+                        </label>
+                        <input type="number" id="rateLimitPerMinute" th:field="*{rateLimitPerMinute}"
+                               min="1" max="1000"
+                               class="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        <p class="mt-1 text-xs text-gray-500">
+                            Requests allowed per client address on public endpoints. Applies without a restart.
+                        </p>
+                        <p th:if="${#fields.hasErrors('rateLimitPerMinute')}" th:errors="*{rateLimitPerMinute}"
+                           class="mt-1 text-sm text-red-600">Error</p>
+                    </div>
+
+                    <div class="flex items-center justify-between border-t border-gray-200 pt-4">
+                        <div class="text-xs text-gray-500">
+                            <span th:if="${updatedAt}">
+                                Last changed
+                                <span th:text="${#temporals.format(updatedAt, 'yyyy-MM-dd HH:mm')}">2026-08-01 12:00</span>
+                            </span>
+                            <span th:unless="${updatedAt}">Never saved</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-gray-500">Takes effect within a minute</span>
+                            <button type="submit"
+                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

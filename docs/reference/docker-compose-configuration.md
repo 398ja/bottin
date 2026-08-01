@@ -92,6 +92,26 @@ rate-limit bucket keyed on the proxy's address.
 | `BOTTIN_API_DOCS_ENABLED` | Enable OpenAPI documentation | `false` |
 | `BOTTIN_SWAGGER_ENABLED` | Enable Swagger UI | `false` |
 
+### Not Configured Here
+
+Four settings that were previously environment variables are now stored in the
+database and edited in the admin UI at `/admin/settings`:
+
+| Setting | Former variable |
+|---------|-----------------|
+| Media server (Blossom) URL | `BOTTIN_BLOSSOM_URL` |
+| System relays | `BOTTIN_DEFAULT_RELAYS` |
+| Profile discovery relays | (was hardcoded in the client) |
+| API rate limit per minute | `bottin.ratelimit.requests-per-minute` |
+
+They moved because they are operational data rather than bootstrap or
+infrastructure configuration: changing one is an ordinary operator decision that
+should not require editing this file and recreating containers. The two variables
+above no longer have any effect and can be deleted from `.env`.
+
+A deployment comes up with them unset by design. See
+[Configure Deployment Settings](../how-to/configure-deployment-settings.md).
+
 ## Volumes
 
 | Volume Name | Purpose | Mount Point |

@@ -7,16 +7,19 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
  * Test application for integration tests.
- * Enables component scanning for all bottin packages.
+ *
+ * <p>Declares the entity and repository scanning these tests need. The services
+ * they exercise come from {@code BottinAutoConfiguration}, which the starter
+ * registers through {@code AutoConfiguration.imports}.
+ *
+ * <p>{@code xyz.tcheeric.bottin.api} is not on any scan path here, and the
+ * auto-configuration no longer scans it either. It contains
+ * {@code BottinApiApplication} — a second {@code @SpringBootApplication} with its
+ * own {@code @EnableJpaRepositories} — and {@code SecurityConfig}, whose "any
+ * request" filter chain collides with Spring Boot's default one when it is
+ * registered late by an auto-configuration's component scan.
  */
-@SpringBootApplication(scanBasePackages = {
-        "xyz.tcheeric.bottin.core",
-        "xyz.tcheeric.bottin.persistence",
-        "xyz.tcheeric.bottin.service",
-        "xyz.tcheeric.bottin.verification",
-        "xyz.tcheeric.bottin.api",
-        "xyz.tcheeric.bottin.starter"
-})
+@SpringBootApplication
 @EntityScan(basePackages = "xyz.tcheeric.bottin.persistence.entity")
 @EnableJpaRepositories(basePackages = "xyz.tcheeric.bottin.persistence.repository")
 public class TestApplication {

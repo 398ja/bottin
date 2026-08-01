@@ -4,24 +4,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import xyz.tcheeric.bottin.client.config.ClientProperties;
+import xyz.tcheeric.bottin.client.dto.DirectorySettings;
+import xyz.tcheeric.bottin.client.service.DirectorySettingsClient;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RelayController.class)
-@Import(xyz.tcheeric.bottin.client.config.ClientProperties.class)
-@TestPropertySource(properties = "bottin.client.default-relays=wss://relay.one,wss://relay.two")
 class RelayControllerTest {
 
     @Autowired
@@ -29,6 +26,9 @@ class RelayControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockBean
+    private DirectorySettingsClient settingsClient;
 
     @Test
     void shouldListRelays() throws Exception {
@@ -128,61 +128,37 @@ class RelayControllerTest {
     }
 
     /**
-     * The defaults endpoint returns each configured relay as a read+write entry so
-     * the client can seed a usable relay list on first visit.
+     * The system relays are the deployment's own, applied to every user's publishes
+     * and reads. They are served as plain URLs because they never enter a user's own
+     * relay list, where per-relay read/write flags would be the user's to set.
      */
     @Test
-    void shouldReturnConfiguredDefaultRelaysAsReadWrite() throws Exception {
-        mockMvc.perform(get("/api/v1/relays/defaults"))
+    void shouldServeConfiguredSystemRelaysAsPlainUrls() throws Exception {
+        // Arrange
+        when(settingsClient.current()).thenReturn(new DirectorySettings(
+                null, List.of("ws://relay-a:7777", "wss://relay-b.example"), List.of()));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/relays/system"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.relays.length()").value(2))
-                .andExpect(jsonPath("$.relays[0].url").value("wss://relay.one"))
-                .andExpect(jsonPath("$.relays[0].read").value(true))
-                .andExpect(jsonPath("$.relays[0].write").value(true))
-                .andExpect(jsonPath("$.relays[1].url").value("wss://relay.two"));
+                .andExpect(jsonPath("$.relays[0]").value("ws://relay-a:7777"))
+                .andExpect(jsonPath("$.relays[1]").value("wss://relay-b.example"));
     }
 
     /**
-     * The defaults endpoint returns a JSON array (not an object or scalar) through the
-     * full MVC stack, regardless of the specific configured relay values.
+     * A deployment with no system relays yields an empty array rather than null, so
+     * the browser always has a well-formed list to union with the user's own.
      */
     @Test
-    void shouldExposeDefaultsEndpointAsArray() throws Exception {
-        mockMvc.perform(get("/api/v1/relays/defaults"))
+    void shouldServeEmptyArrayWhenNoSystemRelaysConfigured() throws Exception {
+        // Arrange
+        when(settingsClient.current()).thenReturn(DirectorySettings.unconfigured());
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/relays/system"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.relays").isArray());
-    }
-
-    /**
-     * Blank or whitespace-only configured entries are dropped so an unset or partially
-     * filled env var never seeds a bogus relay URL.
-     */
-    @Test
-    void shouldDropBlankDefaultRelayEntries() {
-        ClientProperties props = new ClientProperties();
-        props.setDefaultRelays(List.of("wss://relay.one", "  ", ""));
-        RelayController controller = new RelayController(props);
-
-        ResponseEntity<Map<String, Object>> response = controller.getDefaultRelays();
-
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> relays = (List<Map<String, Object>>) response.getBody().get("relays");
-        assertThat(relays).hasSize(1);
-        assertThat(relays.get(0).get("url")).isEqualTo("wss://relay.one");
-    }
-
-    /**
-     * An empty default-relays configuration yields an empty relay array rather than null,
-     * so the client always receives a well-formed list to seed from.
-     */
-    @Test
-    void shouldReturnEmptyArrayWhenNoDefaultRelaysConfigured() {
-        RelayController controller = new RelayController(new ClientProperties());
-
-        ResponseEntity<Map<String, Object>> response = controller.getDefaultRelays();
-
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> relays = (List<Map<String, Object>>) response.getBody().get("relays");
-        assertThat(relays).isEmpty();
+                .andExpect(jsonPath("$.relays").isArray())
+                .andExpect(jsonPath("$.relays").isEmpty());
     }
 }

@@ -9,6 +9,20 @@
         var preview = document.getElementById(config.previewId);
         var error = config.errorId ? document.getElementById(config.errorId) : null;
 
+        // With no media server configured there is nowhere to upload to, so the
+        // control is disabled with the reason stated rather than left to post to
+        // an empty URL, which surfaces as an opaque network error. The rest of the
+        // page carries on: a visitor cannot fix the deployment's configuration, so
+        // blocking them would turn an operator's omission into a dead end.
+        if (!config.blossomUrl || !config.blossomUrl.trim()) {
+            input.disabled = true;
+            if (error) {
+                error.textContent = 'Media server not configured';
+                error.className = 'form-error';
+            }
+            return;
+        }
+
         function showError(message) {
             if (!error) return;
             error.textContent = message;

@@ -111,6 +111,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/records/**").hasRole("API")
                         .requestMatchers("/api/v1/domains/**").hasRole("API")
+                        .requestMatchers("/api/v1/settings").hasRole("API")
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults())

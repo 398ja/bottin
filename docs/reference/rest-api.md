@@ -173,6 +173,41 @@ Attempt to verify a domain using the previously initiated method.
 
 Initiate and attempt verification with a specific method (`DNS_TXT` or `HTTP_FILE`).
 
+## Settings
+
+### GET /api/v1/settings
+
+Return the deployment settings an administrator maintains at `/admin/settings`.
+
+Requires the API role. The values are not secret — the same relay URLs appear in
+every kind-10002 this deployment's users publish — but they are not public
+either, and the only consumer, the client server, already holds credentials.
+
+**Response:**
+
+```json
+{
+  "blossomUrl": "https://blossom.example.com",
+  "defaultRelays": ["ws://relay-a:7777", "wss://relay-b.example"],
+  "discoveryRelays": ["wss://relay.damus.io", "wss://nos.lol"]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `blossomUrl` | string \| null | Media server the browser uploads images to. `null` when unconfigured. |
+| `defaultRelays` | string[] | The deployment's system relays, published to and read from for every user. `[]` when unconfigured, never `null`. |
+| `discoveryRelays` | string[] | Relays searched for the existing profile of an imported key. `[]` when unconfigured, never `null`. |
+
+The configured rate limit is deliberately **not** included: the API is its only
+consumer, and publishing it would invite a second one for a value that means
+nothing outside this process.
+
+There is no write endpoint. The admin UI shares the database and writes through
+the service directly, so a `PUT` would be a second write path with a second
+authentication story and no caller. See
+[Configure Deployment Settings](../how-to/configure-deployment-settings.md).
+
 ## External Verification
 
 ### GET /api/v1/verify

@@ -63,7 +63,6 @@ bottin:
       max-size: 100
 
   ratelimit:
-    requests-per-minute: 100
     cleanup-threshold: 100
 
 # Logging

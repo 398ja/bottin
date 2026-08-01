@@ -95,12 +95,17 @@ the literal `1L`, set by a `SINGLETON_ID` constant.
   `@Builder.Default private String defaultRelaysJson = "[]";` — mirrors
   `Nip05RecordEntity.relaysJson` (`:59-61`) including its `@PrePersist` normalisation of
   `null` to `"[]"`.
-- `@PreUpdate` and `@PrePersist` set `updatedAt = Instant.now()`, mirroring
-  `DomainEntity.onCreate` / `onUpdate`.
-- `toSettingsData()` / `fromSettingsData(SettingsData)` conversion methods, mirroring
-  `DomainEntity`. JSON (de)serialisation does **not** live here — the entity carries the raw
-  JSON strings and `SettingsService` owns the `ObjectMapper`, exactly as
-  `Nip05RecordEntity` carries `relaysJson` while `Nip05RecordService` serialises it.
+- A single `onWrite()` annotated `@PrePersist` and `@PreUpdate` normalises null relay JSON to
+  `'[]'` and sets `updatedAt = Instant.now()`, mirroring `DomainEntity.onCreate` / `onUpdate`.
+- **No** `toSettingsData()` / `fromSettingsData()` conversion methods, unlike `DomainEntity`.
+  The entity carries raw JSON strings while `SettingsData` carries `List<String>`, so any
+  entity-side conversion would have to deserialise — which would drag Jackson into
+  `bottin-persistence`. The mapping therefore lives in `SettingsService`, which already owns
+  the `ObjectMapper`, exactly as `Nip05RecordEntity` carries `relaysJson` while
+  `Nip05RecordService` serialises it.
+
+  *(Corrected during implementation: an earlier draft of this document asked for both the
+  conversion methods and the "no JSON here" rule, which cannot both hold.)*
 
 ## `SettingsRepository` — `bottin-persistence`
 

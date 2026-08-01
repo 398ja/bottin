@@ -66,11 +66,8 @@
         };
 
         return app.napLogin(hexKey, identity.npub)
-            .then(function () { return app.ensureRelaysSeeded(userId); })
-            .then(function (relays) {
-                var relayUrls = (relays || [])
-                    .filter(function (relay) { return relay.write; })
-                    .map(function (relay) { return relay.url; });
+            .then(function () { return app.effectiveWriteRelays(userId); })
+            .then(function (relayUrls) {
                 summary.relayCount = relayUrls.length;
 
                 var registration = username

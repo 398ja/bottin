@@ -68,10 +68,7 @@
         var identity = app.loadIdentity(userId);
         if (!identity || !identity.pubkeyHex) return Promise.resolve(identity);
 
-        return app.ensureRelaysSeeded(userId).then(function (relays) {
-            var readRelays = (relays || [])
-                .filter(function (relay) { return relay.read; })
-                .map(function (relay) { return relay.url; });
+        return app.effectiveReadRelays(userId).then(function (readRelays) {
             var pool = new global.NostrTools.SimplePool();
             return fetch(pool, readRelays, identity.pubkeyHex)
                 .then(function (profile) {

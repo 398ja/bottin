@@ -47,8 +47,8 @@ which is the property the spec's rollout was already built around.
 
 **Purpose**: Establish a green baseline and confirm no build-file changes are needed.
 
-- [ ] T001 Record a green baseline: run `mvn -q verify` from the repository root and `npm test` in `bottin-client-ui/`, and confirm `bottin-persistence/src/main/resources/db/migration/` still has `V3__profile_reach.sql` as its head so the `V4` slot is free
-- [ ] T002 [P] Confirm no POM changes are required for this feature: `bottin-api/pom.xml` and `bottin-admin-ui/pom.xml` already declare `bottin-service`, and `bottin-client-ui/pom.xml` declares `bottin-core` only — record in the commit message that the client's lack of a persistence dependency is what forces the HTTP path in US3
+- [x] T001 Record a green baseline: run `mvn -q verify` from the repository root and `npm test` in `bottin-client-ui/`, and confirm `bottin-persistence/src/main/resources/db/migration/` still has `V3__profile_reach.sql` as its head so the `V4` slot is free
+- [x] T002 [P] Confirm no POM changes are required for this feature: `bottin-api/pom.xml` and `bottin-admin-ui/pom.xml` already declare `bottin-service`, and `bottin-client-ui/pom.xml` declares `bottin-core` only — record in the commit message that the client's lack of a persistence dependency is what forces the HTTP path in US3
 
 ---
 
@@ -58,16 +58,33 @@ which is the property the spec's rollout was already built around.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 [P] Create `SettingsData` immutable value object in `bottin-core/src/main/java/xyz/tcheeric/bottin/core/model/SettingsData.java` — Lombok `@Value` + `@Builder(toBuilder = true)`, fields `blossomUrl`, `defaultRelays`, `discoveryRelays`, `rateLimitPerMinute`, `updatedAt`, mirroring `DomainData`; Javadoc on `defaultRelays` stating these are the deployment's system relays (see research.md R3)
-- [ ] T004 [P] Create `SettingsNotFoundException` in `bottin-core/src/main/java/xyz/tcheeric/bottin/core/exception/SettingsNotFoundException.java` extending `BottinException` with error code `SETTINGS_NOT_FOUND`, `retryable = false`, and the migration-oriented suggestion from data-model.md, following `DomainNotFoundException`
-- [ ] T005 [P] Create the migration in `bottin-persistence/src/main/resources/db/migration/V4__settings.sql` with the table, the `settings_singleton` `CHECK (id = 1)` constraint, and the seed `INSERT` for row 1, exactly as in data-model.md
-- [ ] T006 Create `SettingsEntity` in `bottin-persistence/src/main/java/xyz/tcheeric/bottin/persistence/entity/SettingsEntity.java` — `@Id` with a `SINGLETON_ID = 1L` constant and **no** `@GeneratedValue`, `@Builder.Default` JSON columns defaulting to `"[]"` as in `Nip05RecordEntity:59-61`, `@PrePersist`/`@PreUpdate` stamping `updatedAt`, plus `toSettingsData()` and `fromSettingsData(SettingsData)` (depends on T003, T005)
-- [ ] T007 Create `SettingsRepository extends JpaRepository<SettingsEntity, Long>` in `bottin-persistence/src/main/java/xyz/tcheeric/bottin/persistence/repository/SettingsRepository.java` with no custom query methods (depends on T006)
-- [ ] T008 Write `SettingsServiceTest` in `bottin-service/src/test/java/xyz/tcheeric/bottin/service/SettingsServiceTest.java` with a mocked `SettingsRepository`, covering JSON round-trip for both relay lists, rejection of a non-`ws`/`wss` scheme naming the offending URL, duplicate collapsing with order preserved, blank-line dropping, `SettingsNotFoundException` when row 1 is absent, and `updatedAt` advancing on update; add a `SettingsService` skeleton whose methods throw `UnsupportedOperationException` so the suite compiles, and confirm it FAILS (depends on T007)
-- [ ] T009 Implement `SettingsService` in `bottin-service/src/main/java/xyz/tcheeric/bottin/service/SettingsService.java` — injected `ObjectMapper`, `find()` returning `SettingsData` (throwing `SettingsNotFoundException`), `update(SettingsData)` taking one argument, and a `normalizeRelays` helper using a `LinkedHashSet` as in `Nip05RecordService:193-203`; confirm `SettingsServiceTest` PASSES (depends on T008)
-- [ ] T010 [P] Add `SettingsRepositoryIT` in `bottin-tests/bottin-it/src/test/java/xyz/tcheeric/bottin/it/SettingsRepositoryIT.java` asserting that the migration seeds row 1 with `rate_limit_per_minute = 30`, both relay lists `'[]'` and `blossom_url` null, and that inserting a second row violates `settings_singleton` (depends on T007)
+- [x] T003 [P] Create `SettingsData` immutable value object in `bottin-core/src/main/java/xyz/tcheeric/bottin/core/model/SettingsData.java` — Lombok `@Value` + `@Builder(toBuilder = true)`, fields `blossomUrl`, `defaultRelays`, `discoveryRelays`, `rateLimitPerMinute`, `updatedAt`, mirroring `DomainData`; Javadoc on `defaultRelays` stating these are the deployment's system relays (see research.md R3)
+- [x] T004 [P] Create `SettingsNotFoundException` in `bottin-core/src/main/java/xyz/tcheeric/bottin/core/exception/SettingsNotFoundException.java` extending `BottinException` with error code `SETTINGS_NOT_FOUND`, `retryable = false`, and the migration-oriented suggestion from data-model.md, following `DomainNotFoundException`
+- [x] T005 [P] Create the migration in `bottin-persistence/src/main/resources/db/migration/V4__settings.sql` with the table, the `settings_singleton` `CHECK (id = 1)` constraint, and the seed `INSERT` for row 1, exactly as in data-model.md
+- [x] T006 Create `SettingsEntity` in `bottin-persistence/src/main/java/xyz/tcheeric/bottin/persistence/entity/SettingsEntity.java` — `@Id` with a `SINGLETON_ID = 1L` constant and **no** `@GeneratedValue`, `@Builder.Default` JSON columns defaulting to `"[]"` as in `Nip05RecordEntity:59-61`, `@PrePersist`/`@PreUpdate` stamping `updatedAt`, plus `toSettingsData()` and `fromSettingsData(SettingsData)` (depends on T003, T005)
+- [x] T007 Create `SettingsRepository extends JpaRepository<SettingsEntity, Long>` in `bottin-persistence/src/main/java/xyz/tcheeric/bottin/persistence/repository/SettingsRepository.java` with no custom query methods (depends on T006)
+- [x] T008 Write `SettingsServiceTest` in `bottin-service/src/test/java/xyz/tcheeric/bottin/service/SettingsServiceTest.java` with a mocked `SettingsRepository`, covering JSON round-trip for both relay lists, rejection of a non-`ws`/`wss` scheme naming the offending URL, duplicate collapsing with order preserved, blank-line dropping, `SettingsNotFoundException` when row 1 is absent, and `updatedAt` advancing on update; add a `SettingsService` skeleton whose methods throw `UnsupportedOperationException` so the suite compiles, and confirm it FAILS (depends on T007)
+- [x] T009 Implement `SettingsService` in `bottin-service/src/main/java/xyz/tcheeric/bottin/service/SettingsService.java` — injected `ObjectMapper`, `find()` returning `SettingsData` (throwing `SettingsNotFoundException`), `update(SettingsData)` taking one argument, and a `normalizeRelays` helper using a `LinkedHashSet` as in `Nip05RecordService:193-203`; confirm `SettingsServiceTest` PASSES (depends on T008)
+- [x] T010 [P] Add `SettingsRepositoryIT` in `bottin-tests/bottin-it/src/test/java/xyz/tcheeric/bottin/it/SettingsRepositoryIT.java` asserting that the migration seeds row 1 with `rate_limit_per_minute = 30`, both relay lists `'[]'` and `blossom_url` null, and that inserting a second row violates `settings_singleton` (depends on T007) — **passing**
+- [x] T010a Repair the pre-existing `bottin-it` failure that blocked every integration test in the module. **Fully resolved: all 38 ITs now pass, where none did before this branch.**
+
+  **Root cause:** `BottinAutoConfiguration` carried `@ComponentScan` over `xyz.tcheeric.bottin.api` *from an `@AutoConfiguration` class*, which Spring Boot's documentation warns against. Registered through `AutoConfiguration.imports`, it applied to every context with the starter on the classpath — which is why editing `TestApplication`'s own scan only changed which bean collided first.
+
+  - **Layer 1 — FIXED.** The scan pulled in `BottinApiApplication`, itself `@SpringBootApplication` with `@EnableJpaRepositories` over the same repository package, so every repository was registered twice (`BeanDefinitionOverrideException`).
+  - **Layer 2 — FIXED.** Actuator's `managementSecurityFilterChain` collided with `bottin-api`'s "any request" chain; `ManagementWebSecurityAutoConfiguration` is excluded in `application-test.yml`.
+  - **Layer 3 — FIXED.** The same scan registered `SecurityConfig` *after* `@ConditionalOnDefaultWebSecurity` had already evaluated, so Spring Boot's default chain was created too and collided with it. **Fix: the starter no longer scans `xyz.tcheeric.bottin.api`.** Nothing in production depended on that scan — `bottin-api` wires itself through `BottinApiApplication`'s own `@ComponentScan`, and the only consumers of the starter are the two test modules, one of which already excluded the auto-configuration outright. A starter should offer services, not graft controllers and a security filter chain into whatever puts it on the classpath.
+  - **Schema — FIXED.** With the context finally starting, a fourth problem surfaced: `ddl-auto: create-drop` against PostgreSQL fails on `AdminUserEntity`, because Hibernate 6.6 emits `role enum ('ADMIN','READONLY')` and PostgreSQL has no `enum` type. Schema creation aborted at `admin_users`, leaving every later table missing. `bottin-it` now runs **Flyway** with `ddl-auto: none`, so the tests exercise the migrations production actually runs — which is also what makes `SettingsRepositoryIT` meaningful.
+
+  **Note for whoever owns CI:** no workflow runs `-Pit`, and the default `verify` skips ITs behind `skipITTests=true`. That is why a module-wide outage went unnoticed. Wiring `-Pit` into CI would stop it recurring.
 
 **Checkpoint**: The settings row exists and is readable and writable from Java. No observable behaviour has changed.
+
+**Phase 2 implementation notes** — two deviations from the task text above, both recorded rather than silently absorbed:
+
+- **T006**: `SettingsEntity` has **no** `toSettingsData()` / `fromSettingsData()`. The entity holds raw JSON while `SettingsData` holds `List<String>`, so entity-side conversion would have to deserialise — dragging Jackson into `bottin-persistence` and contradicting the same task's "JSON serialisation belongs to the service" rule. The mapping lives in `SettingsService`, which already owns the `ObjectMapper`. [data-model.md](./data-model.md) corrected to match.
+- **T008**: "`updatedAt` advancing on update" moved to T010. `updatedAt` is stamped by a JPA `@PreUpdate` callback, which never fires against a mocked repository — asserting it in a unit test would have tested nothing. It is verified in `SettingsRepositoryIT` where Hibernate actually runs. `SettingsServiceTest` covers the singleton-update case instead.
+
+`SettingsServiceTest` ended at 10 tests rather than the 6 cases listed, having gained: nothing is persisted when a relay is rejected (a bad submission must not partially apply), and a blank media server is stored as `null` so "unconfigured" has one representation rather than two.
 
 ---
 
@@ -79,18 +96,25 @@ which is the property the spec's rollout was already built around.
 
 ### Tests for User Story 1
 
-- [ ] T011 [US1] Write `AdminSettingsControllerTest` in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminSettingsControllerTest.java` — `@WebMvcTest(AdminSettingsController.class)`, `@Import(AdminSecurityConfig.class)`, mocked `SettingsService`, following `AdminDomainsControllerTest`; cover the six cases in `contracts/admin-settings-form.md` (unauthenticated redirect, bound form render, valid save + flash, blank media server rejected without reaching the service, `http://` relay rejected without reaching the service, `rateLimitPerMinute = 0` rejected) and confirm it FAILS
+- [x] T011 [US1] Write `AdminSettingsControllerTest` in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminSettingsControllerTest.java` — `@WebMvcTest(AdminSettingsController.class)`, `@Import(AdminSecurityConfig.class)`, mocked `SettingsService`, following `AdminDomainsControllerTest`; cover the six cases in `contracts/admin-settings-form.md` (unauthenticated redirect, bound form render, valid save + flash, blank media server rejected without reaching the service, `http://` relay rejected without reaching the service, `rateLimitPerMinute = 0` rejected) and confirm it FAILS
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create `SettingsForm` in `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/dto/SettingsForm.java` — Lombok `@Data @Builder @NoArgsConstructor @AllArgsConstructor` as in `CreateDomainForm`, with the four fields and the bean validation constraints tabulated in `contracts/admin-settings-form.md`; relay textareas are newline-separated `String`s validated by `^\s*((wss?://\S+)\s*)*$`
-- [ ] T013 [US1] Create `AdminSettingsController` in `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/AdminSettingsController.java` — `@RequestMapping("/admin/settings")`, `GET` binding `settingsForm` and `updatedAt` from `settingsService.find()`, `POST` re-rendering `admin/settings` on binding errors and otherwise calling `settingsService.update` then redirecting with a `success` flash; catch `IllegalArgumentException` from the service into an `error` flash naming the offending URL; log `admin_settings_updated` and `admin_settings_update_failed` in the structured style used by `AdminDomainsController` (depends on T012)
-- [ ] T014 [US1] Create `bottin-admin-ui/src/main/resources/templates/admin/settings.html` — Tailwind form matching `admin/domains.html` conventions, `head`/`navigation`/`alerts`/`footer` fragments from `fragments/layout.html`, four bound inputs with field-level error rendering, and labels saying **system relays** rather than "default relays" (depends on T013)
-- [ ] T015 [US1] Add the operator guidance to `bottin-admin-ui/src/main/resources/templates/admin/settings.html`: the two empty-state warnings ("No media server set — image uploads are disabled for all users" and "No system relays set — user events publish only to relays each user adds themselves"), the "Takes effect within a minute" note beside the save button, the rendered `updatedAt`, and the hint that the media server URL must be reachable **from the browser**, not over the compose network (depends on T014)
-- [ ] T016 [P] [US1] Add a `Settings` nav link after `Domains` in `bottin-admin-ui/src/main/resources/templates/fragments/layout.html`, matching the existing anchor styling
-- [ ] T017 [US1] Run `mvn -q verify -pl bottin-admin-ui -am`, confirm `AdminSettingsControllerTest` PASSES, and commit as `feat(admin-ui): add admin-maintained settings page` (depends on T011–T016)
+- [x] T012 [P] [US1] Create `SettingsForm` in `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/dto/SettingsForm.java` — Lombok `@Data @Builder @NoArgsConstructor @AllArgsConstructor` as in `CreateDomainForm`, with the four fields and the bean validation constraints tabulated in `contracts/admin-settings-form.md`; relay textareas are newline-separated `String`s validated by `^\s*((wss?://\S+)\s*)*$`
+- [x] T013 [US1] Create `AdminSettingsController` in `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/AdminSettingsController.java` — `@RequestMapping("/admin/settings")`, `GET` binding `settingsForm` and `updatedAt` from `settingsService.find()`, `POST` re-rendering `admin/settings` on binding errors and otherwise calling `settingsService.update` then redirecting with a `success` flash; catch `IllegalArgumentException` from the service into an `error` flash naming the offending URL; log `admin_settings_updated` and `admin_settings_update_failed` in the structured style used by `AdminDomainsController` (depends on T012)
+- [x] T014 [US1] Create `bottin-admin-ui/src/main/resources/templates/admin/settings.html` — Tailwind form matching `admin/domains.html` conventions, `head`/`navigation`/`alerts`/`footer` fragments from `fragments/layout.html`, four bound inputs with field-level error rendering, and labels saying **system relays** rather than "default relays" (depends on T013)
+- [x] T015 [US1] Add the operator guidance to `bottin-admin-ui/src/main/resources/templates/admin/settings.html`: the two empty-state warnings ("No media server set — image uploads are disabled for all users" and "No system relays set — user events publish only to relays each user adds themselves"), the "Takes effect within a minute" note beside the save button, the rendered `updatedAt`, and the hint that the media server URL must be reachable **from the browser**, not over the compose network (depends on T014)
+- [x] T016 [P] [US1] Add a `Settings` nav link after `Domains` in `bottin-admin-ui/src/main/resources/templates/fragments/layout.html`, matching the existing anchor styling
+- [x] T017 [US1] Run `mvn -q verify -pl bottin-admin-ui -am`, confirm `AdminSettingsControllerTest` PASSES, and commit as `feat(admin-ui): add admin-maintained settings page` (depends on T011–T016)
 
 **Checkpoint**: Settings are editable end to end. Nothing consumes them yet, so this is deployable on its own.
+
+**US1 implementation notes**:
+
+- `AdminSettingsControllerTest` ended at 7 tests rather than 6, gaining: a rejection raised by `SettingsService` (the second enforcement point, for callers that do not come through this form) is reported to the operator instead of surfacing as a 500.
+- The textarea-to-list translation lives on `SettingsForm` (`from` / `toSettingsData`) rather than in the controller, keeping the controller free of logic per the constitution's delivery-layer rule. Trimming and de-duplication stay in the service, which owns them for every caller.
+- A rejected submission re-renders `admin/settings` rather than redirecting, so field errors render next to their inputs and the operator keeps what they typed. `AdminDomainsController` redirects with a flash instead — acceptable there, where one field is being added, but it would discard four fields here.
+- The validation-error path does not re-read settings just to repopulate `updatedAt`; the template guards it with `th:if` and shows "Never saved" otherwise. That avoids a pointless query on every rejected submission.
 
 ---
 
@@ -102,15 +126,22 @@ which is the property the spec's rollout was already built around.
 
 ### Tests for User Story 2
 
-- [ ] T018 [US2] Write `RateLimitServiceTest` in `bottin-api/src/test/java/xyz/tcheeric/bottin/api/ratelimit/RateLimitServiceTest.java` with a mocked `SettingsService`, covering: the limit is read from settings; requests beyond it are rejected; `getRemainingRequests` reflects the configured limit; and a limit changed between calls takes effect on the next call with no restart; confirm it FAILS
+- [x] T018 [US2] Write `RateLimitServiceTest` in `bottin-api/src/test/java/xyz/tcheeric/bottin/api/ratelimit/RateLimitServiceTest.java` with a mocked `SettingsService`, covering: the limit is read from settings; requests beyond it are rejected; `getRemainingRequests` reflects the configured limit; and a limit changed between calls takes effect on the next call with no restart; confirm it FAILS
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Modify `bottin-api/src/main/java/xyz/tcheeric/bottin/api/ratelimit/RateLimitService.java` — replace the `@Value("${bottin.ratelimit.requests-per-minute:30}")` field with a `@RequiredArgsConstructor`-injected `SettingsService` and a private `limit()` method reading `settingsService.find().getRateLimitPerMinute()`, used by both `isAllowed` and `getRemainingRequests`; keep `cleanupThreshold` as `@Value`; add the `ponytail:` comment from research.md R1 naming the per-request read as the accepted ceiling and a 60-second memo as the upgrade path (depends on T018)
-- [ ] T020 [US2] Run `mvn -q verify -pl bottin-api -am` and fix any `bottin-api` test that constructed `RateLimitService` directly or relied on the removed property; `ProfileStatsControllerTest` mocks the bean and should need no change — confirm this rather than assuming (depends on T019)
-- [ ] T021 [US2] Confirm `RateLimitServiceTest` PASSES and commit as `feat(api): read the rate limit from admin-maintained settings` (depends on T020)
+- [x] T019 [US2] Modify `bottin-api/src/main/java/xyz/tcheeric/bottin/api/ratelimit/RateLimitService.java` — replace the `@Value("${bottin.ratelimit.requests-per-minute:30}")` field with a `@RequiredArgsConstructor`-injected `SettingsService` and a private `limit()` method reading `settingsService.find().getRateLimitPerMinute()`, used by both `isAllowed` and `getRemainingRequests`; keep `cleanupThreshold` as `@Value`; add the `ponytail:` comment from research.md R1 naming the per-request read as the accepted ceiling and a 60-second memo as the upgrade path (depends on T018)
+- [x] T020 [US2] Run `mvn -q verify -pl bottin-api -am` and fix any `bottin-api` test that constructed `RateLimitService` directly or relied on the removed property; `ProfileStatsControllerTest` mocks the bean and should need no change — confirm this rather than assuming (depends on T019)
+- [x] T021 [US2] Confirm `RateLimitServiceTest` PASSES and commit as `feat(api): read the rate limit from admin-maintained settings` (depends on T020)
 
 **Checkpoint**: The rate limit is operator-controlled at runtime. US1 and US2 both work independently.
+
+**US2 implementation notes**:
+
+- `RateLimitService` keeps `cleanup-threshold` as a `@Value`: it is an internal memory-management knob, not operator-facing data, so only the allowance moved.
+- `bottin.ratelimit.requests-per-minute` was removed from `application-prod.yml`, `application-test.yml`, and `application-e2e.yml`. Leaving it would have been dead config that reads as if setting it still does something.
+- **Regression caught by T020.** The e2e suite builds its schema with Hibernate (`spring.flyway.enabled=false`, `ddl-auto=create-drop`), so the migration never runs and the settings row is absent. With the allowance now read from that row — and `SettingsService` raising rather than inventing a default — every rate-limited endpoint would have answered 500. `BaseE2ETest` now seeds the row the migration would have inserted, at the allowance of 100 that `application-e2e.yml` previously set. Verified: `mvn -Pe2e` passes 22 tests, exit 0.
+- Unlike `bottin-it`, the e2e module was healthy before this change and remains so.
 
 ---
 
@@ -122,19 +153,26 @@ which is the property the spec's rollout was already built around.
 
 ### Tests for User Story 3
 
-- [ ] T022 [P] [US3] Write `SettingsControllerTest` in `bottin-api/src/test/java/xyz/tcheeric/bottin/api/controller/SettingsControllerTest.java` with a mocked `SettingsService`, covering the four cases in `contracts/settings-api.md` (payload shape with `rateLimitPerMinute` absent, `blossomUrl` as JSON `null` when unconfigured, empty relay lists as `[]` not `null`, `401` without the API role); confirm it FAILS
-- [ ] T023 [P] [US3] Write `DirectorySettingsClientTest` in `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/service/DirectorySettingsClientTest.java` covering the four degradation rules in research.md R5 (cache serves within the TTL, refetches after it, an unreachable API with a warm cache serves the stale value, an unreachable API with no cache yields unconfigured rather than an exception); confirm it FAILS
+- [x] T022 [P] [US3] Write `SettingsControllerTest` in `bottin-api/src/test/java/xyz/tcheeric/bottin/api/controller/SettingsControllerTest.java` with a mocked `SettingsService`, covering the four cases in `contracts/settings-api.md` (payload shape with `rateLimitPerMinute` absent, `blossomUrl` as JSON `null` when unconfigured, empty relay lists as `[]` not `null`, `401` without the API role); confirm it FAILS
+- [x] T023 [P] [US3] Write `DirectorySettingsClientTest` in `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/service/DirectorySettingsClientTest.java` covering the four degradation rules in research.md R5 (cache serves within the TTL, refetches after it, an unreachable API with a warm cache serves the stale value, an unreachable API with no cache yields unconfigured rather than an exception); confirm it FAILS
 
 ### Implementation for User Story 3
 
-- [ ] T024 [P] [US3] Create `SettingsResponse` record in `bottin-api/src/main/java/xyz/tcheeric/bottin/api/dto/SettingsResponse.java` with `blossomUrl`, `defaultRelays`, `discoveryRelays` and a static `from(SettingsData)` factory, mirroring `ProfileReachResponse.from`; `rateLimitPerMinute` is deliberately absent
-- [ ] T025 [US3] Create `SettingsController` in `bottin-api/src/main/java/xyz/tcheeric/bottin/api/controller/SettingsController.java` — `@RestController @RequestMapping("/api/v1/settings")`, one `@GetMapping` returning `SettingsResponse.from(settingsService.find())`, annotated with springdoc `@Tag`/`@Operation`/`@ApiResponses` as in `ProfileStatsController` (depends on T024)
-- [ ] T026 [US3] Add `.requestMatchers("/api/v1/settings").hasRole("API")` to `apiFilterChain` in `bottin-api/src/main/java/xyz/tcheeric/bottin/api/config/SecurityConfig.java`, alongside the existing `records` and `domains` matchers (depends on T025)
-- [ ] T027 [P] [US3] Create the `DirectorySettings` record in `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/dto/DirectorySettings.java` with `blossomUrl`, `defaultRelays`, `discoveryRelays` and a static `unconfigured()` returning `(null, List.of(), List.of())`; no Jackson annotations — the parent POM sets `<parameters>true</parameters>` (research.md R4)
-- [ ] T028 [US3] Create `DirectorySettingsClient` in `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/service/DirectorySettingsClient.java` — a `RestClient` built from `ClientProperties` exactly as `DirectoryRegistrationService`'s constructor does (`directoryUrl` base, Basic auth from `directoryUsername`/`directoryPassword`), a 60-second in-memory cache, and the four degradation rules from research.md R5; log `directory_settings_fetch_failed` at WARN with the fallback taken (depends on T027)
-- [ ] T029 [US3] Run `mvn -q verify`, confirm both new suites PASS, and commit as two commits — `feat(api): serve admin-maintained settings at /api/v1/settings` and `feat(client-ui): read deployment settings from the directory API` (depends on T022, T023, T026, T028)
+- [x] T024 [P] [US3] Create `SettingsResponse` record in `bottin-api/src/main/java/xyz/tcheeric/bottin/api/dto/SettingsResponse.java` with `blossomUrl`, `defaultRelays`, `discoveryRelays` and a static `from(SettingsData)` factory, mirroring `ProfileReachResponse.from`; `rateLimitPerMinute` is deliberately absent
+- [x] T025 [US3] Create `SettingsController` in `bottin-api/src/main/java/xyz/tcheeric/bottin/api/controller/SettingsController.java` — `@RestController @RequestMapping("/api/v1/settings")`, one `@GetMapping` returning `SettingsResponse.from(settingsService.find())`, annotated with springdoc `@Tag`/`@Operation`/`@ApiResponses` as in `ProfileStatsController` (depends on T024)
+- [x] T026 [US3] Add `.requestMatchers("/api/v1/settings").hasRole("API")` to `apiFilterChain` in `bottin-api/src/main/java/xyz/tcheeric/bottin/api/config/SecurityConfig.java`, alongside the existing `records` and `domains` matchers (depends on T025)
+- [x] T027 [P] [US3] Create the `DirectorySettings` record in `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/dto/DirectorySettings.java` with `blossomUrl`, `defaultRelays`, `discoveryRelays` and a static `unconfigured()` returning `(null, List.of(), List.of())`; no Jackson annotations — the parent POM sets `<parameters>true</parameters>` (research.md R4)
+- [x] T028 [US3] Create `DirectorySettingsClient` in `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/service/DirectorySettingsClient.java` — a `RestClient` built from `ClientProperties` exactly as `DirectoryRegistrationService`'s constructor does (`directoryUrl` base, Basic auth from `directoryUsername`/`directoryPassword`), a 60-second in-memory cache, and the four degradation rules from research.md R5; log `directory_settings_fetch_failed` at WARN with the fallback taken (depends on T027)
+- [x] T029 [US3] Run `mvn -q verify`, confirm both new suites PASS, and commit as two commits — `feat(api): serve admin-maintained settings at /api/v1/settings` and `feat(client-ui): read deployment settings from the directory API` (depends on T022, T023, T026, T028)
 
 **Checkpoint**: Settings are readable by the client server. Nothing in the browser has changed yet.
+
+**US3 implementation notes**:
+
+- `DirectorySettingsClient` takes an injected `Clock`, so the 60-second window can be crossed in a test without the suite waiting a real minute. A second, package-private constructor accepts a `RestClient.Builder` for `MockRestServiceServer`; the production one is `@Autowired` so Spring has an unambiguous choice.
+- Serving a stale value deliberately does **not** refresh its timestamp, so the next call retries the directory rather than waiting out another window after a failure.
+- `DirectorySettings` normalises null relay lists to empty ones in its compact constructor, so no caller distinguishes "absent" from "unconfigured".
+- **TDD ordering deviation**: for T027/T028 the implementation was written before T023's test, unlike every other task in this plan. To confirm the tests were not vacuous, `CACHE_TTL` was temporarily mutated to zero — exactly one test failed (`shouldServeFromCacheWithinTheCacheWindow`) — then restored and re-verified green. The cache pair is mutually constraining: serving stale fails the refetch test, refetching early fails the cache test.
 
 ---
 
@@ -146,21 +184,28 @@ which is the property the spec's rollout was already built around.
 
 ### Tests for User Story 4
 
-- [ ] T030 [US4] Rewrite `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/RelayControllerTest.java` for `/api/v1/relays/system` with a mocked `DirectorySettingsClient` — returns configured system relays as plain strings, returns `{"relays": []}` when none are configured — replacing the `@TestPropertySource(properties = "bottin.client.default-relays=…")` fixture and the `shouldDropBlankDefaultRelayEntries` / `shouldReturnEmptyArrayWhenNoDefaultRelaysConfigured` tests; confirm it FAILS
-- [ ] T031 [US4] Rewrite the `ensureRelaysSeeded` block in `bottin-client-ui/src/test/js/app-session.test.js` as tests for `APP.systemRelays`, `APP.effectiveWriteRelays`, and `APP.effectiveReadRelays` — union with the user's relays first, de-duplication by URL, `[]` on fetch failure, and the assertion that **neither** effective-relay function writes to `localStorage`; confirm it FAILS
+- [x] T030 [US4] Rewrite `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/RelayControllerTest.java` for `/api/v1/relays/system` with a mocked `DirectorySettingsClient` — returns configured system relays as plain strings, returns `{"relays": []}` when none are configured — replacing the `@TestPropertySource(properties = "bottin.client.default-relays=…")` fixture and the `shouldDropBlankDefaultRelayEntries` / `shouldReturnEmptyArrayWhenNoDefaultRelaysConfigured` tests; confirm it FAILS
+- [x] T031 [US4] Rewrite the `ensureRelaysSeeded` block in `bottin-client-ui/src/test/js/app-session.test.js` as tests for `APP.systemRelays`, `APP.effectiveWriteRelays`, and `APP.effectiveReadRelays` — union with the user's relays first, de-duplication by URL, `[]` on fetch failure, and the assertion that **neither** effective-relay function writes to `localStorage`; confirm it FAILS
 
 ### Implementation for User Story 4
 
-- [ ] T032 [US4] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/RelayController.java` — replace `@GetMapping("/defaults")` with `@GetMapping("/system")` returning `{"relays": [...plain URLs]}` from `directorySettingsClient.current().defaultRelays()`, and drop the `ClientProperties` dependency; leave the other mappings untouched (depends on T030)
-- [ ] T033 [US4] Modify `bottin-client-ui/src/main/resources/static/js/app.js` — delete `ensureRelaysSeeded` (lines 119–137) and add `systemRelays()`, `effectiveWriteRelays(userId)`, and `effectiveReadRelays(userId)` per the browser contract in `contracts/relays-system-api.md`, sharing one private union helper; `systemRelays()` resolves to `[]` rather than rejecting on failure (depends on T031, T032)
-- [ ] T034 [P] [US4] Modify `bottin-client-ui/src/main/resources/static/js/profile.js:140` to use `APP.effectiveWriteRelays(userId)`, which already yields URL strings, and remove the now-redundant `filter`/`map` and the stale "Seed the default relay list on first use" comment
-- [ ] T035 [P] [US4] Modify `bottin-client-ui/src/main/resources/static/js/onboarding-complete.js:69` to use `app.effectiveWriteRelays(userId)`, dropping the local `filter`/`map`, and update the `APP` stub in `bottin-client-ui/src/test/js/onboarding-complete.test.js:29` accordingly
-- [ ] T036 [P] [US4] Modify `bottin-client-ui/src/main/resources/static/js/profile-fetch.js:71` to use `app.effectiveReadRelays(userId)`, dropping the local `filter`/`map`, and update the stubs in `bottin-client-ui/src/test/js/profile-fetch.test.js:89` and `:120`
-- [ ] T037 [US4] Modify `bottin-client-ui/src/main/resources/static/js/settings-relays.js` — `init()` (line 121) reads `APP.loadRelays(userId)` so only the user's own relays render, and `publishRelays()` (line 97) unions the system relays in as read+write entries for both the kind-10002 tags and the publish targets, per `contracts/relays-system-api.md` (depends on T033)
-- [ ] T038 [US4] Add a Vitest spec asserting that the relay settings page renders only the user's own relays while `publishRelays` still targets the union, in `bottin-client-ui/src/test/js/settings-relays.test.js` (depends on T037)
-- [ ] T039 [US4] Run `npm test` in `bottin-client-ui/` and `mvn -q verify`, confirm all suites PASS, and commit as `feat(client-ui): apply system relays at publish time instead of seeding browsers` (depends on T034–T038)
+- [x] T032 [US4] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/RelayController.java` — replace `@GetMapping("/defaults")` with `@GetMapping("/system")` returning `{"relays": [...plain URLs]}` from `directorySettingsClient.current().defaultRelays()`, and drop the `ClientProperties` dependency; leave the other mappings untouched (depends on T030)
+- [x] T033 [US4] Modify `bottin-client-ui/src/main/resources/static/js/app.js` — delete `ensureRelaysSeeded` (lines 119–137) and add `systemRelays()`, `effectiveWriteRelays(userId)`, and `effectiveReadRelays(userId)` per the browser contract in `contracts/relays-system-api.md`, sharing one private union helper; `systemRelays()` resolves to `[]` rather than rejecting on failure (depends on T031, T032)
+- [x] T034 [P] [US4] Modify `bottin-client-ui/src/main/resources/static/js/profile.js:140` to use `APP.effectiveWriteRelays(userId)`, which already yields URL strings, and remove the now-redundant `filter`/`map` and the stale "Seed the default relay list on first use" comment
+- [x] T035 [P] [US4] Modify `bottin-client-ui/src/main/resources/static/js/onboarding-complete.js:69` to use `app.effectiveWriteRelays(userId)`, dropping the local `filter`/`map`, and update the `APP` stub in `bottin-client-ui/src/test/js/onboarding-complete.test.js:29` accordingly
+- [x] T036 [P] [US4] Modify `bottin-client-ui/src/main/resources/static/js/profile-fetch.js:71` to use `app.effectiveReadRelays(userId)`, dropping the local `filter`/`map`, and update the stubs in `bottin-client-ui/src/test/js/profile-fetch.test.js:89` and `:120`
+- [x] T037 [US4] Modify `bottin-client-ui/src/main/resources/static/js/settings-relays.js` — `init()` (line 121) reads `APP.loadRelays(userId)` so only the user's own relays render, and `publishRelays()` (line 97) unions the system relays in as read+write entries for both the kind-10002 tags and the publish targets, per `contracts/relays-system-api.md` (depends on T033)
+- [x] T038 [US4] Add a Vitest spec asserting that the relay settings page renders only the user's own relays while `publishRelays` still targets the union, in `bottin-client-ui/src/test/js/settings-relays.test.js` (depends on T037)
+- [x] T039 [US4] Run `npm test` in `bottin-client-ui/` and `mvn -q verify`, confirm all suites PASS, and commit as `feat(client-ui): apply system relays at publish time instead of seeding browsers` (depends on T034–T038)
 
 **Checkpoint**: The relay behaviour is admin-controlled and reaches existing users. This is the story that fixes the spec's headline defect.
+
+**US4 implementation notes**:
+
+- **A false green worth recording.** Immediately after deleting `ensureRelaysSeeded` from `app.js`, the whole JS suite passed — because `profile-fetch.test.js` and `onboarding-complete.test.js` stub `window.APP` wholesale, so they never noticed their production callers were invoking a function that no longer existed. Stopping at that green would have shipped a broken client. The call sites (T034–T037) and their stubs had to be updated before the suite meant anything.
+- `settings-relays.js` gained explicit `window.RelayEditor` / `window.addRelay` / `window.publishRelays` assignments. They were already globals under a plain `<script>`; the assignments make the module reachable when a test imports it, without wrapping the file in an IIFE, which would have broken the template's inline `onclick` handlers.
+- `publishRelays()` now returns its promise chain. It previously returned nothing, so a test could not await it and would have asserted before the publish completed.
+- Java unit count moves 305 → 303: `RelayControllerTest` loses four `/defaults` tests and gains two `/system` ones. JS moves 67 → 73.
 
 ---
 
@@ -172,16 +217,23 @@ which is the property the spec's rollout was already built around.
 
 ### Tests for User Story 5
 
-- [ ] T040 [US5] Add a test to `bottin-client-ui/src/test/js/profile-image.test.js` asserting that `ProfileImage.bind` with a blank `blossomUrl` disables the file input, writes "Media server not configured" into the error slot, and registers no `change` listener; confirm it FAILS
+- [x] T040 [US5] Add a test to `bottin-client-ui/src/test/js/profile-image.test.js` asserting that `ProfileImage.bind` with a blank `blossomUrl` disables the file input, writes "Media server not configured" into the error slot, and registers no `change` listener; confirm it FAILS
 
 ### Implementation for User Story 5
 
-- [ ] T041 [US5] Add the guard at the top of `bind(config)` in `bottin-client-ui/src/main/resources/static/js/profile-image.js` — when `config.blossomUrl` is blank, disable `config.fileInputId`, show the reason in `config.errorId`, and return before registering the listener; one guard covers both call sites per research.md R7 (depends on T040)
-- [ ] T042 [P] [US5] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/ProfileController.java:29` to read `blossomUrl` from `DirectorySettingsClient` instead of `ClientProperties`, and update `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/ProfileControllerTest.java` — replacing the `@TestPropertySource(properties = "bottin.client.blossom-url=…")` fixture with a mocked client — keeping the existing assertions on the `blossomUrl` model attribute and the rendered `id="blossom-url"` span
-- [ ] T043 [P] [US5] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/OnboardingController.java:54` and `:94` to read `blossomUrl` from `DirectorySettingsClient`, and update `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/OnboardingControllerTest.java` to match
-- [ ] T044 [US5] Run `npm test` in `bottin-client-ui/` and `mvn -q verify`, confirm PASS, and commit as `feat(client-ui): take the media server from admin settings` (depends on T041–T043)
+- [x] T041 [US5] Add the guard at the top of `bind(config)` in `bottin-client-ui/src/main/resources/static/js/profile-image.js` — when `config.blossomUrl` is blank, disable `config.fileInputId`, show the reason in `config.errorId`, and return before registering the listener; one guard covers both call sites per research.md R7 (depends on T040)
+- [x] T042 [P] [US5] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/ProfileController.java:29` to read `blossomUrl` from `DirectorySettingsClient` instead of `ClientProperties`, and update `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/ProfileControllerTest.java` — replacing the `@TestPropertySource(properties = "bottin.client.blossom-url=…")` fixture with a mocked client — keeping the existing assertions on the `blossomUrl` model attribute and the rendered `id="blossom-url"` span
+- [x] T043 [P] [US5] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/OnboardingController.java:54` and `:94` to read `blossomUrl` from `DirectorySettingsClient`, and update `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/OnboardingControllerTest.java` to match
+- [x] T044 [US5] Run `npm test` in `bottin-client-ui/` and `mvn -q verify`, confirm PASS, and commit as `feat(client-ui): take the media server from admin settings` (depends on T041–T043)
 
 **Checkpoint**: Image uploads follow admin configuration and fail informatively when it is missing.
+
+**US5 implementation notes**:
+
+- The guard sits at the top of `ProfileImage.bind` and returns before registering the `change` listener, so an unconfigured deployment cannot start an upload at all rather than starting one that fails. A whitespace-only value counts as unconfigured: the settings row stores `null`, but Thymeleaf renders that as an empty span.
+- One guard covers both call sites — the profile editor's two fields and onboarding's two — and any third added later, which is why it went in the shared function rather than at each caller.
+- `ProfileControllerTest` and `OnboardingControllerTest` lose their `@TestPropertySource(bottin.client.blossom-url=…)` fixtures for a mocked `DirectorySettingsClient`. `OnboardingController` still holds `ClientProperties` for the domain and the step-import relay list; US6 removes the latter.
+- Java 303 → 304 (a new unconfigured-media-server case on the profile editor), JS 73 → 76.
 
 ---
 
@@ -193,15 +245,22 @@ which is the property the spec's rollout was already built around.
 
 ### Tests for User Story 6
 
-- [ ] T045 [US6] Add a test to `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/OnboardingControllerTest.java` asserting that `GET /onboarding/step/import` exposes a `discoveryRelays` model attribute holding the discovery relays unioned with the system relays, and an empty value when neither is configured; confirm it FAILS
+- [x] T045 [US6] Add a test to `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/OnboardingControllerTest.java` asserting that `GET /onboarding/step/import` exposes a `discoveryRelays` model attribute holding the discovery relays unioned with the system relays, and an empty value when neither is configured; confirm it FAILS
 
 ### Implementation for User Story 6
 
-- [ ] T046 [US6] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/OnboardingController.java:96-100` — replace the `defaultRelays` model attribute with `discoveryRelays`, built from `DirectorySettingsClient` as discovery relays unioned with system relays, de-duplicated; server-side injection is required because this step runs before any NAP session exists (research.md R8) (depends on T045)
-- [ ] T047 [US6] Modify `bottin-client-ui/src/main/resources/templates/onboarding/step-import.html` — delete the hardcoded `DISCOVERY_RELAYS` constant (lines 55–58) and the `DEFAULT_RELAYS` concatenation (lines 59–64), rename the span at line 49 from `configured-relays` to `discovery-relays` bound to `${discoveryRelays}`, and read the relay list straight from it; update the surrounding comments, which currently describe the deleted public-relay behaviour (depends on T046)
-- [ ] T048 [US6] Run `mvn -q verify`, confirm PASS, and commit as `feat(client-ui): take profile discovery relays from admin settings` (depends on T047)
+- [x] T046 [US6] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/OnboardingController.java:96-100` — replace the `defaultRelays` model attribute with `discoveryRelays`, built from `DirectorySettingsClient` as discovery relays unioned with system relays, de-duplicated; server-side injection is required because this step runs before any NAP session exists (research.md R8) (depends on T045)
+- [x] T047 [US6] Modify `bottin-client-ui/src/main/resources/templates/onboarding/step-import.html` — delete the hardcoded `DISCOVERY_RELAYS` constant (lines 55–58) and the `DEFAULT_RELAYS` concatenation (lines 59–64), rename the span at line 49 from `configured-relays` to `discovery-relays` bound to `${discoveryRelays}`, and read the relay list straight from it; update the surrounding comments, which currently describe the deleted public-relay behaviour (depends on T046)
+- [x] T048 [US6] Run `mvn -q verify`, confirm PASS, and commit as `feat(client-ui): take profile discovery relays from admin settings` (depends on T047)
 
 **Checkpoint**: All six stories are functional. Every consumer now reads settings; the environment variables are dead but still present.
+
+**US6 implementation notes**:
+
+- The four relays previously compiled into `step-import.html` (`relay.damus.io`, `nos.lol`, `relay.primal.net`, `relay.nostr.band`) are gone entirely rather than kept as a fallback. Keeping a compiled-in list while deleting the environment fallback would have been inconsistent, and it is exactly what forced a client rebuild to change. They live on as the suggested seed values in the new how-to.
+- Discovery and system relays are unioned server-side, discovery first, de-duplicated. Injection has to be server-side: `/onboarding/step/import` runs before any NAP session exists, so it cannot read the NAP-protected `/api/v1/relays/system`.
+- `ClientProperties.getDefaultRelays()` has no callers left. The remaining `getDefaultRelays()` hits in the repo are `Nip05RecordProperties` and `ReachProperties` — different classes, out of scope.
+- Java 304 → 307.
 
 ---
 
@@ -209,20 +268,20 @@ which is the property the spec's rollout was already built around.
 
 **Purpose**: Delete the superseded configuration and bring documentation in line. This is the spec's rollout step 5 and must run only after every consumer has switched.
 
-- [ ] T049 Remove `defaultRelays` and `blossomUrl` from `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/config/ClientProperties.java` and update its class Javadoc, which currently documents both
-- [ ] T050 Remove the `blossom-url` and `default-relays` keys and their comments from `bottin-client-ui/src/main/resources/application.yml` (depends on T049)
-- [ ] T051 [P] Remove `BOTTIN_BLOSSOM_URL` and `BOTTIN_DEFAULT_RELAYS` from the `bottin-client` service in `docker-compose.yml:90-91`, along with the now-inaccurate "Browser-facing URLs" comment above them
-- [ ] T052 [P] Remove `BOTTIN_DEFAULT_RELAYS` and `BOTTIN_BLOSSOM_URL` from `.env:30-31`
-- [ ] T053 Sweep for dead references with `grep -rn "relays/defaults\|ensureRelaysSeeded\|BOTTIN_BLOSSOM_URL\|BOTTIN_DEFAULT_RELAYS\|blossom-url\|default-relays" --include=* . | grep -v docs/superpowers` and resolve every hit; historical plans and specs under `docs/superpowers/` are records of what was and are left alone (depends on T049–T052)
-- [ ] T054 [P] Write the how-to `docs/how-to/configure-deployment-settings.md` (Diátaxis how-to: `#` heading, purpose statement, the four fields, the browser-reachability warning, the 60-second propagation note) and link it from the How-To section of `docs/README.md`
-- [ ] T055 [P] Document `GET /api/v1/settings` in `docs/reference/rest-api.md` — auth requirement, response shape, and the deliberate absence of `rateLimitPerMinute`
-- [ ] T056 [P] Update `docs/reference/docker-compose-configuration.md` to drop the two retired variables and point at `/admin/settings`, keeping the table of variables that deliberately stay in the environment
-- [ ] T057 [P] Update `docs/how-to/docker-deployment.md` with the post-deploy configuration step — the stack now comes up unconfigured by design
-- [ ] T058 [P] Update `docs/how-to/upload-profile-images.md:27-30` and `:47` to configure the media server in `/admin/settings` rather than via `BOTTIN_BLOSSOM_URL`
-- [ ] T059 [P] Update `docs/how-to/verify-profile-and-relay-publishing.md:24`, `:31`, and `:42` to configure system relays in `/admin/settings` rather than via `BOTTIN_DEFAULT_RELAYS`
-- [ ] T060 Run the full [quickstart.md](./quickstart.md) developer verification — `mvn -q verify`, `npm test`, the two `curl` checks, the rate-limit `429` check, and the degradation check with `bottin-api` stopped (depends on T053)
-- [ ] T061 Bump the project version in the parent `pom.xml` per semantic versioning and add the `CHANGELOG.md` entry derived from this branch's Conventional Commits, then run `graphify update .` to refresh the knowledge graph (depends on T060)
-- [ ] T062 Update the task's card on the kan `bottin` board with the commit ids and a note, per the `kan-tracking` skill (depends on T061)
+- [x] T049 Remove `defaultRelays` and `blossomUrl` from `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/config/ClientProperties.java` and update its class Javadoc, which currently documents both
+- [x] T050 Remove the `blossom-url` and `default-relays` keys and their comments from `bottin-client-ui/src/main/resources/application.yml` (depends on T049)
+- [x] T051 [P] Remove `BOTTIN_BLOSSOM_URL` and `BOTTIN_DEFAULT_RELAYS` from the `bottin-client` service in `docker-compose.yml:90-91`, along with the now-inaccurate "Browser-facing URLs" comment above them
+- [x] T052 [P] Remove `BOTTIN_DEFAULT_RELAYS` and `BOTTIN_BLOSSOM_URL` from `.env:30-31`
+- [x] T053 Sweep for dead references with `grep -rn "relays/defaults\|ensureRelaysSeeded\|BOTTIN_BLOSSOM_URL\|BOTTIN_DEFAULT_RELAYS\|blossom-url\|default-relays" --include=* . | grep -v docs/superpowers` and resolve every hit; historical plans and specs under `docs/superpowers/` are records of what was and are left alone (depends on T049–T052)
+- [x] T054 [P] Write the how-to `docs/how-to/configure-deployment-settings.md` (Diátaxis how-to: `#` heading, purpose statement, the four fields, the browser-reachability warning, the 60-second propagation note) and link it from the How-To section of `docs/README.md`
+- [x] T055 [P] Document `GET /api/v1/settings` in `docs/reference/rest-api.md` — auth requirement, response shape, and the deliberate absence of `rateLimitPerMinute`
+- [x] T056 [P] Update `docs/reference/docker-compose-configuration.md` to drop the two retired variables and point at `/admin/settings`, keeping the table of variables that deliberately stay in the environment
+- [x] T057 [P] Update `docs/how-to/docker-deployment.md` with the post-deploy configuration step — the stack now comes up unconfigured by design
+- [x] T058 [P] Update `docs/how-to/upload-profile-images.md:27-30` and `:47` to configure the media server in `/admin/settings` rather than via `BOTTIN_BLOSSOM_URL`
+- [x] T059 [P] Update `docs/how-to/verify-profile-and-relay-publishing.md:24`, `:31`, and `:42` to configure system relays in `/admin/settings` rather than via `BOTTIN_DEFAULT_RELAYS`
+- [x] T060 Run the full [quickstart.md](./quickstart.md) developer verification — `mvn -q verify`, `npm test`, the two `curl` checks, the rate-limit `429` check, and the degradation check with `bottin-api` stopped (depends on T053)
+- [x] T061 Bump the project version in the parent `pom.xml` per semantic versioning and add the `CHANGELOG.md` entry derived from this branch's Conventional Commits, then run `graphify update .` to refresh the knowledge graph (depends on T060)
+- [x] T062 Update the task's card on the kan `bottin` board with the commit ids and a note, per the `kan-tracking` skill (depends on T061)
 
 ---
 

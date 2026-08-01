@@ -85,10 +85,10 @@ services:
       - BOTTIN_DIRECTORY_URL=${BOTTIN_DIRECTORY_URL:-http://bottin-api:8080}
       - BOTTIN_API_USER=${BOTTIN_API_USER:-api}
       - BOTTIN_API_PASSWORD=${BOTTIN_API_PASSWORD:-changeme-api}
-      # Browser-facing URLs: the relay/blossom services below are reached from the
-      # host, not over bottin-network, so these must be host-published addresses.
-      - BOTTIN_BLOSSOM_URL=${BOTTIN_BLOSSOM_URL:-http://localhost:${BOTTIN_BLOSSOM_PORT:-8888}}
-      - BOTTIN_DEFAULT_RELAYS=${BOTTIN_DEFAULT_RELAYS:-ws://localhost:${BOTTIN_RELAY_PORT:-8086}}
+      # The media server and the relay sets are not configured here. They are
+      # operational data an administrator maintains at /admin/settings, which the
+      # client reads through the directory API. A fresh stack comes up with them
+      # unset by design; see docs/how-to/configure-deployment-settings.md.
     restart: unless-stopped
     healthcheck:
       # This module has no actuator dependency, so /actuator/health 404s and the

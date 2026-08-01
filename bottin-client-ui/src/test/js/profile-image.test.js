@@ -244,3 +244,61 @@ describe('ProfileImage.bind', () => {
     })).not.toThrow();
   });
 });
+
+describe('ProfileImage.bind without a media server', () => {
+  // An unconfigured deployment must not leave a control that posts to an empty
+  // URL, which today produces an opaque network error. The field says why it is
+  // unavailable, and the rest of the page carries on.
+  it('disables the control and states the reason', () => {
+    const { input, error } = renderField();
+
+    ProfileImage.bind({
+      fileInputId: 'pic-input',
+      previewId: 'pic-preview',
+      errorId: 'pic-error',
+      blossomUrl: '',
+      resolveSigner: () => Promise.resolve(signer),
+      onUploaded: () => {},
+    });
+
+    expect(input.disabled).toBe(true);
+    expect(error.textContent).toBe('Media server not configured');
+    expect(error.className).not.toContain('hidden');
+  });
+
+  // A whitespace-only value is unconfigured too: the settings row stores null,
+  // but a template renders it as an empty span.
+  it('treats a blank value as unconfigured', () => {
+    const { input } = renderField();
+
+    ProfileImage.bind({
+      fileInputId: 'pic-input',
+      previewId: 'pic-preview',
+      errorId: 'pic-error',
+      blossomUrl: '   ',
+      resolveSigner: () => Promise.resolve(signer),
+      onUploaded: () => {},
+    });
+
+    expect(input.disabled).toBe(true);
+  });
+
+  // No listener is registered, so a change event cannot start an upload.
+  it('never uploads', async () => {
+    const { input } = renderField();
+    const upload = vi.spyOn(window.BlossomUpload, 'upload');
+
+    ProfileImage.bind({
+      fileInputId: 'pic-input',
+      previewId: 'pic-preview',
+      errorId: 'pic-error',
+      blossomUrl: '',
+      resolveSigner: () => Promise.resolve(signer),
+      onUploaded: () => {},
+    });
+    selectFile(input, fakeFile('image/png', 1000));
+    await Promise.resolve();
+
+    expect(upload).not.toHaveBeenCalled();
+  });
+});

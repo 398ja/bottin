@@ -2,12 +2,12 @@
 
 This guide shows you how to verify, in a real browser, that the Bottin client can edit
 and publish a Nostr profile (kind-0) and relay list (kind-10002) to real relays. It
-covers the interactive behaviour that server-side tests cannot assert: the relay list
-seeding from server defaults, the shared unlock-once-per-session modal, idle re-lock,
-and the per-relay publish result.
+covers the interactive behaviour that server-side tests cannot assert: how the
+deployment's system relays apply without appearing in a user's own list, the shared
+unlock-once-per-session modal, idle re-lock, and the per-relay publish result.
 
 The server-side guards for this feature (the `/settings/relays` route renders, the
-defaults endpoint returns the configured relay list, the profile page renders its
+system relay endpoint returns the configured list, the profile page renders its
 editable fields) live in `RelayControllerTest`, `SettingsControllerTest`, and
 `ProfileControllerTest`, and run with the normal build. Use this guide for the
 end-to-end flow on top of a running client and real relays.
@@ -19,33 +19,41 @@ end-to-end flow on top of a running client and real relays.
 - An `nsec` you can sign in with (a test key is fine — profile/relay-list events are
   small and harmless to publish to public relays).
 
-## Start the Client with Default Relays
+## Start the Stack and Configure System Relays
 
-`BOTTIN_DEFAULT_RELAYS` seeds a new identity's relay list the first time it visits
-`/settings/relays`, so it must be set before sign-in for the seeding step below to have
-relays to seed:
+The relays a deployment publishes to are maintained by an administrator, and the
+client reads them through the directory API, so the whole stack must be running —
+the client alone has nowhere to read them from.
 
 ```bash
-BOTTIN_CLIENT_PORT=8090 COOKIE_SECURE=false \
-BOTTIN_EXTERNAL_URL=http://localhost:8090 THYMELEAF_CACHE=false \
-BOTTIN_DEFAULT_RELAYS=wss://relay.damus.io,wss://nos.lol \
-mvn -q -pl bottin-client-ui spring-boot:run
+docker compose up -d
 ```
 
-The client is ready when `http://localhost:8090/apps` responds.
+Then open the admin UI at `http://localhost:8081/admin/settings`, enter one relay
+per line under **System relays**, and save. For a check against public relays:
 
-## Verify Relay List Seeding
+```text
+wss://relay.damus.io
+wss://nos.lol
+```
 
-1. **Sign in.** Open `http://localhost:8090/login`, paste a valid `nsec`, and submit.
+Changes reach the client within a minute; the page says so beside the save button.
+
+## Verify How System Relays Apply
+
+1. **Sign in.** Open `http://localhost:8082/login`, paste a valid `nsec`, and submit.
    You are redirected to `/apps`.
-2. **Open `/settings/relays`.** On first visit for this identity, the page seeds its
-   relay list from `BOTTIN_DEFAULT_RELAYS` — `relay.damus.io` and `nos.lol` appear
-   under both the **Read** and **Write** columns, since seeded defaults are read+write.
-   Reloading the page does not re-seed: the stored list, once present, is authoritative.
+2. **Open `/settings/relays`.** For a new identity the page is **empty** — "No read
+   relays configured" and "No write relays configured". This is correct: the system
+   relays are applied to every publish but are not yours to edit, and they were never
+   copied into your list. Publishing still works, as the next section shows.
 3. **Edit the list.** Add a relay by pasting a `wss://` URL, choosing read and/or write,
    and clicking **Add**. Remove one with the `×` button next to its row. Both actions
    persist immediately to the browser's local storage — no publish required to keep the
-   edit.
+   edit. Only relays you add appear here.
+4. **Change the system relays.** Edit them in the admin UI and wait a minute. The next
+   publish uses the new set, for every user at once — no per-browser reset, and nothing
+   in `/settings/relays` changes.
 
 ## Verify Profile Publish (kind-0)
 

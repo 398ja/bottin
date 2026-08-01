@@ -116,25 +116,35 @@ window.APP = {
         localStorage.setItem(this.relaysKey(userId), JSON.stringify(relays));
     },
 
-    // Seeds the relay list from the server-configured defaults whenever the stored
-    // list has no write relay, so an identity with no NIP-65 list still publishes.
-    // Stored entries are kept; a default is added only when its URL is not listed.
-    ensureRelaysSeeded: function(userId) {
-        var existing = this.loadRelays(userId);
-        if (existing.some(function(r) { return r.write; })) return Promise.resolve(existing);
-        var self = this;
-        return fetch('/api/v1/relays/defaults', { credentials: 'same-origin' })
+    // The deployment's system relays. Resolves to an empty list when the endpoint
+    // is unreachable, so a failure leaves the user publishing to their own relays
+    // rather than blocking them.
+    systemRelays: function() {
+        return fetch('/api/v1/relays/system', { credentials: 'same-origin' })
             .then(function(r) { return r.ok ? r.json() : null; })
-            .then(function(data) {
-                var missing = ((data && data.relays) || []).filter(function(d) {
-                    return !existing.some(function(r) { return r.url === d.url; });
-                });
-                if (!missing.length) return existing;
-                var merged = existing.concat(missing);
-                self.saveRelays(userId, merged);
-                return merged;
-            });
+            .then(function(data) { return (data && data.relays) || []; })
+            .catch(function() { return []; });
     },
+
+    // The user's own relays carrying the given permission, followed by any system
+    // relay not already among them.
+    //
+    // Nothing is written back to storage. Copying the system relays into the
+    // browser is exactly what the old seeding did, and it is what froze the relay
+    // set per browser and put relays the user never chose into the list Settings
+    // offers them to remove.
+    effectiveRelays: function(userId, permission) {
+        var own = this.loadRelays(userId)
+            .filter(function(r) { return r[permission]; })
+            .map(function(r) { return r.url; });
+        return this.systemRelays().then(function(system) {
+            return own.concat(system.filter(function(url) { return own.indexOf(url) === -1; }));
+        });
+    },
+
+    effectiveWriteRelays: function(userId) { return this.effectiveRelays(userId, 'write'); },
+
+    effectiveReadRelays: function(userId) { return this.effectiveRelays(userId, 'read'); },
 
     SESSION_TTL_MS: 15 * 60 * 1000,
 
