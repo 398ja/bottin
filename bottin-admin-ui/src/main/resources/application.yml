@@ -40,14 +40,36 @@ spring:
 server:
   port: 8081
 
+# NAP: administrators sign in by proving control of a Nostr key.
+#
+# The cookie name must differ from the client's `client_session`. Cookies are
+# not isolated by port, so on localhost a shared name would let one
+# application's session silently overwrite the other's.
+nap:
+  enabled: true
+  external-base-url: ${BOTTIN_ADMIN_EXTERNAL_URL:http://localhost:8081}
+  challenge-ttl-seconds: 60
+  session-ttl-seconds: 3600
+  max-clock-skew-seconds: 60
+  protected-path-prefixes: /admin
+  cookie:
+    name: admin_session
+    http-only: true
+    secure: ${COOKIE_SECURE:true}
+    same-site: Lax
+    path: /
+    max-age-seconds: 3600
+
 # Bottin Configuration
 bottin:
   default-domain: ""
 
-  # Admin credentials
   admin:
-    username: admin
-    # password: Set via BOTTIN_ADMIN_PASSWORD environment variable
+    # The public key of the administrator, as npub or hex. Not a secret — a
+    # public key is safe to publish, which is what makes it safe to configure
+    # here where a password was not. Deliberately has no default: an
+    # unconfigured deployment must admit nobody rather than somebody known.
+    npub: ${BOTTIN_ADMIN_NPUB:}
 
 # Logging
 logging:
