@@ -22,6 +22,12 @@
             <artifactId>bottin-core</artifactId>
         </dependency>
 
+        <!-- Browser key handling and the NAP handshake, shared with the other UI. -->
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>bottin-web-assets</artifactId>
+        </dependency>
+
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

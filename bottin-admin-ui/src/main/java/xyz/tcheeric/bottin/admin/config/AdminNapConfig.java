@@ -39,6 +39,20 @@ public class AdminNapConfig {
     private static final String ADMIN_PREFIX = "/admin";
 
     /**
+     * These filters must run before Spring Security's chain, which Spring Boot
+     * registers at order -100. Unlike bottin-client-ui, this module has Spring
+     * Security on the classpath, so leaving the NAP filters at a positive order
+     * would let Spring Security authorize the request before
+     * {@link NapSessionFilter} had established the principal — every
+     * administrator would be rejected regardless of their key.
+     */
+    private static final int NAP_BODY_CAPTURE_ORDER = -110;
+
+    private static final int NAP_SESSION_ORDER = -109;
+
+    private static final int REQUIRE_SESSION_ORDER = -108;
+
+    /**
      * Captures the raw request body of the NAP challenge-completion request.
      *
      * <p>{@link NapServletFilter} stashes the body as a request attribute that
@@ -52,7 +66,7 @@ public class AdminNapConfig {
         FilterRegistrationBean<NapServletFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(new NapServletFilter());
         registration.addUrlPatterns(NAP_COMPLETE_PATH);
-        registration.setOrder(0);
+        registration.setOrder(NAP_BODY_CAPTURE_ORDER);
         return registration;
     }
 
@@ -90,7 +104,7 @@ public class AdminNapConfig {
                 Duration.ofSeconds(napProperties.aclRefreshIntervalSeconds())
         ));
         registration.addUrlPatterns(ADMIN_PREFIX, ADMIN_PREFIX + "/*");
-        registration.setOrder(1);
+        registration.setOrder(NAP_SESSION_ORDER);
         return registration;
     }
 
@@ -118,7 +132,7 @@ public class AdminNapConfig {
 
         registration.setFilter(new RequireAdminSessionFilter(SIGN_IN_PATH));
         registration.addUrlPatterns(ADMIN_PREFIX, ADMIN_PREFIX + "/*");
-        registration.setOrder(2);
+        registration.setOrder(REQUIRE_SESSION_ORDER);
         return registration;
     }
 }

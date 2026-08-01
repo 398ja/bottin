@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>xyz.tcheeric</groupId>
+        <artifactId>bottin</artifactId>
+        <version>0.6.0</version>
+    </parent>
+
+    <artifactId>bottin-web-assets</artifactId>
+    <name>Bottin Web Assets</name>
+    <description>
+        Browser code shared by the client and the admin dashboard: key handling
+        and the NAP sign-in handshake. Both applications hold a Nostr key in the
+        browser and prove control of it the same way, and a second copy of key
+        encryption would drift — the copy that drifts silently being the one
+        without tests.
+
+        Served from META-INF/resources, so the files keep the same /js/ URLs they
+        had when they lived in the client, and no template changes.
+    </description>
+
+    <!-- No dependencies. This module is static resources only. -->
+</project>

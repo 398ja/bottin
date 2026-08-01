@@ -44,6 +44,7 @@
         <module>bottin-reach</module>
         <module>bottin-admin-ui</module>
         <module>bottin-client-ui</module>
+        <module>bottin-web-assets</module>
         <module>bottin-spring-boot-starter</module>
         <module>bottin-tests</module>
     </modules>
@@ -125,6 +126,11 @@
             <dependency>
                 <groupId>xyz.tcheeric</groupId>
                 <artifactId>bottin-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>bottin-web-assets</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
