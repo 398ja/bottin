@@ -2,6 +2,14 @@ spring:
   application:
     name: bottin-it
 
+  # bottin-api's SecurityConfig publishes an "any request" filter chain, which
+  # actuator's management chain then collides with. The integration tests here
+  # exercise repositories and services, not the actuator surface, so the
+  # management chain is excluded rather than reordering production security.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+
   # JPA Configuration for tests
   jpa:
     hibernate:
