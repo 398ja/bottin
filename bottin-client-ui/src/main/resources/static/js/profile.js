@@ -135,11 +135,10 @@ document.addEventListener('DOMContentLoaded', function () {
         identity.website = fields.website;
         APP.saveIdentity(identity);
 
-        // Seed the default relay list on first use so a fresh profile can publish
-        // out of the box, then publish to the configured write relays.
-        APP.ensureRelaysSeeded(userId).then(function (relays) {
-            var writeRelays = relays.filter(function (r) { return r.write; })
-                .map(function (r) { return r.url; });
+        // Publish to the user's own write relays together with the deployment's
+        // system relays, so a profile reaches the deployment's relays even before
+        // the user has added any of their own.
+        APP.effectiveWriteRelays(userId).then(function (writeRelays) {
             if (!writeRelays.length) {
                 APP.showToast('Add at least one write relay in Settings → Relays.', 'error');
                 return;

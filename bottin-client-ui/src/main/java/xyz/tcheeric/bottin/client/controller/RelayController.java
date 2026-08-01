@@ -3,11 +3,10 @@ package xyz.tcheeric.bottin.client.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import xyz.tcheeric.bottin.client.config.ClientProperties;
+import xyz.tcheeric.bottin.client.service.DirectorySettingsClient;
 
 import java.net.InetAddress;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -18,17 +17,20 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class RelayController {
 
-    private final ClientProperties clientProperties;
+    private final DirectorySettingsClient settingsClient;
 
-    @GetMapping("/defaults")
-    public ResponseEntity<Map<String, Object>> getDefaultRelays() {
-        List<Map<String, Object>> defaults = new ArrayList<>();
-        for (String url : clientProperties.getDefaultRelays()) {
-            if (url != null && !url.isBlank()) {
-                defaults.add(Map.of("url", url.trim(), "read", true, "write", true));
-            }
-        }
-        return ResponseEntity.ok(Map.of("relays", defaults));
+    /**
+     * The deployment's system relays, as plain URLs.
+     *
+     * <p>Replaces {@code /defaults}, which described the opposite of what now
+     * happens: these relays are applied on every publish and read rather than
+     * copied once into a browser as a starting point. They carry no read/write
+     * flags because they never enter a user's own relay list, which is the only
+     * place those flags mean anything.
+     */
+    @GetMapping("/system")
+    public ResponseEntity<Map<String, Object>> getSystemRelays() {
+        return ResponseEntity.ok(Map.of("relays", settingsClient.current().defaultRelays()));
     }
 
     @GetMapping

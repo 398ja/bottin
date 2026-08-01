@@ -86,10 +86,7 @@ describe('ProfileFetch.refresh', () => {
     window.APP = {
       loadIdentity: () => ({ userId: USER, npub: USER, pubkeyHex: PUBKEY, displayName: 'Stored' }),
       saveIdentity: (identity) => { saved = identity; },
-      ensureRelaysSeeded: vi.fn(() => Promise.resolve([
-        { url: 'wss://read', read: true, write: false },
-        { url: 'wss://write-only', read: false, write: true }
-      ]))
+      effectiveReadRelays: vi.fn(() => Promise.resolve(['wss://read']))
     };
     window.NostrTools = { SimplePool: function () { return poolReturning([event({ display_name: 'Published' }, 100)]); } };
   });
@@ -117,7 +114,7 @@ describe('ProfileFetch.refresh', () => {
 
   // An unreachable relay leaves the sign-in usable with what is stored.
   it('resolves with the stored identity when the lookup fails', async () => {
-    window.APP.ensureRelaysSeeded = vi.fn(() => Promise.reject(new Error('offline')));
+    window.APP.effectiveReadRelays = vi.fn(() => Promise.reject(new Error('offline')));
 
     const identity = await window.ProfileFetch.refresh(USER);
 

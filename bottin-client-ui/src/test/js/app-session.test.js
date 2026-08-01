@@ -20,47 +20,67 @@ describe('relay storage', () => {
   });
 });
 
-describe('ensureRelaysSeeded', () => {
-  const defaults = [{ url: 'wss://seed', read: true, write: true }];
+describe('system relays and effective relay lists', () => {
+  const SYSTEM = ['ws://relay-a:7777', 'wss://relay-b.example'];
 
-  function mockDefaults(ok, body) {
+  function mockSystemRelays(ok, body) {
     global.fetch = vi.fn(() => Promise.resolve({ ok: ok, json: () => Promise.resolve(body) }));
   }
 
-  // With no stored list, seeds from the defaults endpoint and saves.
-  it('seeds from the defaults endpoint when absent', async () => {
-    mockDefaults(true, { relays: defaults });
-    const seeded = await APP.ensureRelaysSeeded(USER);
-    expect(seeded).toEqual(defaults);
-    expect(APP.loadRelays(USER)).toEqual(defaults);
-    expect(global.fetch).toHaveBeenCalledWith('/api/v1/relays/defaults', expect.anything());
+  // The endpoint belongs to the client server and replaces /defaults, which
+  // described the opposite of what now happens.
+  it('reads the system relays from the client server', async () => {
+    mockSystemRelays(true, { relays: SYSTEM });
+    await expect(APP.systemRelays()).resolves.toEqual(SYSTEM);
+    expect(global.fetch).toHaveBeenCalledWith('/api/v1/relays/system', expect.anything());
   });
 
-  // With a usable write relay stored, does not fetch and keeps the existing list.
-  it('is a no-op when a write relay already exists', async () => {
-    const existing = [{ url: 'wss://mine', read: true, write: true }];
-    APP.saveRelays(USER, existing);
-    global.fetch = vi.fn();
-    const result = await APP.ensureRelaysSeeded(USER);
-    expect(result).toEqual(existing);
-    expect(global.fetch).not.toHaveBeenCalled();
+  // A brand-new identity owns no relays yet still publishes, because the system
+  // relays are applied rather than copied in.
+  it('unions the system relays in when the user has none', async () => {
+    mockSystemRelays(true, { relays: SYSTEM });
+    await expect(APP.effectiveWriteRelays(USER)).resolves.toEqual(SYSTEM);
   });
 
-  // A read-only list cannot publish, so the defaults are added alongside it.
-  it('adds the defaults when no stored relay is writable', async () => {
-    const readOnly = [{ url: 'wss://mine', read: true, write: false }];
-    APP.saveRelays(USER, readOnly);
-    mockDefaults(true, { relays: defaults });
-    const result = await APP.ensureRelaysSeeded(USER);
-    expect(result).toEqual(readOnly.concat(defaults));
-    expect(APP.loadRelays(USER)).toEqual(readOnly.concat(defaults));
+  // The user's own relays lead, and a system relay they already listed is not repeated.
+  it('puts the user relays first and de-duplicates by url', async () => {
+    APP.saveRelays(USER, [
+      { url: 'wss://mine', read: true, write: true },
+      { url: 'ws://relay-a:7777', read: true, write: true }
+    ]);
+    mockSystemRelays(true, { relays: SYSTEM });
+    await expect(APP.effectiveWriteRelays(USER)).resolves
+      .toEqual(['wss://mine', 'ws://relay-a:7777', 'wss://relay-b.example']);
   });
 
-  // A failed defaults request must not be persisted as an empty relay list.
-  it('leaves the stored list untouched when the request fails', async () => {
-    mockDefaults(false, { status: 'error', code: 'NAP_SESSION_REQUIRED' });
-    const result = await APP.ensureRelaysSeeded(USER);
-    expect(result).toEqual([]);
+  // A relay the user marked read-only must not receive publishes.
+  it('excludes the user read-only relays from the write list', async () => {
+    APP.saveRelays(USER, [{ url: 'wss://readonly', read: true, write: false }]);
+    mockSystemRelays(true, { relays: [] });
+    await expect(APP.effectiveWriteRelays(USER)).resolves.toEqual([]);
+  });
+
+  // The read path unions the same way, or a new user could never read back the
+  // profile they just published to the system relays.
+  it('unions the system relays into the read list', async () => {
+    APP.saveRelays(USER, [{ url: 'wss://readonly', read: true, write: false }]);
+    mockSystemRelays(true, { relays: SYSTEM });
+    await expect(APP.effectiveReadRelays(USER)).resolves
+      .toEqual(['wss://readonly'].concat(SYSTEM));
+  });
+
+  // An unreachable endpoint must not stop a user publishing to relays they own.
+  it('falls back to the user relays when the endpoint fails', async () => {
+    APP.saveRelays(USER, [{ url: 'wss://mine', read: true, write: true }]);
+    mockSystemRelays(false, {});
+    await expect(APP.effectiveWriteRelays(USER)).resolves.toEqual(['wss://mine']);
+  });
+
+  // Nothing is copied into the browser. Seeding is what froze the relay set per
+  // browser and put system relays into the user's own editable list.
+  it('never writes the system relays into stored state', async () => {
+    mockSystemRelays(true, { relays: SYSTEM });
+    await APP.effectiveWriteRelays(USER);
     expect(localStorage.getItem(APP.relaysKey(USER))).toBeNull();
   });
 });
