@@ -1,6 +1,5 @@
 package xyz.tcheeric.bottin.it;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,22 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * singleton constraint makes a second row unrepresentable rather than unlikely.
  */
 @Transactional
-@Disabled("""
-        Blocked on bottin-it, not on the settings feature. Two things must change first.
-
-        1. The module's Spring context does not start. BottinAutoConfiguration
-           component-scans xyz.tcheeric.bottin.api from an @AutoConfiguration class,
-           which registers SecurityConfig too late for @ConditionalOnDefaultWebSecurity
-           to back off, so Spring Boot's default filter chain collides with it. Every
-           IT in this module fails this way, and did so before this feature existed.
-
-        2. These tests assert what the V4 migration produces, but application-test.yml
-           sets spring.flyway.enabled=false with ddl-auto=create-drop, so migrations
-           never run here — Hibernate builds the schema instead, without the seeded row
-           or the settings_singleton constraint. This class needs Flyway enabled and
-           ddl-auto=none to mean anything.
-
-        See T010a in specs/004-admin-settings/tasks.md.""")
 class SettingsRepositoryIT extends BaseIntegrationTest {
 
     private static final String EMPTY_RELAYS_JSON = "[]";

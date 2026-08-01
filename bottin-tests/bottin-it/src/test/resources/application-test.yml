@@ -11,17 +11,24 @@ spring:
       - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
 
   # JPA Configuration for tests
+  #
+  # The schema comes from Flyway, not from Hibernate. These tests run against
+  # PostgreSQL, and Hibernate's generated DDL is not valid there — it emits
+  # `role enum ('ADMIN','READONLY')` for AdminUserEntity, which PostgreSQL
+  # rejects with `type "enum" does not exist`, aborting schema creation and
+  # leaving every later table missing. The migrations are hand-written and
+  # PostgreSQL-correct, and they are what production actually runs, which is
+  # what an integration test should be exercising.
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
         format_sql: false
 
-  # Flyway - disabled for tests (use Hibernate auto DDL)
   flyway:
-    enabled: false
+    enabled: true
 
   # Security - test credentials
   security:

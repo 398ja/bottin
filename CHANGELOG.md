@@ -41,10 +41,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The four public relays previously hardcoded in the onboarding import step.
 
 ### Fixed
-- Two of the three causes of the `bottin-it` integration-test context failure, which predated this
-  release and blocked every test in that module. The remaining cause — `BottinAutoConfiguration`
-  component-scanning from an `@AutoConfiguration` class — is documented but unfixed, and
-  `SettingsRepositoryIT` is disabled with the reason recorded.
+- **The `bottin-it` integration tests run again.** Every test in that module had failed to load its
+  Spring context since before this release; all 38 now pass. `BottinAutoConfiguration` was
+  component-scanning `xyz.tcheeric.bottin.api` from an `@AutoConfiguration` class, which registered
+  every repository twice and introduced a security filter chain too late for
+  `@ConditionalOnDefaultWebSecurity` to stand down. The module also ran `ddl-auto: create-drop`
+  against PostgreSQL, where Hibernate's generated `enum` DDL is invalid; it now runs the Flyway
+  migrations instead, so the tests exercise the schema production uses.
+
+### Changed (starter)
+- `bottin-spring-boot-starter` no longer component-scans `xyz.tcheeric.bottin.api`. Adding the
+  starter previously grafted bottin's REST controllers and an "any request" security filter chain
+  into the consuming application, which broke context startup. An application that wants the REST
+  layer now scans that package explicitly, as `BottinApiApplication` does. No module in this
+  repository relied on the old behaviour.
 
 ## [0.3.0] - 2026-06-25
 
