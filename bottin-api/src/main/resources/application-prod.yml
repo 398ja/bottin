@@ -57,8 +57,8 @@ bottin:
       max-size: 1000
 
   # Rate limiting
+  # The per-minute allowance is admin-maintained in the settings table, not here.
   ratelimit:
-    requests-per-minute: 30
     cleanup-threshold: 1000
 
 # OpenAPI / Swagger - disabled in production by default

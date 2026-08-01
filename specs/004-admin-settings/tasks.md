@@ -125,15 +125,22 @@ which is the property the spec's rollout was already built around.
 
 ### Tests for User Story 2
 
-- [ ] T018 [US2] Write `RateLimitServiceTest` in `bottin-api/src/test/java/xyz/tcheeric/bottin/api/ratelimit/RateLimitServiceTest.java` with a mocked `SettingsService`, covering: the limit is read from settings; requests beyond it are rejected; `getRemainingRequests` reflects the configured limit; and a limit changed between calls takes effect on the next call with no restart; confirm it FAILS
+- [x] T018 [US2] Write `RateLimitServiceTest` in `bottin-api/src/test/java/xyz/tcheeric/bottin/api/ratelimit/RateLimitServiceTest.java` with a mocked `SettingsService`, covering: the limit is read from settings; requests beyond it are rejected; `getRemainingRequests` reflects the configured limit; and a limit changed between calls takes effect on the next call with no restart; confirm it FAILS
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Modify `bottin-api/src/main/java/xyz/tcheeric/bottin/api/ratelimit/RateLimitService.java` — replace the `@Value("${bottin.ratelimit.requests-per-minute:30}")` field with a `@RequiredArgsConstructor`-injected `SettingsService` and a private `limit()` method reading `settingsService.find().getRateLimitPerMinute()`, used by both `isAllowed` and `getRemainingRequests`; keep `cleanupThreshold` as `@Value`; add the `ponytail:` comment from research.md R1 naming the per-request read as the accepted ceiling and a 60-second memo as the upgrade path (depends on T018)
-- [ ] T020 [US2] Run `mvn -q verify -pl bottin-api -am` and fix any `bottin-api` test that constructed `RateLimitService` directly or relied on the removed property; `ProfileStatsControllerTest` mocks the bean and should need no change — confirm this rather than assuming (depends on T019)
-- [ ] T021 [US2] Confirm `RateLimitServiceTest` PASSES and commit as `feat(api): read the rate limit from admin-maintained settings` (depends on T020)
+- [x] T019 [US2] Modify `bottin-api/src/main/java/xyz/tcheeric/bottin/api/ratelimit/RateLimitService.java` — replace the `@Value("${bottin.ratelimit.requests-per-minute:30}")` field with a `@RequiredArgsConstructor`-injected `SettingsService` and a private `limit()` method reading `settingsService.find().getRateLimitPerMinute()`, used by both `isAllowed` and `getRemainingRequests`; keep `cleanupThreshold` as `@Value`; add the `ponytail:` comment from research.md R1 naming the per-request read as the accepted ceiling and a 60-second memo as the upgrade path (depends on T018)
+- [x] T020 [US2] Run `mvn -q verify -pl bottin-api -am` and fix any `bottin-api` test that constructed `RateLimitService` directly or relied on the removed property; `ProfileStatsControllerTest` mocks the bean and should need no change — confirm this rather than assuming (depends on T019)
+- [x] T021 [US2] Confirm `RateLimitServiceTest` PASSES and commit as `feat(api): read the rate limit from admin-maintained settings` (depends on T020)
 
 **Checkpoint**: The rate limit is operator-controlled at runtime. US1 and US2 both work independently.
+
+**US2 implementation notes**:
+
+- `RateLimitService` keeps `cleanup-threshold` as a `@Value`: it is an internal memory-management knob, not operator-facing data, so only the allowance moved.
+- `bottin.ratelimit.requests-per-minute` was removed from `application-prod.yml`, `application-test.yml`, and `application-e2e.yml`. Leaving it would have been dead config that reads as if setting it still does something.
+- **Regression caught by T020.** The e2e suite builds its schema with Hibernate (`spring.flyway.enabled=false`, `ddl-auto=create-drop`), so the migration never runs and the settings row is absent. With the allowance now read from that row — and `SettingsService` raising rather than inventing a default — every rate-limited endpoint would have answered 500. `BaseE2ETest` now seeds the row the migration would have inserted, at the allowance of 100 that `application-e2e.yml` previously set. Verified: `mvn -Pe2e` passes 22 tests, exit 0.
+- Unlike `bottin-it`, the e2e module was healthy before this change and remains so.
 
 ---
 
