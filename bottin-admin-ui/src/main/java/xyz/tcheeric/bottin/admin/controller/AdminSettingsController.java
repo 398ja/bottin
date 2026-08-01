@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.nap.spring.annotation.RequiresPermission;
 import xyz.tcheeric.bottin.admin.dto.SettingsForm;
 import xyz.tcheeric.bottin.core.model.SettingsData;
 import xyz.tcheeric.bottin.service.SettingsService;
@@ -23,6 +25,7 @@ import xyz.tcheeric.bottin.service.SettingsService;
  * equivalent: a write endpoint would be a second write path with a second
  * authentication story and no caller.
  */
+@RequiresPermission(AdminPermissions.READ)
 @Controller
 @RequestMapping("/admin/settings")
 @RequiredArgsConstructor
@@ -47,6 +50,7 @@ public class AdminSettingsController {
      * <p>A rejected submission re-renders the form rather than redirecting, so
      * the operator keeps what they typed alongside the error that explains it.
      */
+    @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping
     public String saveSettings(
             @Valid @ModelAttribute("settingsForm") SettingsForm form,

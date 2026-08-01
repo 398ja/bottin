@@ -3,4 +3,4 @@
 # helpers (De(), ce(), ne()) into the god-node ranking, crowding out the
 # real domain abstractions. Hand-written JS in this directory is kept.
 bottin-client-ui/src/main/resources/static/js/htmx.js
-bottin-client-ui/src/main/resources/static/js/nostr-tools.js
+bottin-web-assets/src/main/resources/META-INF/resources/js/nostr-tools.js

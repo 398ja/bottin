@@ -51,6 +51,14 @@ public class AdminSecurityConfig {
                         .requestMatchers("/admin/css/**", "/admin/js/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                // The handshake endpoints are exempt from CSRF. They are POSTs
+                // that no session authenticates: what authorises them is a
+                // signed challenge, which a cross-site attacker cannot produce
+                // because it needs the administrator's private key. Requiring a
+                // CSRF token as well would only mean no administrator can sign
+                // in, since the token cannot be obtained before the session it
+                // is meant to protect exists. Every other admin POST keeps it.
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/auth/**"))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(adminAuthenticationEntryPoint()))
                 .build();

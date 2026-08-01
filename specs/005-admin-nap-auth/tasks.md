@@ -81,15 +81,15 @@ tests, `src/main/resources/templates/admin/` for pages. Browser JS currently liv
 ### Tests for User Story 1
 
 - [ ] T015 [US1] Write `AdminAccessControlTest` in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAccessControlTest.java` enumerating every route in the table in `contracts/admin-access-contract.md` and asserting each is reachable with a `super-admin` session and redirects without one — written as an enumeration so a route added later without protection fails the suite; confirm it FAILS
-- [ ] T016 [P] [US1] Write the first-sign-in browser tests in `bottin-admin-ui/src/test/js/admin-signin.test.js` per `contracts/browser-identity.md` — an encrypted identity is stored, the plaintext nsec is absent from storage, and the passphrase appears in no storage key; confirm they FAIL
+- [X] T016 [P] [US1] Write the first-sign-in browser tests in `bottin-admin-ui/src/test/js/admin-signin.test.js` per `contracts/browser-identity.md` — an encrypted identity is stored, the plaintext nsec is absent from storage, and the passphrase appears in no storage key; confirm they FAIL
 
 ### Implementation for User Story 1
 
-- [ ] T017 [US1] Annotate the admin controllers in `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/` with `@RequiresPermission` — `admin:read` on the GET handlers of `AdminDashboardController`, `AdminRecordsController`, `AdminDomainsController`, `AdminSettingsController`, and `admin:write` on their POST handlers — per the route table (depends on T015)
-- [ ] T018 [US1] Replace the username and password fields in `bottin-admin-ui/src/main/resources/templates/admin/login.html:37-59` with the first-sign-in form: nsec and a new passphrase, no account-creation affordance (FR-016)
-- [ ] T019 [US1] Implement the first-sign-in path in `bottin-admin-ui/src/main/resources/static/js/admin-signin.js` — `buildEncryptedIdentity(nsec, passphrase)`, store it, run the handshake from `contracts/auth-endpoints.md`, redirect to the dashboard on success (depends on T012, T018)
-- [ ] T020 [US1] Modify `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/AdminLoginController.java` to render the sign-in page and pass it the state it needs to choose a form — whether an administrator key is configured — leaving the unconfigured wording to US3
-- [ ] T021 [US1] Run `mvn -q verify -pl bottin-admin-ui -am` and the admin JS suite, confirm both new suites PASS, and commit as `feat(admin-ui): sign in with a Nostr key instead of a password` (depends on T016–T020)
+- [X] T017 [US1] Annotate the admin controllers in `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/` with `@RequiresPermission` — `admin:read` on the GET handlers of `AdminDashboardController`, `AdminRecordsController`, `AdminDomainsController`, `AdminSettingsController`, and `admin:write` on their POST handlers — per the route table (depends on T015)
+- [X] T018 [US1] Replace the username and password fields in `bottin-admin-ui/src/main/resources/templates/admin/login.html:37-59` with the first-sign-in form: nsec and a new passphrase, no account-creation affordance (FR-016)
+- [X] T019 [US1] Implement the first-sign-in path in `bottin-admin-ui/src/main/resources/static/js/admin-signin.js` — `buildEncryptedIdentity(nsec, passphrase)`, store it, run the handshake from `contracts/auth-endpoints.md`, redirect to the dashboard on success (depends on T012, T018)
+- [X] T020 [US1] Modify `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/AdminLoginController.java` to render the sign-in page and pass it the state it needs to choose a form — whether an administrator key is configured — leaving the unconfigured wording to US3
+- [X] T021 [US1] Run `mvn -q verify -pl bottin-admin-ui -am` and the admin JS suite, confirm both new suites PASS, and commit as `feat(admin-ui): sign in with a Nostr key instead of a password` (depends on T016–T020)
 
 **Checkpoint**: The dashboard is reachable by key. Password sign-in is already gone, since T011 removed it.
 
