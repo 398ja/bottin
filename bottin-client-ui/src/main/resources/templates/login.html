@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Sign In</title>
+</head>
+<body>
+    <div th:fragment="content" class="container-narrow">
+        <div th:replace="~{fragments/page-header :: header('Sign In', 'Access your Nostr identity')}"></div>
+        <div class="card">
+            <div id="unlock-form" class="hidden">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <div id="recognition-banner"
+                         style="display: none; height: 72px; border-radius: 8px 8px 0 0; background-size: cover; background-position: center;"></div>
+                    <img id="recognition-avatar" src="/img/default-avatar.svg" alt=""
+                         style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid var(--color-surface, #fff); background: var(--color-bg);">
+                    <div id="recognition-name" style="font-weight: 600; font-size: 1.125rem; margin-top: 0.5rem;"></div>
+                    <div id="recognition-nip05" class="text-secondary text-sm"></div>
+                </div>
+                <p class="text-secondary text-sm text-center mb-3">
+                    Enter your passphrase to unlock and sign in.
+                </p>
+                <div class="form-group">
+                    <label class="form-label">Passphrase</label>
+                    <input type="password" id="passphrase-input" class="form-input"
+                           autocomplete="current-password" placeholder="Your passphrase">
+                </div>
+                <button id="unlock-btn" class="btn btn-primary btn-full" onclick="handleUnlock()">
+                    Unlock &amp; Sign In
+                </button>
+                <div class="text-center mt-2 text-sm">
+                    <a href="/onboarding">Use a different identity</a>
+                </div>
+            </div>
+
+            <div id="login-error" class="form-error text-center mt-2 hidden"></div>
+            <div id="login-loading" class="hidden text-center mt-2 text-secondary text-sm">
+                Signing challenge...
+            </div>
+
+            <div class="text-center mt-3 text-sm">
+                <a href="/restore">Restore from backup</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showError(message) {
+            var error = document.getElementById('login-error');
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        function setBusy(busy) {
+            document.getElementById('login-loading').style.display = busy ? 'block' : 'none';
+            document.getElementById('unlock-btn').disabled = busy;
+            if (busy) document.getElementById('login-error').style.display = 'none';
+        }
+
+        async function handleUnlock() {
+            var passphrase = document.getElementById('passphrase-input').value;
+            if (!passphrase) {
+                showError('Please enter your passphrase');
+                return;
+            }
+            setBusy(true);
+            try {
+                var identity = APP.loadIdentity(APP.getIdentityUserId());
+                if (!identity) throw new Error('No stored identity found');
+
+                var valid = await NostrCrypto.verifyPassword(
+                    identity.passwordHash, identity.passwordSalt, passphrase);
+                if (!valid) throw new Error('Incorrect passphrase');
+
+                var hexKey = await NostrCrypto.decryptPrivateKey(
+                    identity.privateKeyEncrypted, identity.privateKeyIv, identity.privateKeySalt, passphrase);
+
+                await APP.napLogin(hexKey, identity.npub);
+                // Pull the published profile back in: it may have been edited from
+                // another client since this browser last stored it.
+                await ProfileFetch.refresh(APP.getIdentityUserId());
+                window.location.href = '/apps';
+            } catch (err) {
+                showError(err.message);
+                setBusy(false);
+            }
+        }
+
+        function renderRecognition(identity) {
+            document.getElementById('recognition-name').textContent =
+                identity.displayName || 'Welcome back';
+
+            var nip05El = document.getElementById('recognition-nip05');
+            if (identity.nip05) {
+                nip05El.textContent = identity.nip05;
+            } else {
+                var npub = identity.npub || identity.userId || '';
+                nip05El.textContent = npub ? (npub.slice(0, 12) + '…' + npub.slice(-6)) : '';
+            }
+
+            var pictureUrl = safeImageUrl(identity.picture);
+            if (pictureUrl) {
+                var avatar = document.getElementById('recognition-avatar');
+                avatar.onerror = function() { this.src = '/img/default-avatar.svg'; };
+                avatar.src = pictureUrl;
+            }
+
+            var bannerUrl = safeImageUrl(identity.banner);
+            if (bannerUrl) {
+                var banner = document.getElementById('recognition-banner');
+                banner.style.backgroundImage = 'url("' + bannerUrl + '")';
+                banner.style.display = 'block';
+                document.getElementById('recognition-avatar').style.marginTop = '-32px';
+            }
+        }
+
+        // Accepts only http(s) URLs and returns the normalized href (which
+        // percent-encodes quotes/parens), so profile URLs from relay data cannot
+        // break out of a CSS url("...") or trigger non-http schemes.
+        function safeImageUrl(value) {
+            try {
+                var url = new URL(value);
+                if (url.protocol === 'https:' || url.protocol === 'http:') return url.href;
+            } catch (e) { /* invalid or non-absolute URL */ }
+            return null;
+        }
+
+        // This page unlocks an identity this browser already holds. With none
+        // stored there is nothing to unlock, and entering a key belongs to the
+        // entry flow, which encrypts and stores it rather than only signing in.
+        (function() {
+            var userId = APP.getIdentityUserId();
+            if (!userId) {
+                window.location.replace('/onboarding');
+                return;
+            }
+            renderRecognition(APP.loadIdentity(userId) || {});
+            document.getElementById('unlock-form').className = '';
+            document.getElementById('passphrase-input').focus();
+        })();
+    </script>
+</body>
+</html>

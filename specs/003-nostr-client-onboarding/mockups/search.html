@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Search</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.navbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+.navbar .logo { font-weight: 700; font-size: 1.125rem; }
+.navbar .nav-links { display: flex; gap: 16px; align-items: center; }
+.navbar .nav-links a { text-decoration: none; color: var(--muted); font-size: .875rem; cursor: pointer; }
+.navbar .nav-links a:hover { color: var(--text); }
+.navbar .avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: .75rem; font-weight: 600; cursor: pointer;
+}
+.search-section { max-width: 680px; margin: 0 auto; padding: 32px 24px; }
+.search-box {
+    display: flex; gap: 12px; margin-bottom: 24px;
+}
+.search-box input {
+    flex: 1; padding: 12px 16px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: .9375rem; outline: none;
+}
+.search-box input:focus { border-color: var(--primary); }
+.search-box input::placeholder { color: #aaa; }
+.result-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+}
+.result-item:last-child { border-bottom: none; }
+.result-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #e0e7ff; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary); font-weight: 600; font-size: .875rem;
+}
+.result-info { flex: 1; min-width: 0; }
+.result-info .name { font-weight: 500; font-size: .875rem; }
+.result-info .name .nip05 { color: var(--muted); font-weight: 400; font-size: .8125rem; }
+.result-info .about { font-size: .8125rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.result-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.result-actions button {
+    padding: 6px 14px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: .75rem; cursor: pointer; background: var(--surface);
+}
+.result-actions button.follow { background: var(--primary); color: #fff; border-color: var(--primary); }
+.result-actions button.following { background: var(--surface); color: var(--text); border-color: var(--primary); }
+.result-actions button.block { color: var(--danger); border-color: #fecaca; }
+.empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+.empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+.empty-state h3 { font-size: 1.0625rem; color: var(--text); margin-bottom: 4px; }
+.empty-state p { font-size: .875rem; }
+.results-count { font-size: .8125rem; color: var(--muted); margin-bottom: 16px; }
+.mobile-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.mobile-nav .logo { font-weight: 700; font-size: 1.125rem; }
+.mobile-nav .icons { display: flex; gap: 16px; }
+.mobile-nav .icons span { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="page-frame">
+    <div class="page-frame-header">
+        <h2>Search (Desktop — Authenticated)</h2>
+        <span class="badge">Authenticated</span>
+    </div>
+    <div class="page-frame-body" style="padding:0">
+        <div class="navbar">
+            <div class="logo">Bottin</div>
+            <div class="nav-links">
+                <a style="font-weight:600;color:var(--text)">Search</a>
+                <a>Settings</a>
+                <a>Logout</a>
+                <div class="avatar">A</div>
+            </div>
+        </div>
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" placeholder="Search Nostr profiles..." value="will">
+                <button style="background:var(--primary);color:#fff;border:none;padding:0 24px;border-radius:8px;cursor:pointer;font-size:.875rem">Search</button>
+            </div>
+            <div class="results-count">3 results for "will"</div>
+            <div class="result-item">
+                <div class="result-avatar">WB</div>
+                <div class="result-info">
+                    <div class="name">William <span class="nip05">william@nostr.com ✓</span></div>
+                    <div class="about">Bitcoin and Nostr enthusiast</div>
+                </div>
+                <div class="result-actions">
+                    <button class="following">Following</button>
+                    <button class="block">Block</button>
+                </div>
+            </div>
+            <div class="result-item">
+                <div class="result-avatar">WJ</div>
+                <div class="result-info">
+                    <div class="name">Willow <span class="nip05">willow@example.com ✓</span></div>
+                    <div class="about">Software developer, open source</div>
+                </div>
+                <div class="result-actions">
+                    <button class="follow">Follow</button>
+                    <button class="block">Block</button>
+                </div>
+            </div>
+            <div class="result-item">
+                <div class="result-avatar">WC</div>
+                <div class="result-info">
+                    <div class="name">WillCode <span class="nip05" style="color:#aaa">no NIP-05</span></div>
+                    <div class="about">Building on nostr</div>
+                </div>
+                <div class="result-actions">
+                    <button class="follow">Follow</button>
+                    <button class="block">Block</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-frame">
+    <div class="page-frame-header">
+        <h2>Search (Mobile)</h2>
+        <span class="badge">375px</span>
+    </div>
+    <div class="page-frame-body" style="display:flex;justify-content:center;padding:0">
+        <div class="phone-frame" style="margin:0">
+            <div class="notch"><div></div></div>
+            <div class="phone-content">
+                <div class="mobile-nav">
+                    <span class="logo">Bottin</span>
+                    <div class="icons">
+                        <span>⚙️</span>
+                        <span>👤</span>
+                    </div>
+                </div>
+                <div style="padding:16px">
+                    <div class="search-box" style="gap:8px;margin-bottom:16px;flex-direction:column">
+                        <input type="text" placeholder="Search profiles..." value="will" style="font-size:.875rem;padding:10px 14px;width:100%">
+                        <button style="background:var(--primary);color:#fff;border:none;padding:10px 0;border-radius:8px;cursor:pointer;font-size:.8125rem;width:100%">Search</button>
+                    </div>
+                    <div class="results-count" style="font-size:.75rem;margin-bottom:12px">3 results</div>
+                    <div class="result-item" style="padding:10px 0;gap:10px">
+                        <div class="result-avatar" style="width:36px;height:36px;font-size:.75rem">WB</div>
+                        <div class="result-info">
+                            <div class="name" style="font-size:.8125rem">William</div>
+                            <div class="about" style="font-size:.75rem">Bitcoin enthusiast</div>
+                        </div>
+                        <div class="result-actions" style="flex-direction:column;gap:4px">
+                            <button class="following" style="font-size:.6875rem;padding:4px 10px">✓</button>
+                        </div>
+                    </div>
+                    <div class="result-item" style="padding:10px 0;gap:10px">
+                        <div class="result-avatar" style="width:36px;height:36px;font-size:.75rem">WJ</div>
+                        <div class="result-info">
+                            <div class="name" style="font-size:.8125rem">Willow</div>
+                            <div class="about" style="font-size:.75rem">Software developer</div>
+                        </div>
+                        <div class="result-actions" style="flex-direction:column;gap:4px">
+                            <button class="follow" style="font-size:.6875rem;padding:4px 10px">+ Follow</button>
+                        </div>
+                    </div>
+                    <div class="result-item" style="padding:10px 0;gap:10px">
+                        <div class="result-avatar" style="width:36px;height:36px;font-size:.75rem">WC</div>
+                        <div class="result-info">
+                            <div class="name" style="font-size:.8125rem">WillCode</div>
+                            <div class="about" style="font-size:.75rem">Building on nostr</div>
+                        </div>
+                        <div class="result-actions" style="flex-direction:column;gap:4px">
+                            <button class="follow" style="font-size:.6875rem;padding:4px 10px">+ Follow</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p style="text-align:center;color:var(--muted);font-size:.8125rem;padding:16px">
+    <a href="index.html" style="color:var(--primary)">← Back to gallery</a>
+</p>
+
+</body>
+</html>

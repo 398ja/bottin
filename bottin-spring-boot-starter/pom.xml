@@ -8,7 +8,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>bottin</artifactId>
-        <version>0.3.0</version>
+        <version>0.5.0</version>
     </parent>
 
     <artifactId>bottin-spring-boot-starter</artifactId>
@@ -39,7 +39,7 @@
         </dependency>
         <dependency>
             <groupId>xyz.tcheeric</groupId>
-            <artifactId>bottin-web</artifactId>
+            <artifactId>bottin-api</artifactId>
         </dependency>
 
         <!-- Spring Boot -->

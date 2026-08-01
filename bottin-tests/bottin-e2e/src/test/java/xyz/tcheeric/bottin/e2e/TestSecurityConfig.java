@@ -25,7 +25,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * Security configuration for E2E tests.
  * Mirrors the production SecurityConfig to ensure consistent behavior.
  *
- * <p>This configuration is needed because the SecurityConfig from bottin-web
+ * <p>This configuration is needed because the SecurityConfig from bottin-api
  * may conflict with Spring Security auto-configuration during tests.
  * By defining it explicitly with @Primary beans, we ensure the correct
  * security filter chains are used.</p>

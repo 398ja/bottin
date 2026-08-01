@@ -16,6 +16,9 @@ Problem-oriented guides that show you how to achieve a specific goal.
 
 - [Deploy with Docker](how-to/docker-deployment.md) - Deploy Bottin services using Docker Compose
 - [Running E2E Tests](how-to/running-e2e-tests.md) - Run end-to-end tests with Testcontainers
+- [Verify the /apps Nav and Avatar Dropdown](how-to/verify-apps-nav-and-avatar-dropdown.md) - Browser-level check of the authenticated nav and logout flow
+- [Verify Profile and Relay Publishing](how-to/verify-profile-and-relay-publishing.md) - Edit and publish kind-0 profile and kind-10002 relay list from the browser
+- [Upload a Profile Avatar and Banner](how-to/upload-profile-images.md) - Set profile images from a local file and configure the Blossom media server
 
 ## Reference
 

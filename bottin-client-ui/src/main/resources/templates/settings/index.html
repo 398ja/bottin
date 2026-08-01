@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Settings</title>
+</head>
+<body>
+    <div th:fragment="content" class="container-wide">
+        <div th:replace="~{fragments/page-header :: header('Settings', 'Manage your identity, relays, and privacy')}"></div>
+
+        <div class="grid-6">
+            <a href="/profile" class="card card-clickable">
+                <div style="font-size: 1.5rem;">👤</div>
+                <div><strong>Profile</strong><p class="text-xs text-secondary">Edit display name, bio, avatar</p></div>
+            </a>
+
+            <a href="/settings/relays" class="card card-clickable">
+                <div style="font-size: 1.5rem;">🔁</div>
+                <div><strong>Relays</strong><p class="text-xs text-secondary">Manage Nostr relay connections</p></div>
+            </a>
+
+            <a href="/settings/security" class="card card-clickable">
+                <div style="font-size: 1.5rem;">🔒</div>
+                <div><strong>Security</strong><p class="text-xs text-secondary">Change passphrase, reveal nsec</p></div>
+            </a>
+
+            <a href="/settings/follows" class="card card-clickable">
+                <div style="font-size: 1.5rem;">👥</div>
+                <div><strong>Follows</strong><p class="text-xs text-secondary">View and manage followed users</p></div>
+            </a>
+
+            <a href="/settings/blocks" class="card card-clickable">
+                <div style="font-size: 1.5rem;">🚫</div>
+                <div><strong>Blocks</strong><p class="text-xs text-secondary">View and manage blocked users</p></div>
+            </a>
+
+            <a href="/settings/backup" class="card card-clickable">
+                <div style="font-size: 1.5rem;">💾</div>
+                <div><strong>Backup</strong><p class="text-xs text-secondary">Export encrypted backup file</p></div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

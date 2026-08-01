@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Profile View</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.navbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.navbar .logo { font-weight: 700; font-size: 1.125rem; }
+.navbar .nav-links { display: flex; gap: 16px; align-items: center; }
+.navbar .nav-links a { text-decoration: none; color: var(--muted); font-size: .875rem; cursor: pointer; }
+.navbar .nav-links a:hover { color: var(--text); }
+.navbar .avatar-nav { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .75rem; font-weight: 600; cursor: pointer; }
+.profile-page { max-width: 640px; margin: 0 auto; }
+.profile-banner { height: 160px; background: linear-gradient(135deg, #6b47ed, #a78bfa); border-radius: var(--radius) var(--radius) 0 0; }
+.profile-header { padding: 0 24px 24px; position: relative; }
+.profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: #e0e7ff; border: 4px solid var(--surface); margin-top: -40px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 700; font-size: 1.5rem; }
+.profile-name { font-size: 1.25rem; font-weight: 600; margin-top: 8px; }
+.profile-npub { font-size: .75rem; font-family: monospace; color: var(--muted); word-break: break-all; margin-bottom: 4px; }
+.profile-nip05 { font-size: .8125rem; color: var(--success); margin-bottom: 8px; }
+.profile-about { font-size: .875rem; color: var(--text); margin-bottom: 16px; line-height: 1.6; }
+.profile-meta { display: flex; gap: 16px; flex-wrap: wrap; font-size: .8125rem; color: var(--muted); margin-bottom: 20px; }
+.profile-meta span { display: flex; align-items: center; gap: 4px; }
+.profile-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.profile-actions button {
+    padding: 8px 20px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: .8125rem; cursor: pointer; background: var(--surface);
+}
+.profile-actions button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.profile-actions button.danger { color: var(--danger); border-color: #fecaca; }
+.profile-actions button.following { background: var(--surface); color: var(--text); border-color: var(--primary); }
+.section { padding: 24px; border-top: 1px solid var(--border); }
+.section h3 { font-size: .9375rem; margin-bottom: 12px; }
+.mobile-nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.mobile-nav .logo { font-weight: 700; font-size: 1.125rem; }
+.mobile-nav .icons { display: flex; gap: 16px; }
+</style>
+</head>
+<body>
+
+<div class="page-frame">
+    <div class="page-frame-header">
+        <h2>Profile View — Other User (Desktop)</h2>
+        <span class="badge">Authenticated</span>
+    </div>
+    <div class="page-frame-body" style="padding:0">
+        <div class="navbar">
+            <div class="logo">Bottin</div>
+            <div class="nav-links">
+                <a>Search</a>
+                <a>Settings</a>
+                <a>Logout</a>
+                <div class="avatar-nav">A</div>
+            </div>
+        </div>
+        <div class="profile-page">
+            <div class="profile-banner"></div>
+            <div class="profile-header">
+                <div class="profile-avatar">WB</div>
+                <div class="profile-name">William Bitcoin</div>
+                <div class="profile-npub">npub1wz2x3y4...f7g8h9j0</div>
+                <div class="profile-nip05">✓ william@nostr.com</div>
+                <div class="profile-about">
+                    Bitcoin and Nostr enthusiast. Building decentralized social media tools.
+                </div>
+                <div class="profile-meta">
+                    <span>⚡ william@getalby.com</span>
+                    <span>🌐 nostr.com</span>
+                </div>
+                <div class="profile-actions">
+                    <button class="following">✓ Following</button>
+                    <button>✉ Message</button>
+                    <button class="danger">Block</button>
+                    <button>⋯</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-frame">
+    <div class="page-frame-header">
+        <h2>Profile View — Other User (Mobile)</h2>
+        <span class="badge">375px</span>
+    </div>
+    <div class="page-frame-body" style="display:flex;justify-content:center;padding:0">
+        <div class="phone-frame" style="margin:0">
+            <div class="notch"><div></div></div>
+            <div class="phone-content">
+                <div class="mobile-nav">
+                    <span class="logo">Bottin</span>
+                    <div class="icons">
+                        <span>🔍</span>
+                        <span>⚙️</span>
+                    </div>
+                </div>
+                <div style="height:100px;background:linear-gradient(135deg,#6b47ed,#a78bfa)"></div>
+                <div style="padding:0 16px 20px;position:relative">
+                    <div style="width:64px;height:64px;border-radius:50%;background:#e0e7ff;border:3px solid var(--surface);margin-top:-32px;display:flex;align-items:center;justify-content:center;color:var(--primary);font-weight:700;font-size:1.25rem">WB</div>
+                    <div style="font-size:1.0625rem;font-weight:600;margin-top:6px">William Bitcoin</div>
+                    <div style="font-size:.6875rem;font-family:monospace;color:var(--muted);word-break:break-all">npub1wz2x3y4...f7g8h9j0</div>
+                    <div style="font-size:.75rem;color:var(--success);margin-bottom:6px">✓ william@nostr.com</div>
+                    <div style="font-size:.8125rem;margin-bottom:12px">Bitcoin and Nostr enthusiast.</div>
+                    <div style="font-size:.75rem;color:var(--muted);margin-bottom:14px">⚡ william@getalby.com</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <button style="flex:1;padding:8px 0;border:1px solid var(--primary);border-radius:8px;font-size:.75rem;cursor:pointer;background:var(--surface);color:var(--text)">✓ Following</button>
+                        <button style="flex:1;padding:8px 0;border:1px solid #fecaca;border-radius:8px;font-size:.75rem;cursor:pointer;background:var(--surface);color:var(--danger)">Block</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p style="text-align:center;color:var(--muted);font-size:.8125rem;padding:16px">
+    <a href="index.html" style="color:var(--primary)">← Back to gallery</a>
+</p>
+
+</body>
+</html>

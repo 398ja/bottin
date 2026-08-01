@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <nav th:fragment="nav" class="nav">
+        <a th:href="@{/}" class="nav-brand">
+            <span class="nav-brand-mark">Bottin</span>
+            <span class="nav-brand-sub">nostr directory</span>
+        </a>
+        <div class="nav-spacer"></div>
+        <div id="nav-authed" class="hidden">
+            <a th:href="@{/search}" class="nav-link">Search</a>
+            <div class="nav-dropdown">
+                <button class="nav-link nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <img id="nav-avatar" src="/img/default-avatar.svg" alt="" class="nav-avatar">
+                </button>
+                <div class="nav-dropdown-menu">
+                    <a th:href="@{/profile}" class="nav-dropdown-item">Profile</a>
+                    <a th:href="@{/settings}" class="nav-dropdown-item">Settings</a>
+                    <a class="nav-dropdown-item"
+                       href="#"
+                       onclick="event.preventDefault(); APP.logout();">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+</body>
+</html>

@@ -1,5 +1,5 @@
-# Multi-stage build for bottin-web (default)
-# For service-specific builds, use Dockerfile.web or Dockerfile.admin
+# Multi-stage build for bottin-api (default)
+# For service-specific builds, use Dockerfile.api or Dockerfile.admin
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /app
@@ -10,7 +10,7 @@ COPY bottin-core/pom.xml bottin-core/
 COPY bottin-persistence/pom.xml bottin-persistence/
 COPY bottin-service/pom.xml bottin-service/
 COPY bottin-verification/pom.xml bottin-verification/
-COPY bottin-web/pom.xml bottin-web/
+COPY bottin-api/pom.xml bottin-api/
 COPY bottin-admin-ui/pom.xml bottin-admin-ui/
 COPY bottin-spring-boot-starter/pom.xml bottin-spring-boot-starter/
 COPY bottin-tests/pom.xml bottin-tests/
@@ -24,7 +24,7 @@ RUN apk add --no-cache maven && \
 COPY . .
 
 # Build the application
-RUN mvn package -DskipTests -B -pl bottin-web -am
+RUN mvn package -DskipTests -B -pl bottin-api -am
 
 # Runtime image
 FROM eclipse-temurin:21-jre-alpine
@@ -36,7 +36,7 @@ RUN addgroup -g 1000 bottin && \
     adduser -u 1000 -G bottin -s /bin/sh -D bottin
 
 # Copy the built JAR
-COPY --from=builder /app/bottin-web/target/bottin-web-*.jar app.jar
+COPY --from=builder /app/bottin-api/target/bottin-api-*.jar app.jar
 
 # Set ownership
 RUN chown -R bottin:bottin /app

@@ -9,7 +9,7 @@ COPY bottin-core/pom.xml bottin-core/
 COPY bottin-persistence/pom.xml bottin-persistence/
 COPY bottin-service/pom.xml bottin-service/
 COPY bottin-verification/pom.xml bottin-verification/
-COPY bottin-web/pom.xml bottin-web/
+COPY bottin-api/pom.xml bottin-api/
 COPY bottin-admin-ui/pom.xml bottin-admin-ui/
 COPY bottin-spring-boot-starter/pom.xml bottin-spring-boot-starter/
 COPY bottin-tests/pom.xml bottin-tests/

@@ -14,7 +14,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "xyz.tcheeric.bottin.persistence",
         "xyz.tcheeric.bottin.service",
         "xyz.tcheeric.bottin.verification",
-        "xyz.tcheeric.bottin.web",
+        "xyz.tcheeric.bottin.api",
         "xyz.tcheeric.bottin.starter"
 })
 @EntityScan(basePackages = "xyz.tcheeric.bottin.persistence.entity")

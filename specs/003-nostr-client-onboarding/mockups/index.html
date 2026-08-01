@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bottin Client UI — Mockup Gallery</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.gallery { max-width: 900px; margin: 0 auto; padding: 32px; }
+.gallery h1 { margin-bottom: 4px; }
+.gallery .subtitle { color: var(--muted); margin-bottom: 32px; }
+.mockup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.mockup-card {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; transition: box-shadow .15s;
+}
+.mockup-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+.mockup-card .preview {
+    height: 180px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; border-bottom: 1px solid var(--border);
+}
+.mockup-card .preview.onboarding { background: linear-gradient(135deg, #e0e7ff, #f5f0ff); }
+.mockup-card .preview.login { background: linear-gradient(135deg, #fef9c3, #fef3c7); }
+.mockup-card .preview.search { background: linear-gradient(135deg, #dbeafe, #e0e7ff); }
+.mockup-card .preview.profile { background: linear-gradient(135deg, #f3e8ff, #e0e7ff); }
+.mockup-card .preview.settings { background: linear-gradient(135deg, #ecfdf5, #d1fae5); }
+.mockup-card .preview.relays { background: linear-gradient(135deg, #fef2f2, #fee2e2); }
+.mockup-card .info { padding: 16px; }
+.mockup-card .info h3 { font-size: .9375rem; margin-bottom: 4px; }
+.mockup-card .info p { font-size: .8125rem; color: var(--muted); margin-bottom: 12px; }
+.mockup-card .info a {
+    display: inline-block; padding: 6px 16px; background: var(--primary);
+    color: #fff; border-radius: 6px; text-decoration: none; font-size: .8125rem;
+}
+</style>
+</head>
+<body>
+<div class="gallery">
+    <h1>🎨 Bottin Client UI Mockups</h1>
+    <p class="subtitle">Interactive HTML mockups showing desktop and mobile layouts for each page</p>
+
+    <div class="mockup-grid">
+        <div class="mockup-card">
+            <div class="preview onboarding">✨</div>
+            <div class="info">
+                <h3>Onboarding — Method Choice</h3>
+                <p>Step 1: Create new key or import existing</p>
+                <a href="onboarding-method.html">View Mockup</a>
+            </div>
+        </div>
+
+        <div class="mockup-card">
+            <div class="preview onboarding">📝</div>
+            <div class="info">
+                <h3>Onboarding — Profile Setup</h3>
+                <p>Step 2: Enter username, display name, bio, etc.</p>
+                <a href="onboarding-profile.html">View Mockup</a>
+            </div>
+        </div>
+
+        <div class="mockup-card">
+            <div class="preview onboarding">🎉</div>
+            <div class="info">
+                <h3>Onboarding — Welcome & Backup</h3>
+                <p>Final step: nsec backup prompt with copy/download</p>
+                <a href="onboarding-welcome.html">View Mockup</a>
+            </div>
+        </div>
+
+        <div class="mockup-card">
+            <div class="preview login">🔑</div>
+            <div class="info">
+                <h3>Login</h3>
+                <p>nsec paste → NAP challenge → session cookie</p>
+                <a href="login.html">View Mockup</a>
+            </div>
+        </div>
+
+        <div class="mockup-card">
+            <div class="preview search">🔍</div>
+            <div class="info">
+                <h3>Search</h3>
+                <p>Authenticated landing page with profile search</p>
+                <a href="search.html">View Mockup</a>
+            </div>
+        </div>
+
+        <div class="mockup-card">
+            <div class="preview profile">👤</div>
+            <div class="info">
+                <h3>Profile View</h3>
+                <p>User profile with follow/block actions</p>
+                <a href="profile.html">View Mockup</a>
+            </div>
+        </div>
+
+        <div class="mockup-card">
+            <div class="preview settings">⚙️</div>
+            <div class="info">
+                <h3>Settings Hub</h3>
+                <p>Overview with links to all settings sections</p>
+                <a href="settings-hub.html">View Mockup</a>
+            </div>
+        </div>
+
+        <div class="mockup-card">
+            <div class="preview relays">🌐</div>
+            <div class="info">
+                <h3>Relay Management</h3>
+                <p>Read/write relay lists with add/remove controls</p>
+                <a href="relays.html">View Mockup</a>
+            </div>
+        </div>
+
+        <div class="mockup-card">
+            <div class="preview settings" style="background:linear-gradient(135deg,#fef2f2,#fee2e2)">🔒</div>
+            <div class="info">
+                <h3>Security Settings</h3>
+                <p>Change passphrase, reveal nsec (password-gated)</p>
+                <a href="settings-security.html">View Mockup</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

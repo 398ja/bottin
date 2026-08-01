@@ -4,16 +4,16 @@ Technical reference for all Docker Compose services, environment variables, and 
 
 ## Services
 
-### bottin-web
+### bottin-api
 
 The REST API service for NIP-05 identity resolution and management.
 
 | Property | Value |
 |----------|-------|
-| Dockerfile | `Dockerfile.web` |
+| Dockerfile | `Dockerfile.api` |
 | Default Port | 8080 |
 | Health Check | `/actuator/health` |
-| Container Name | `bottin-web` |
+| Container Name | `bottin-api` |
 
 ### bottin-admin
 
@@ -53,6 +53,24 @@ PostgreSQL database for persistent storage.
 |----------|-------------|---------|
 | `BOTTIN_ADMIN_USER` | Admin username | `admin` |
 | `BOTTIN_ADMIN_PASSWORD` | Admin password | `changeme` |
+| `BOTTIN_API_USER` | Username machine callers present to the API | `api` |
+| `BOTTIN_API_PASSWORD` | Password for that user, on both `bottin-api` and `bottin-client` | `changeme-api` |
+| `BOTTIN_TRUSTED_PROXIES` | Regex of proxy addresses allowed to set `X-Forwarded-For` | empty (trust none) |
+
+The `api` user holds API access without admin rights, and its password is separate
+from the admin one: `bottin-client` needs it to register onboarded handles, and
+handing it out must not hand out the admin credential. Both services read
+`BOTTIN_API_PASSWORD`, so the two must be set to the same value. Under the `prod`
+profile `bottin-api` refuses to start unless `BOTTIN_ADMIN_PASSWORD` and
+`BOTTIN_API_PASSWORD` are both set — unset, they fall back to a random password
+that changes on every restart.
+
+`BOTTIN_TRUSTED_PROXIES` governs which peer may state the caller's address. It is
+empty by default, so `X-Forwarded-For` is ignored and the rate limiters key on the
+connection itself — otherwise any caller could rotate the header and bypass them.
+Set it to a regex matching your edge proxy (for example `10\.0\.0\.5`) when one
+is in front of the API; until then every client behind that proxy shares a single
+rate-limit bucket keyed on the proxy's address.
 
 ### Service Ports
 
@@ -90,7 +108,7 @@ PostgreSQL database for persistent storage.
 
 All services include health checks for container orchestration:
 
-### bottin-web / bottin-admin
+### bottin-api / bottin-admin
 
 ```yaml
 healthcheck:
@@ -113,7 +131,7 @@ healthcheck:
 
 ## Dockerfiles
 
-### Dockerfile.web
+### Dockerfile.api
 
 Multi-stage build for the REST API service:
 - Builder stage: Eclipse Temurin JDK 21 Alpine
@@ -131,14 +149,14 @@ Multi-stage build for the Admin Dashboard service:
 
 ### Dockerfile (default)
 
-Alias for `Dockerfile.web`, maintained for backward compatibility.
+Alias for `Dockerfile.api`, maintained for backward compatibility.
 
 ## Dependencies
 
 Service startup order is managed via `depends_on` with health checks:
 
 ```
-postgres (healthy) -> bottin-web
+postgres (healthy) -> bottin-api
 postgres (healthy) -> bottin-admin
 ```
 

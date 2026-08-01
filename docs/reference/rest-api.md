@@ -196,6 +196,64 @@ Verify an external NIP-05 identifier.
 }
 ```
 
+## Client UI Endpoints
+
+Served by the client UI (default `http://localhost:8081`), not by the API above.
+Authentication is a NAP session cookie rather than HTTP Basic.
+
+### POST /api/v1/register
+
+Registers the handle chosen during onboarding. The client UI calls
+`POST /api/v1/records` on the API above with its own credentials, so the browser
+never holds them.
+
+**Request Body:**
+
+```json
+{
+  "username": "alice",
+  "relays": ["wss://relay.example.com"]
+}
+```
+
+The pubkey is taken from the caller's NAP session, not from the request, so a
+handle can only be claimed for the key that signed in.
+
+**Response:**
+
+```json
+{
+  "status": "registered",
+  "nip05": "alice@example.com"
+}
+```
+
+**Errors:** `401 NAP_SESSION_REQUIRED`, `400 INVALID_USERNAME`,
+`409 USERNAME_TAKEN`, `404 DOMAIN_NOT_FOUND` (the handle suffix has no domain
+record yet), `502 DIRECTORY_UNAVAILABLE`.
+
+### GET /api/v1/resolve?username={username}
+
+Checks whether a handle can still be claimed, during onboarding. Requires no
+authentication.
+
+**Response:**
+
+```json
+{
+  "available": true,
+  "status": "available"
+}
+```
+
+`status` is `available`, `taken` (the directory holds a record for it),
+`invalid` (outside `[a-z0-9_-]{1,64}`), or `unknown` (the directory could not be
+reached). Only `available` leaves `available` true, so a handle is never offered
+on the strength of a failed check.
+
+With an `HX-Request` header the same check returns the inline status badge as
+HTML instead of JSON.
+
 ## Error Responses
 
 All errors follow this format:

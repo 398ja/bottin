@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Confirm</title>
+</head>
+<body>
+    <div th:fragment="content" class="container-narrow">
+        <div class="wizard-step-indicator">
+            <div class="wizard-step completed">✓</div>
+            <div class="wizard-connector completed"></div>
+            <div class="wizard-step completed">✓</div>
+            <div class="wizard-connector completed"></div>
+            <div class="wizard-step completed">✓</div>
+            <div class="wizard-connector completed"></div>
+            <div class="wizard-step active">4</div>
+        </div>
+
+        <div class="card" style="max-width: 480px; margin: 0 auto;">
+            <h1 class="page-title" style="margin-bottom: 0.75rem;">Review &amp; Create</h1>
+            <p class="text-secondary text-sm mb-3">
+                Review your information before creating your identity.
+            </p>
+
+            <div class="flex-row mb-2">
+                <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--color-bg); flex-shrink: 0;" id="avatar-preview"></div>
+                <div>
+                    <div style="font-weight: 600; font-size: 1.125rem;" id="confirm-name">alice</div>
+                    <div class="text-secondary text-sm" id="confirm-username">@alice</div>
+                </div>
+            </div>
+
+            <div class="grid-6 text-sm mb-3" style="gap: 0.5rem;">
+                <div><strong>Bio:</strong> <span class="text-secondary" id="confirm-bio">-</span></div>
+                <div><strong>Lightning:</strong> <span class="text-secondary" id="confirm-lud16">-</span></div>
+                <div><strong>Website:</strong> <span class="text-secondary" id="confirm-website">-</span></div>
+            </div>
+
+            <div class="mt-3 mb-3" style="border-top: 1px solid var(--color-border); padding-top: 1rem;">
+                <div class="text-sm mb-2"><strong>Method:</strong> <span class="text-secondary" id="confirm-method">Creating new key</span></div>
+            </div>
+
+            <div class="flex-row-gap-sm">
+                <button type="button" class="btn btn-outline" style="flex: 1;"
+                        hx-get="/onboarding/step/security" hx-target="body" hx-push-url="false"
+                        hx-params="none">Back</button>
+                <form action="/onboarding/complete" method="post" style="flex: 1;" id="confirm-form"
+                      onsubmit="generateAndSaveKey(event); return false;">
+                    <button type="submit" class="btn btn-primary btn-full">Create Identity</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/nostr-tools@2.10.4/lib/nostr.bundle.min.js"></script>
+    <script>
+        (function() {
+            sessionStorage.removeItem('onboarding-nsec');
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            if (data.display_name) document.getElementById('confirm-name').textContent = data.display_name;
+            if (data.username) document.getElementById('confirm-username').textContent = '@' + data.username;
+            if (data.about) document.getElementById('confirm-bio').textContent = data.about;
+            if (data.lud16) document.getElementById('confirm-lud16').textContent = data.lud16;
+            if (data.website) document.getElementById('confirm-website').textContent = data.website;
+            if (data.method === 'import') document.getElementById('confirm-method').textContent = 'Importing existing key';
+            if (data.picture) {
+                var img = new Image();
+                img.onload = function() {
+                    document.getElementById('avatar-preview').style.backgroundImage = 'url(' + data.picture + ')';
+                };
+                img.onerror = function() {
+                    document.getElementById('avatar-preview').style.backgroundImage = 'url(/img/default-avatar.svg)';
+                };
+                img.src = data.picture;
+            }
+        })();
+
+        async function generateAndSaveKey(event) {
+            if (event) event.preventDefault();
+            var data = JSON.parse(sessionStorage.getItem('onboarding-data') || '{}');
+            var nsec;
+
+            if (!data.password) {
+                alert('Missing encryption password. Please go back to the password step.');
+                return;
+            }
+
+            if (data.method === 'import') {
+                var imported = (data.nsec || '').trim();
+                if (!imported) {
+                    alert('No nsec provided. Please go back and enter the key you want to import.');
+                    return;
+                }
+                try {
+                    var decoded = NostrTools.nip19.decode(imported);
+                    if (decoded.type !== 'nsec') {
+                        throw new Error('not an nsec');
+                    }
+                } catch (e) {
+                    alert('The key you entered is not a valid nsec. Please go back and check it.');
+                    return;
+                }
+                nsec = imported;
+            } else if (data.generatedNsec) {
+                // The profile step already minted a key to sign an image
+                // upload; reusing it keeps uploaded blobs owned by the same
+                // pubkey the identity is built from.
+                nsec = data.generatedNsec;
+            } else {
+                if (typeof NostrTools === 'undefined') {
+                    alert('Key generation library not loaded. Please refresh and try again.');
+                    return;
+                }
+                try {
+                    var secretKey = NostrTools.generateSecretKey();
+                    nsec = NostrTools.nip19.nsecEncode(secretKey);
+                } catch(e) {
+                    alert('Failed to generate key: ' + e.message);
+                    return;
+                }
+            }
+
+            try {
+                var identity = await NostrCrypto.buildEncryptedIdentity(nsec, data.password);
+                if (data.display_name) identity.displayName = data.display_name;
+                if (data.picture) identity.picture = data.picture;
+                if (data.banner) identity.banner = data.banner;
+                if (data.about) identity.about = data.about;
+                if (data.lud16) identity.lud16 = data.lud16;
+                if (data.website) identity.website = data.website;
+                if (data.username && data.domain) identity.nip05 = data.username + '@' + data.domain;
+                APP.saveIdentity(identity);
+            } catch (e) {
+                alert('Failed to secure your key: ' + e.message);
+                return;
+            }
+
+            sessionStorage.setItem('onboarding-nsec', nsec);
+            sessionStorage.removeItem('onboarding-data');
+            document.getElementById('confirm-form').submit();
+        }
+
+        function decodeNsec(nsec) {
+            try {
+                var decoded = NostrTools.nip19.decode(nsec);
+                return decoded.data;
+            } catch (e) {
+                return nsec;
+            }
+        }
+    </script>
+</body>
+</html>

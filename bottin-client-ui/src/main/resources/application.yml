@@ -1,0 +1,42 @@
+server:
+  port: ${BOTTIN_CLIENT_PORT:8081}
+
+spring:
+  application:
+    name: bottin-client-ui
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: ${THYMELEAF_CACHE:false}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
+
+nap:
+  enabled: true
+  external-base-url: ${BOTTIN_EXTERNAL_URL:http://localhost:8080}
+  challenge-ttl-seconds: 60
+  session-ttl-seconds: 3600
+  max-clock-skew-seconds: 60
+  protected-path-prefixes: /api/v1/follow,/api/v1/block,/api/v1/relays,/api/v1/publish-contact-list,/api/v1/register
+  cookie:
+    name: client_session
+    http-only: true
+    secure: ${COOKIE_SECURE:true}
+    same-site: Lax
+    path: /
+    max-age-seconds: 3600
+
+bottin:
+  client:
+    domain: bottin.example.com
+    blossom-url: ${BOTTIN_BLOSSOM_URL:http://localhost:8888}
+    # Comma-separated wss:// URLs seeded read+write for a user's initial relay list.
+    default-relays: ${BOTTIN_DEFAULT_RELAYS:}
+    # The bottin directory API this server registers onboarded handles with. Its
+    # /api/v1/records endpoint requires Basic auth, so the credentials stay here
+    # rather than in the browser.
+    directory-url: ${BOTTIN_DIRECTORY_URL:http://localhost:8080}
+    directory-username: ${BOTTIN_API_USER:api}
+    directory-password: ${BOTTIN_API_PASSWORD:changeme-api}

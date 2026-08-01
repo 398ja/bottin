@@ -1,11 +1,11 @@
 services:
-  bottin-web:
-    image: docker.398ja.xyz/bottin-web:latest
+  bottin-api:
+    image: docker.398ja.xyz/bottin-api:latest
     # To build locally instead, uncomment:
     # build:
     #   context: .
-    #   dockerfile: Dockerfile.web
-    container_name: bottin-web
+    #   dockerfile: Dockerfile.api
+    container_name: bottin-api
     ports:
       - "${BOTTIN_PORT:-8080}:8080"
     environment:
@@ -15,7 +15,13 @@ services:
       - BOTTIN_DATABASE_PASSWORD=${BOTTIN_DATABASE_PASSWORD:-bottin}
       - BOTTIN_ADMIN_USER=${BOTTIN_ADMIN_USER:-admin}
       - BOTTIN_ADMIN_PASSWORD=${BOTTIN_ADMIN_PASSWORD:-changeme}
-      - BOTTIN_DEFAULT_DOMAIN=${BOTTIN_DEFAULT_DOMAIN:-}
+      # Credential for machine callers such as bottin-client. Separate from the
+      # admin one so a service holding it cannot act as the admin.
+      - BOTTIN_API_PASSWORD=${BOTTIN_API_PASSWORD:-changeme-api}
+      - BOTTIN_DEFAULT_DOMAIN=${BOTTIN_DEFAULT_DOMAIN:-${BOTTIN_DOMAIN:-}}
+      # Regex matching the proxy allowed to set X-Forwarded-For. Empty means no
+      # peer is trusted, so the rate limiter keys on the actual connection.
+      - BOTTIN_TRUSTED_PROXIES=${BOTTIN_TRUSTED_PROXIES:-}
       - BOTTIN_API_DOCS_ENABLED=${BOTTIN_API_DOCS_ENABLED:-false}
       - BOTTIN_SWAGGER_ENABLED=${BOTTIN_SWAGGER_ENABLED:-false}
     depends_on:
@@ -47,7 +53,7 @@ services:
       - BOTTIN_DATABASE_PASSWORD=${BOTTIN_DATABASE_PASSWORD:-bottin}
       - BOTTIN_ADMIN_USER=${BOTTIN_ADMIN_USER:-admin}
       - BOTTIN_ADMIN_PASSWORD=${BOTTIN_ADMIN_PASSWORD:-changeme}
-      - BOTTIN_DEFAULT_DOMAIN=${BOTTIN_DEFAULT_DOMAIN:-}
+      - BOTTIN_DEFAULT_DOMAIN=${BOTTIN_DEFAULT_DOMAIN:-${BOTTIN_DOMAIN:-}}
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,6 +64,67 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    networks:
+      - bottin-network
+
+  bottin-client:
+    build:
+      context: ./bottin-client-ui
+      dockerfile: ../Dockerfile.client
+    container_name: bottin-client
+    ports:
+      - "${BOTTIN_CLIENT_PORT:-8082}:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NAP_ENABLED=true
+      - BOTTIN_CLIENT_DOMAIN=${BOTTIN_CLIENT_DOMAIN:-${BOTTIN_DOMAIN:-bottin.example.com}}
+      # Directory API used to register onboarded handles. Reached over the compose
+      # network as the api user, whose credential must match the one bottin-api is
+      # started with. Not the admin credential: this container only needs to write
+      # NIP-05 records.
+      - BOTTIN_DIRECTORY_URL=${BOTTIN_DIRECTORY_URL:-http://bottin-api:8080}
+      - BOTTIN_API_USER=${BOTTIN_API_USER:-api}
+      - BOTTIN_API_PASSWORD=${BOTTIN_API_PASSWORD:-changeme-api}
+      # Browser-facing URLs: the relay/blossom services below are reached from the
+      # host, not over bottin-network, so these must be host-published addresses.
+      - BOTTIN_BLOSSOM_URL=${BOTTIN_BLOSSOM_URL:-http://localhost:${BOTTIN_BLOSSOM_PORT:-8888}}
+      - BOTTIN_DEFAULT_RELAYS=${BOTTIN_DEFAULT_RELAYS:-ws://localhost:${BOTTIN_RELAY_PORT:-8086}}
+    restart: unless-stopped
+    healthcheck:
+      # This module has no actuator dependency, so /actuator/health 404s and the
+      # container never leaves "unhealthy". /login is a rendered page, so a 200
+      # also proves Thymeleaf and the servlet stack are up.
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - bottin-network
+
+  relay:
+    # strfry over nostr-rs-relay: the latter's 0.10.0 image panics on startup
+    # (quanta "po2_denom was zero!") and then silently drops every EVENT.
+    # The image's own config binds loopback-only, so strfry.conf is mounted over it.
+    image: ghcr.io/hoytech/strfry:latest
+    container_name: bottin-relay
+    ports:
+      - "${BOTTIN_RELAY_PORT:-8086}:7777"
+    volumes:
+      - ./relay/strfry.conf:/app/strfry.conf:ro
+      - bottin-relay-data:/app/strfry-db
+    restart: unless-stopped
+    networks:
+      - bottin-network
+
+  blossom:
+    image: ghcr.io/hzrd149/blossom-server:master
+    container_name: bottin-blossom
+    ports:
+      - "${BOTTIN_BLOSSOM_PORT:-8888}:3000"
+    volumes:
+      - bottin-blossom-data:/app/data
+    restart: unless-stopped
     networks:
       - bottin-network
 
@@ -81,6 +148,8 @@ services:
 
 volumes:
   bottin-postgres-data:
+  bottin-relay-data:
+  bottin-blossom-data:
 
 networks:
   bottin-network:

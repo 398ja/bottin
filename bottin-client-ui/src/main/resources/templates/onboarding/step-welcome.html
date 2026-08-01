@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Welcome</title>
+</head>
+<body>
+    <div th:fragment="content" class="container-narrow">
+        <div class="card text-center">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🎉</div>
+            <h1 class="page-title" style="margin-bottom: 0.5rem;">Your Nostr Identity is Ready!</h1>
+            <p class="text-secondary text-sm mb-3">
+                Your key has been generated and encrypted locally. Save your backup key below.
+            </p>
+
+            <p id="onboarding-status" class="text-secondary text-sm mb-3">Registering your handle…</p>
+
+            <div class="callout callout-warning" style="text-align: left;">
+                <strong class="text-sm">Your Backup Key (nsec)</strong>
+                <p class="text-2xs" style="color: var(--color-warning); margin-bottom: 0.5rem;">
+                    This is the only way to recover your identity. Save it somewhere safe.
+                </p>
+                <div style="position: relative;">
+                    <input type="password" id="nsec-display" class="form-input form-input-mono" readonly
+                           value="nsec1..." style="font-size: 0.8125rem; padding-right: 2.5rem;">
+                    <button type="button" id="reveal-btn" class="btn-ghost" style="position: absolute; right: 0.25rem; top: 0.25rem; font-size: 0.875rem;">👁</button>
+                </div>
+                <div class="flex-row-gap-sm mt-1">
+                    <button class="btn btn-sm btn-outline" id="copy-btn" style="flex: 1;">Copy</button>
+                    <button class="btn btn-sm btn-outline" id="download-btn" style="flex: 1;">Download</button>
+                </div>
+            </div>
+
+            <label class="flex-center gap-sm mt-2 text-sm">
+                <input type="checkbox" id="backup-check">
+                I have saved my backup key
+            </label>
+
+            <a href="/search" class="btn btn-primary btn-full mt-2" id="continue-btn"
+               style="pointer-events: none; opacity: 0.5; text-decoration: none; display: inline-block; text-align: center;">
+                Continue to Search
+            </a>
+        </div>
+    </div>
+
+    <script src="/js/nostr-publish.js"></script>
+    <script src="/js/onboarding-complete.js"></script>
+    <script>
+        (function() {
+            var nsec = sessionStorage.getItem('onboarding-nsec');
+            var nsecInput = document.getElementById('nsec-display');
+            var revealBtn = document.getElementById('reveal-btn');
+            var copyBtn = document.getElementById('copy-btn');
+            var downloadBtn = document.getElementById('download-btn');
+            var backupCheck = document.getElementById('backup-check');
+            var continueBtn = document.getElementById('continue-btn');
+            var revealed = false;
+
+            if (nsec) {
+                nsecInput.value = nsec;
+
+                revealBtn.addEventListener('click', function() {
+                    revealed = !revealed;
+                    nsecInput.type = revealed ? 'text' : 'password';
+                });
+
+                copyBtn.addEventListener('click', function() {
+                    navigator.clipboard.writeText(nsec).then(function() {
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000);
+                    });
+                });
+
+                downloadBtn.addEventListener('click', function() {
+                    var blob = new Blob(['Nostr private key (nsec): ' + nsec], { type: 'text/plain' });
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'bottin-backup-key.txt';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+            }
+
+            backupCheck.addEventListener('change', function() {
+                var enabled = this.checked;
+                continueBtn.style.pointerEvents = enabled ? 'auto' : 'none';
+                continueBtn.style.opacity = enabled ? '1' : '0.5';
+            });
+
+            continueBtn.addEventListener('click', function() {
+                sessionStorage.removeItem('onboarding-nsec');
+            });
+
+            var status = document.getElementById('onboarding-status');
+
+            function describe(summary) {
+                var parts = [];
+                if (summary.registered) {
+                    parts.push('Handle registered in the directory');
+                } else if (summary.registerError) {
+                    parts.push(summary.registerError === 'USERNAME_TAKEN'
+                        ? 'That handle is already taken — pick another in Settings'
+                        : 'Handle registration failed (' + summary.registerError + ')');
+                }
+                if (summary.publishError) {
+                    parts.push('Profile not published: ' + summary.publishError);
+                } else if (summary.relayCount) {
+                    parts.push('profile published to ' + summary.published + '/' + summary.relayCount + ' relays');
+                }
+                return parts.join(' · ');
+            }
+
+            // The directory registration and the first profile publish both need the
+            // key, which only lives in this tab for the moment. Deferred scripts have
+            // run by DOMContentLoaded, so NostrCrypto and friends are available here.
+            if (!nsec) {
+                status.textContent = '';
+                return;
+            }
+            document.addEventListener('DOMContentLoaded', function() {
+                OnboardingComplete.run(nsec)
+                    .then(function(summary) { status.textContent = describe(summary); })
+                    .catch(function(err) {
+                        status.textContent = 'Could not finish setting up your account: '
+                            + (err && err.message ? err.message : err);
+                    });
+            });
+        })();
+    </script>
+</body>
+</html>
