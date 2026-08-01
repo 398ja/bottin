@@ -66,6 +66,22 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- NAP: administrators sign in by proving control of a Nostr key.
+             Version comes from the parent's dependencyManagement, as it does for
+             bottin-client-ui, so the two applications cannot drift onto
+             different protocol versions. -->
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>nap-spring</artifactId>
+        </dependency>
+
+        <!-- Bech32, for decoding the configured administrator npub to the hex
+             form NAP proves. Principle VI forbids hand-rolling it. -->
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>nostr-java-core</artifactId>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
