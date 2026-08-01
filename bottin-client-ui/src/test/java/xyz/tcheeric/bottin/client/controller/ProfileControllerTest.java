@@ -1,23 +1,39 @@
 package xyz.tcheeric.bottin.client.controller;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import xyz.tcheeric.bottin.client.dto.DirectorySettings;
+import xyz.tcheeric.bottin.client.service.DirectorySettingsClient;
+
+import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.Mockito.when;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @WebMvcTest(ProfileController.class)
-@org.springframework.context.annotation.Import(xyz.tcheeric.bottin.client.config.ClientProperties.class)
-@org.springframework.test.context.TestPropertySource(properties = "bottin.client.blossom-url=http://blossom.test:8888")
 class ProfileControllerTest {
+
+    private static final String MEDIA_SERVER = "http://blossom.test:8888";
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private DirectorySettingsClient settingsClient;
+
+    @BeforeEach
+    void configureMediaServer() {
+        when(settingsClient.current())
+                .thenReturn(new DirectorySettings(MEDIA_SERVER, List.of(), List.of()));
+    }
 
     @Test
     void shouldShowOwnProfile() throws Exception {
@@ -106,7 +122,7 @@ class ProfileControllerTest {
     void shouldExposeBlossomUrlToTheProfileEditPage() throws Exception {
         mockMvc.perform(get("/profile/edit"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("blossomUrl", "http://blossom.test:8888"));
+                .andExpect(model().attribute("blossomUrl", MEDIA_SERVER));
     }
 
     /**
@@ -117,7 +133,7 @@ class ProfileControllerTest {
     void shouldRenderImageFilePickersAndBlossomUrl() throws Exception {
         mockMvc.perform(get("/profile/edit"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("blossomUrl", "http://blossom.test:8888"))
+                .andExpect(model().attribute("blossomUrl", MEDIA_SERVER))
                 .andExpect(content().string(containsString("id=\"profile-picture\" type=\"file\"")))
                 .andExpect(content().string(containsString("id=\"profile-banner\" type=\"file\"")))
                 .andExpect(content().string(containsString("id=\"profile-preview-avatar\"")))
@@ -125,6 +141,23 @@ class ProfileControllerTest {
                 .andExpect(content().string(containsString("id=\"profile-picture-remove\"")))
                 .andExpect(content().string(containsString("id=\"profile-banner-remove\"")))
                 .andExpect(content().string(containsString("id=\"blossom-url\"")))
-                .andExpect(content().string(containsString("http://blossom.test:8888")));
+                .andExpect(content().string(containsString(MEDIA_SERVER)));
+    }
+
+    /**
+     * Tests that an unconfigured deployment still renders the page and the span,
+     * carrying no URL. The uploader reads that empty value and disables its
+     * controls with a stated reason rather than posting nowhere.
+     */
+    @Test
+    void shouldRenderTheProfileEditorWithoutAMediaServerWhenUnconfigured() throws Exception {
+        // Arrange
+        when(settingsClient.current()).thenReturn(DirectorySettings.unconfigured());
+
+        // Act & Assert
+        mockMvc.perform(get("/profile/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"blossom-url\"")))
+                .andExpect(content().string(not(containsString("blossom.test"))));
     }
 }

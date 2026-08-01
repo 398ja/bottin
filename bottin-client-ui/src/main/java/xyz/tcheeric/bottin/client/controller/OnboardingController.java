@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import xyz.tcheeric.bottin.client.config.ClientProperties;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationException;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationService;
+import xyz.tcheeric.bottin.client.service.DirectorySettingsClient;
 
 import java.util.Map;
 
@@ -33,6 +34,7 @@ public class OnboardingController {
 
     private final ClientProperties clientProperties;
     private final DirectoryRegistrationService registrationService;
+    private final DirectorySettingsClient settingsClient;
 
     @GetMapping("/")
     public String root() {
@@ -51,7 +53,7 @@ public class OnboardingController {
         model.addAttribute("title", "Profile Setup");
         model.addAttribute("content", "onboarding/step-profile");
         model.addAttribute("bottinDomain", clientProperties.getDomain());
-        model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
+        model.addAttribute("blossomUrl", settingsClient.current().blossomUrl());
         return "layout";
     }
 
@@ -91,7 +93,7 @@ public class OnboardingController {
         model.addAttribute("content", "onboarding/step-" + step);
         if ("profile".equals(step)) {
             model.addAttribute("bottinDomain", clientProperties.getDomain());
-            model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
+            model.addAttribute("blossomUrl", settingsClient.current().blossomUrl());
         }
         if ("import".equals(step)) {
             // The key being imported may have published its profile to this

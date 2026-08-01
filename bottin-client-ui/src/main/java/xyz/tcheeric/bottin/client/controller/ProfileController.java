@@ -6,14 +6,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import xyz.tcheeric.bottin.client.config.ClientProperties;
+import xyz.tcheeric.bottin.client.service.DirectorySettingsClient;
 
 @Controller
 @RequestMapping("/profile")
 @RequiredArgsConstructor
 public class ProfileController {
 
-    private final ClientProperties clientProperties;
+    private final DirectorySettingsClient settingsClient;
 
     @GetMapping
     public String ownProfile(Model model) {
@@ -26,7 +26,7 @@ public class ProfileController {
     public String editOwnProfile(Model model) {
         model.addAttribute("title", "Edit Profile");
         model.addAttribute("content", "profile-edit");
-        model.addAttribute("blossomUrl", clientProperties.getBlossomUrl());
+        model.addAttribute("blossomUrl", settingsClient.current().blossomUrl());
         return "layout";
     }
 

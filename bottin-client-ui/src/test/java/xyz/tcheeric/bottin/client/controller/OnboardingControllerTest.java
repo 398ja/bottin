@@ -5,8 +5,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import xyz.tcheeric.bottin.client.dto.DirectorySettings;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationException;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationService;
+import xyz.tcheeric.bottin.client.service.DirectorySettingsClient;
+
+import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -18,14 +22,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(OnboardingController.class)
 @org.springframework.context.annotation.Import(xyz.tcheeric.bottin.client.config.ClientProperties.class)
-@org.springframework.test.context.TestPropertySource(properties = "bottin.client.blossom-url=http://blossom.test:8888")
 class OnboardingControllerTest {
+
+    private static final String MEDIA_SERVER = "http://blossom.test:8888";
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private DirectoryRegistrationService registrationService;
+
+    @MockitoBean
+    private DirectorySettingsClient settingsClient;
+
+    @org.junit.jupiter.api.BeforeEach
+    void configureMediaServer() {
+        when(settingsClient.current())
+                .thenReturn(new DirectorySettings(MEDIA_SERVER, List.of(), List.of()));
+    }
 
     @Test
     void shouldRenderClientRouterAtRoot() throws Exception {
@@ -229,7 +243,7 @@ class OnboardingControllerTest {
     void shouldExposeBlossomUrlOnTheProfileStep() throws Exception {
         mockMvc.perform(get("/onboarding/step/profile"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("blossomUrl", "http://blossom.test:8888"));
+                .andExpect(model().attribute("blossomUrl", MEDIA_SERVER));
     }
 
     /**
@@ -240,7 +254,7 @@ class OnboardingControllerTest {
     void shouldExposeBlossomUrlWhenPostingTheMethodStep() throws Exception {
         mockMvc.perform(post("/onboarding/step-method").with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("blossomUrl", "http://blossom.test:8888"));
+                .andExpect(model().attribute("blossomUrl", MEDIA_SERVER));
     }
 
     /**
@@ -257,6 +271,6 @@ class OnboardingControllerTest {
                 .andExpect(content().string(containsString("name=\"picture\"")))
                 .andExpect(content().string(containsString("name=\"banner\"")))
                 .andExpect(content().string(containsString("id=\"blossom-url\"")))
-                .andExpect(content().string(containsString("http://blossom.test:8888")));
+                .andExpect(content().string(containsString(MEDIA_SERVER)));
     }
 }

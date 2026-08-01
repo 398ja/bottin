@@ -216,16 +216,23 @@ which is the property the spec's rollout was already built around.
 
 ### Tests for User Story 5
 
-- [ ] T040 [US5] Add a test to `bottin-client-ui/src/test/js/profile-image.test.js` asserting that `ProfileImage.bind` with a blank `blossomUrl` disables the file input, writes "Media server not configured" into the error slot, and registers no `change` listener; confirm it FAILS
+- [x] T040 [US5] Add a test to `bottin-client-ui/src/test/js/profile-image.test.js` asserting that `ProfileImage.bind` with a blank `blossomUrl` disables the file input, writes "Media server not configured" into the error slot, and registers no `change` listener; confirm it FAILS
 
 ### Implementation for User Story 5
 
-- [ ] T041 [US5] Add the guard at the top of `bind(config)` in `bottin-client-ui/src/main/resources/static/js/profile-image.js` — when `config.blossomUrl` is blank, disable `config.fileInputId`, show the reason in `config.errorId`, and return before registering the listener; one guard covers both call sites per research.md R7 (depends on T040)
-- [ ] T042 [P] [US5] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/ProfileController.java:29` to read `blossomUrl` from `DirectorySettingsClient` instead of `ClientProperties`, and update `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/ProfileControllerTest.java` — replacing the `@TestPropertySource(properties = "bottin.client.blossom-url=…")` fixture with a mocked client — keeping the existing assertions on the `blossomUrl` model attribute and the rendered `id="blossom-url"` span
-- [ ] T043 [P] [US5] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/OnboardingController.java:54` and `:94` to read `blossomUrl` from `DirectorySettingsClient`, and update `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/OnboardingControllerTest.java` to match
-- [ ] T044 [US5] Run `npm test` in `bottin-client-ui/` and `mvn -q verify`, confirm PASS, and commit as `feat(client-ui): take the media server from admin settings` (depends on T041–T043)
+- [x] T041 [US5] Add the guard at the top of `bind(config)` in `bottin-client-ui/src/main/resources/static/js/profile-image.js` — when `config.blossomUrl` is blank, disable `config.fileInputId`, show the reason in `config.errorId`, and return before registering the listener; one guard covers both call sites per research.md R7 (depends on T040)
+- [x] T042 [P] [US5] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/ProfileController.java:29` to read `blossomUrl` from `DirectorySettingsClient` instead of `ClientProperties`, and update `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/ProfileControllerTest.java` — replacing the `@TestPropertySource(properties = "bottin.client.blossom-url=…")` fixture with a mocked client — keeping the existing assertions on the `blossomUrl` model attribute and the rendered `id="blossom-url"` span
+- [x] T043 [P] [US5] Modify `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/controller/OnboardingController.java:54` and `:94` to read `blossomUrl` from `DirectorySettingsClient`, and update `bottin-client-ui/src/test/java/xyz/tcheeric/bottin/client/controller/OnboardingControllerTest.java` to match
+- [x] T044 [US5] Run `npm test` in `bottin-client-ui/` and `mvn -q verify`, confirm PASS, and commit as `feat(client-ui): take the media server from admin settings` (depends on T041–T043)
 
 **Checkpoint**: Image uploads follow admin configuration and fail informatively when it is missing.
+
+**US5 implementation notes**:
+
+- The guard sits at the top of `ProfileImage.bind` and returns before registering the `change` listener, so an unconfigured deployment cannot start an upload at all rather than starting one that fails. A whitespace-only value counts as unconfigured: the settings row stores `null`, but Thymeleaf renders that as an empty span.
+- One guard covers both call sites — the profile editor's two fields and onboarding's two — and any third added later, which is why it went in the shared function rather than at each caller.
+- `ProfileControllerTest` and `OnboardingControllerTest` lose their `@TestPropertySource(bottin.client.blossom-url=…)` fixtures for a mocked `DirectorySettingsClient`. `OnboardingController` still holds `ClientProperties` for the domain and the step-import relay list; US6 removes the latter.
+- Java 303 → 304 (a new unconfigured-media-server case on the profile editor), JS 73 → 76.
 
 ---
 
