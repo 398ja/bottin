@@ -267,19 +267,19 @@ which is the property the spec's rollout was already built around.
 
 **Purpose**: Delete the superseded configuration and bring documentation in line. This is the spec's rollout step 5 and must run only after every consumer has switched.
 
-- [ ] T049 Remove `defaultRelays` and `blossomUrl` from `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/config/ClientProperties.java` and update its class Javadoc, which currently documents both
-- [ ] T050 Remove the `blossom-url` and `default-relays` keys and their comments from `bottin-client-ui/src/main/resources/application.yml` (depends on T049)
-- [ ] T051 [P] Remove `BOTTIN_BLOSSOM_URL` and `BOTTIN_DEFAULT_RELAYS` from the `bottin-client` service in `docker-compose.yml:90-91`, along with the now-inaccurate "Browser-facing URLs" comment above them
-- [ ] T052 [P] Remove `BOTTIN_DEFAULT_RELAYS` and `BOTTIN_BLOSSOM_URL` from `.env:30-31`
-- [ ] T053 Sweep for dead references with `grep -rn "relays/defaults\|ensureRelaysSeeded\|BOTTIN_BLOSSOM_URL\|BOTTIN_DEFAULT_RELAYS\|blossom-url\|default-relays" --include=* . | grep -v docs/superpowers` and resolve every hit; historical plans and specs under `docs/superpowers/` are records of what was and are left alone (depends on T049–T052)
-- [ ] T054 [P] Write the how-to `docs/how-to/configure-deployment-settings.md` (Diátaxis how-to: `#` heading, purpose statement, the four fields, the browser-reachability warning, the 60-second propagation note) and link it from the How-To section of `docs/README.md`
-- [ ] T055 [P] Document `GET /api/v1/settings` in `docs/reference/rest-api.md` — auth requirement, response shape, and the deliberate absence of `rateLimitPerMinute`
-- [ ] T056 [P] Update `docs/reference/docker-compose-configuration.md` to drop the two retired variables and point at `/admin/settings`, keeping the table of variables that deliberately stay in the environment
-- [ ] T057 [P] Update `docs/how-to/docker-deployment.md` with the post-deploy configuration step — the stack now comes up unconfigured by design
-- [ ] T058 [P] Update `docs/how-to/upload-profile-images.md:27-30` and `:47` to configure the media server in `/admin/settings` rather than via `BOTTIN_BLOSSOM_URL`
-- [ ] T059 [P] Update `docs/how-to/verify-profile-and-relay-publishing.md:24`, `:31`, and `:42` to configure system relays in `/admin/settings` rather than via `BOTTIN_DEFAULT_RELAYS`
-- [ ] T060 Run the full [quickstart.md](./quickstart.md) developer verification — `mvn -q verify`, `npm test`, the two `curl` checks, the rate-limit `429` check, and the degradation check with `bottin-api` stopped (depends on T053)
-- [ ] T061 Bump the project version in the parent `pom.xml` per semantic versioning and add the `CHANGELOG.md` entry derived from this branch's Conventional Commits, then run `graphify update .` to refresh the knowledge graph (depends on T060)
+- [x] T049 Remove `defaultRelays` and `blossomUrl` from `bottin-client-ui/src/main/java/xyz/tcheeric/bottin/client/config/ClientProperties.java` and update its class Javadoc, which currently documents both
+- [x] T050 Remove the `blossom-url` and `default-relays` keys and their comments from `bottin-client-ui/src/main/resources/application.yml` (depends on T049)
+- [x] T051 [P] Remove `BOTTIN_BLOSSOM_URL` and `BOTTIN_DEFAULT_RELAYS` from the `bottin-client` service in `docker-compose.yml:90-91`, along with the now-inaccurate "Browser-facing URLs" comment above them
+- [x] T052 [P] Remove `BOTTIN_DEFAULT_RELAYS` and `BOTTIN_BLOSSOM_URL` from `.env:30-31`
+- [x] T053 Sweep for dead references with `grep -rn "relays/defaults\|ensureRelaysSeeded\|BOTTIN_BLOSSOM_URL\|BOTTIN_DEFAULT_RELAYS\|blossom-url\|default-relays" --include=* . | grep -v docs/superpowers` and resolve every hit; historical plans and specs under `docs/superpowers/` are records of what was and are left alone (depends on T049–T052)
+- [x] T054 [P] Write the how-to `docs/how-to/configure-deployment-settings.md` (Diátaxis how-to: `#` heading, purpose statement, the four fields, the browser-reachability warning, the 60-second propagation note) and link it from the How-To section of `docs/README.md`
+- [x] T055 [P] Document `GET /api/v1/settings` in `docs/reference/rest-api.md` — auth requirement, response shape, and the deliberate absence of `rateLimitPerMinute`
+- [x] T056 [P] Update `docs/reference/docker-compose-configuration.md` to drop the two retired variables and point at `/admin/settings`, keeping the table of variables that deliberately stay in the environment
+- [x] T057 [P] Update `docs/how-to/docker-deployment.md` with the post-deploy configuration step — the stack now comes up unconfigured by design
+- [x] T058 [P] Update `docs/how-to/upload-profile-images.md:27-30` and `:47` to configure the media server in `/admin/settings` rather than via `BOTTIN_BLOSSOM_URL`
+- [x] T059 [P] Update `docs/how-to/verify-profile-and-relay-publishing.md:24`, `:31`, and `:42` to configure system relays in `/admin/settings` rather than via `BOTTIN_DEFAULT_RELAYS`
+- [x] T060 Run the full [quickstart.md](./quickstart.md) developer verification — `mvn -q verify`, `npm test`, the two `curl` checks, the rate-limit `429` check, and the degradation check with `bottin-api` stopped (depends on T053)
+- [x] T061 Bump the project version in the parent `pom.xml` per semantic versioning and add the `CHANGELOG.md` entry derived from this branch's Conventional Commits, then run `graphify update .` to refresh the knowledge graph (depends on T060)
 - [ ] T062 Update the task's card on the kan `bottin` board with the commit ids and a note, per the `kan-tracking` skill (depends on T061)
 
 ---

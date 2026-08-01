@@ -31,9 +31,9 @@ nap:
 bottin:
   client:
     domain: bottin.example.com
-    blossom-url: ${BOTTIN_BLOSSOM_URL:http://localhost:8888}
-    # Comma-separated wss:// URLs seeded read+write for a user's initial relay list.
-    default-relays: ${BOTTIN_DEFAULT_RELAYS:}
+    # The media server and relay sets are not configured here. They are
+    # operational data an administrator maintains at /admin/settings and this
+    # server reads through the directory API.
     # The bottin directory API this server registers onboarded handles with. Its
     # /api/v1/records endpoint requires Basic auth, so the credentials stay here
     # rather than in the browser.
