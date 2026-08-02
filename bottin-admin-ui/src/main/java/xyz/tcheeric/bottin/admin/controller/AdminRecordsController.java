@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.nap.spring.annotation.RequiresPermission;
 import xyz.tcheeric.bottin.admin.dto.CreateRecordForm;
 import xyz.tcheeric.bottin.admin.dto.UpdateRecordForm;
 import xyz.tcheeric.bottin.core.model.Nip05RecordData;
@@ -26,6 +28,7 @@ import jakarta.validation.Valid;
 /**
  * Controller for NIP-05 records management.
  */
+@RequiresPermission(AdminPermissions.READ)
 @Controller
 @RequestMapping("/admin/records")
 @RequiredArgsConstructor
@@ -64,6 +67,7 @@ public class AdminRecordsController {
                 .orElse("redirect:/admin/records?error=notfound");
     }
 
+    @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping
     public String createRecord(
             @Valid @ModelAttribute("createForm") CreateRecordForm form,
@@ -93,6 +97,7 @@ public class AdminRecordsController {
         return "redirect:/admin/records";
     }
 
+    @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping("/{id}/update")
     public String updateRecord(
             @PathVariable Long id,
@@ -117,6 +122,7 @@ public class AdminRecordsController {
         return "redirect:/admin/records/" + id;
     }
 
+    @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping("/{id}/toggle")
     public String toggleRecord(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
@@ -131,6 +137,7 @@ public class AdminRecordsController {
         return "redirect:/admin/records";
     }
 
+    @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping("/{id}/delete")
     public String deleteRecord(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {

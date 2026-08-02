@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.nap.spring.annotation.RequiresPermission;
 import xyz.tcheeric.bottin.admin.dto.CreateDomainForm;
 import xyz.tcheeric.bottin.core.model.DomainData;
 import xyz.tcheeric.bottin.core.model.VerificationMethod;
@@ -30,6 +32,7 @@ import jakarta.validation.Valid;
 /**
  * Controller for domain management.
  */
+@RequiresPermission(AdminPermissions.READ)
 @Controller
 @RequestMapping("/admin/domains")
 @RequiredArgsConstructor
@@ -71,6 +74,7 @@ public class AdminDomainsController {
                 .orElse("redirect:/admin/domains?error=notfound");
     }
 
+    @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping
     public String createDomain(
             @Valid @ModelAttribute("createForm") CreateDomainForm form,
@@ -94,6 +98,7 @@ public class AdminDomainsController {
         return "redirect:/admin/domains";
     }
 
+    @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping("/{id}/verify")
     public String initiateVerification(
             @PathVariable Long id,
@@ -119,6 +124,7 @@ public class AdminDomainsController {
         return "redirect:/admin/domains/" + id;
     }
 
+    @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping("/{id}/verify/attempt")
     public String attemptVerification(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
@@ -139,6 +145,7 @@ public class AdminDomainsController {
         return "redirect:/admin/domains/" + id;
     }
 
+    @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping("/{id}/delete")
     public String deleteDomain(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {

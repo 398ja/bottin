@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-02
+
+### Added
+- Administrators sign in to the dashboard by proving control of a Nostr key, matched against
+  `BOTTIN_ADMIN_NPUB`. The key is supplied once per device, kept encrypted in the browser under a
+  passphrase, and never reaches the deployment — what crosses the wire is a signed challenge.
+- `bottin-web-assets`, a module holding the browser code both user interfaces need: key encryption
+  and the NAP handshake. A second copy of key encryption would drift, and the copy that drifts
+  silently is the one without tests.
+- Rate limiting on the sign-in handshake, the dashboard's only unauthenticated surface.
+
+### Changed
+- **BREAKING (deployment):** the admin dashboard no longer accepts a username and password.
+  `BOTTIN_ADMIN_NPUB` must be set before upgrading or nobody can sign in. `BOTTIN_ADMIN_USER` and
+  `BOTTIN_ADMIN_PASSWORD` remain in use by `bottin-api` for its HTTP Basic credentials and must not
+  be removed from that service.
+- The administrator holds a distinct super-administrator role rather than merely being
+  authenticated, so the follow-up feature adding further administrators adds a role instead of
+  introducing authorization across every route.
+- Signing out ends the session **and** erases the stored key, as one action. Session expiry
+  deliberately differs: it leaves the key in place so the passphrase alone resumes work.
+- `nap-client.js` is the NAP handshake rather than a stub whose methods threw
+  "Not implemented - Phase 2" while the working code sat inline in the client's `app.js`.
+
+### Fixed
+- The client served shared scripts from its own `static/` directory in preference to the shared
+  module, and an explicit `/js/**` resource handler hid the shared location entirely. Both surfaced
+  only when checking what the running application actually served.
+
 ## [0.6.0] - 2026-08-01
 
 ### Added

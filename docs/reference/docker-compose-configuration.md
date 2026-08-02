@@ -51,8 +51,10 @@ PostgreSQL database for persistent storage.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `BOTTIN_ADMIN_USER` | Admin username | `admin` |
-| `BOTTIN_ADMIN_PASSWORD` | Admin password | `changeme` |
+| `BOTTIN_ADMIN_NPUB` | Public key of the administrator who may sign in to the dashboard, as `npub1…` or hex. No default — unset admits nobody. | (empty) |
+| `BOTTIN_ADMIN_EXTERNAL_URL` | The dashboard URL as the browser reaches it. Must match, or the sign-in proof is rejected. | `http://localhost:8081` |
+| `BOTTIN_ADMIN_USER` | Username for `bottin-api`'s HTTP Basic credentials. **Not** used by the dashboard. | `admin` |
+| `BOTTIN_ADMIN_PASSWORD` | Password for that user, on `bottin-api` only. **Not** used by the dashboard. | `changeme` |
 | `BOTTIN_API_USER` | Username machine callers present to the API | `api` |
 | `BOTTIN_API_PASSWORD` | Password for that user, on both `bottin-api` and `bottin-client` | `changeme-api` |
 | `BOTTIN_TRUSTED_PROXIES` | Regex of proxy addresses allowed to set `X-Forwarded-For` | empty (trust none) |
@@ -91,6 +93,13 @@ rate-limit bucket keyed on the proxy's address.
 |----------|-------------|---------|
 | `BOTTIN_API_DOCS_ENABLED` | Enable OpenAPI documentation | `false` |
 | `BOTTIN_SWAGGER_ENABLED` | Enable Swagger UI | `false` |
+
+The admin dashboard authenticates by Nostr key rather than by password: an
+administrator proves control of the private key matching `BOTTIN_ADMIN_NPUB`, and
+that key never reaches the deployment. `BOTTIN_ADMIN_USER` and
+`BOTTIN_ADMIN_PASSWORD` survive for `bottin-api`'s HTTP Basic credentials only,
+and removing them would leave the API with a password that changes on every
+restart. See [Configure Admin Access](../how-to/configure-admin-access.md).
 
 ### Not Configured Here
 

@@ -8,7 +8,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>bottin</artifactId>
-        <version>0.6.0</version>
+        <version>0.7.0</version>
     </parent>
 
     <artifactId>bottin-client-ui</artifactId>
@@ -20,6 +20,12 @@
         <dependency>
             <groupId>xyz.tcheeric</groupId>
             <artifactId>bottin-core</artifactId>
+        </dependency>
+
+        <!-- Browser key handling and the NAP handshake, shared with the other UI. -->
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>bottin-web-assets</artifactId>
         </dependency>
 
         <!-- Spring Boot Web -->
