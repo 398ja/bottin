@@ -12,6 +12,7 @@ import xyz.tcheeric.bottin.admin.security.ConfiguredAdminAclResolver;
 import xyz.tcheeric.bottin.admin.service.AdminDashboardService;
 import xyz.tcheeric.bottin.service.DomainService;
 import xyz.tcheeric.bottin.service.Nip05RecordService;
+import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.bottin.service.SettingsService;
 import xyz.tcheeric.bottin.verification.DomainVerificationService;
 
@@ -48,6 +49,9 @@ class AdminAccessControlTest {
 
     @MockBean
     private AdminDashboardService dashboardService;
+
+    @MockBean
+    private AdminUserService adminUserService;
 
     @MockBean
     private Nip05RecordService recordService;

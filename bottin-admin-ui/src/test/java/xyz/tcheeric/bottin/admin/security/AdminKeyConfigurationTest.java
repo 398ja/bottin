@@ -9,10 +9,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.bottin.service.AdminUserService;
 
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 /**
  * Verifies how a misconfigured deployment behaves.
@@ -30,6 +32,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * fails to sign in.
  */
 class AdminKeyConfigurationTest {
+
+    /**
+     * No stored administrators. These tests are about a misconfigured master
+     * key, and an empty list is what makes the master key the only way in.
+     */
+    private final AdminUserService storedAdministrators = mock(AdminUserService.class);
+
+    private ConfiguredAdminAclResolver resolverFor(String configuredKey) {
+        return new ConfiguredAdminAclResolver(configuredKey, storedAdministrators);
+    }
 
     private static final String ADMIN_NPUB =
             "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6";
@@ -74,7 +86,7 @@ class AdminKeyConfigurationTest {
     })
     void shouldAdmitNobodyWhenNoKeyIsConfigured(String pubkey) {
         // Given: a deployment with no administrator key
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(null);
+        ConfiguredAdminAclResolver resolver = resolverFor(null);
 
         // When & Then: whoever asks is refused
         assertThat(resolver.resolve(pubkey, pubkey).allowed()).isFalse();
@@ -92,7 +104,7 @@ class AdminKeyConfigurationTest {
     })
     void shouldAdmitNobodyWhenTheConfiguredKeyIsUnusable(String pubkey) {
         // Given: a deployment whose configured value is not a public key
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver("not-a-key");
+        ConfiguredAdminAclResolver resolver = resolverFor("not-a-key");
 
         // When & Then: whoever asks is refused
         assertThat(resolver.resolve(pubkey, pubkey).allowed()).isFalse();
@@ -106,7 +118,7 @@ class AdminKeyConfigurationTest {
     @Test
     void shouldRefuseWhenNoKeyWasProven() {
         // Given: a properly configured deployment
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_NPUB);
 
         // When & Then
         assertThat(resolver.resolve(null, null).allowed()).isFalse();
@@ -123,7 +135,7 @@ class AdminKeyConfigurationTest {
         captureLogs();
 
         // When: the deployment starts with no administrator key
-        new ConfiguredAdminAclResolver(null);
+        resolverFor(null);
 
         // Then: it says so, and says what it means
         assertThat(loggedMessages()).contains("admin_key_configuration", "state=not_configured");
@@ -139,7 +151,7 @@ class AdminKeyConfigurationTest {
         captureLogs();
 
         // When: the deployment starts with a value that is not a key
-        new ConfiguredAdminAclResolver("not-a-key");
+        resolverFor("not-a-key");
 
         // Then
         assertThat(loggedMessages()).contains("admin_key_configuration", "state=unreadable");
@@ -156,7 +168,7 @@ class AdminKeyConfigurationTest {
         captureLogs();
 
         // When: the deployment starts with a usable administrator key
-        new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        resolverFor(ADMIN_NPUB);
 
         // Then
         assertThat(loggedMessages()).contains("admin_key_configuration", "state=configured");

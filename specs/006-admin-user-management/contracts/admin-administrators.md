@@ -58,7 +58,7 @@ template's absence of a button.
 | Outcome | Result |
 |---|---|
 | Added | `302` to `/admin/settings`, flash success naming the label or the key. Logs `administrator_added`. |
-| Not a public key | Re-renders the settings page with the offending value named, as relay URLs already are. Nothing stored. |
+| Not a public key | `302` to `/admin/settings` with an **error** flash naming the offending value, as relay URLs already are. Nothing stored. |
 | Already an administrator | `302` to `/admin/settings` with an **informational** flash — not an error — saying the key already administers the deployment. Nothing stored, no duplicate row. Logs `administrator_add_ignored reason=already_administrator`. |
 | Is the configured master key | Same: informational flash saying the key is already the super administrator. No entry created, ordinary or otherwise (FR-004, FR-004a, US4 scenario 3). Logs `administrator_add_ignored reason=already_super_admin`. |
 | Caller lacks the permission | `403`. Logs `administrator_change_rejected reason=not_super_admin`. |
@@ -72,9 +72,13 @@ believe access had been granted, and would discover otherwise only when the
 colleague cannot sign in, with nothing on the page to explain it. The
 informational flash is the one answer that is both true and useful.
 
-Re-rendering rather than redirecting on rejection keeps what the operator typed
-beside the error explaining it — the pattern `AdminSettingsController` already
-uses.
+**Redirecting rather than re-rendering, unlike the settings form.** The settings
+form re-renders on rejection so the operator keeps what they typed. This
+controller does not own the settings page's model, and reconstructing it here to
+preserve one field would put that page together in two places — the kind of
+duplication that lets two versions of a page drift apart. The error names the
+offending value, so nothing needed to correct the mistake is lost. Revised
+during implementation; the original contract said re-render.
 
 ---
 

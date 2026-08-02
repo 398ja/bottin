@@ -1,41 +1,49 @@
 package xyz.tcheeric.bottin.admin.security;
 
 import lombok.extern.slf4j.Slf4j;
-import nostr.crypto.bech32.Bech32;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.bottin.service.AdminUserService;
+import xyz.tcheeric.bottin.service.NostrPublicKeys;
 import xyz.tcheeric.nap.core.AclDecision;
 import xyz.tcheeric.nap.server.AclResolver;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Decides who administers this deployment.
  *
  * <p>This is the single point at which that question is answered. Every admin
  * route is gated on the permissions granted here, so a second place making the
- * same decision would be a second place to get it wrong — and the follow-up
- * feature that adds further administrators extends this class rather than
- * revisiting every route.
+ * same decision would be a second place to get it wrong.
  *
- * <p>The administrator's public key is deployment configuration rather than
- * stored data, because it is what admits an operator when the database is
- * empty, wrong, or freshly restored. A public key is not a secret, which is
- * what makes it safe to hold where a password should not be.
+ * <p>Two sources are consulted, and the order is the design. The configured
+ * master key is checked first and wins: its authority is deployment
+ * configuration, which is what admits an operator when the database is empty,
+ * wrong, or freshly restored. A stored entry for that same key — which the
+ * interface will not create, but a later change of configuration could leave
+ * behind — therefore cannot demote its holder. Only then is the stored list of
+ * added administrators consulted.
  *
- * <p>The three ways to be refused are kept distinct. "No key configured" and
- * "the configured value is not a key" are operator mistakes with different
- * fixes, and neither should look like "your key is not the administrator's".
+ * <p>The difference between the two roles lives here and nowhere else: an added
+ * administrator's session never carries {@link AdminPermissions#MANAGE_ADMINS},
+ * so the permission interceptor refuses them the management endpoints whether or
+ * not a page offered the control.
+ *
+ * <p>A public key is not a secret, which is what makes it safe to hold in
+ * configuration where a password should not be.
+ *
+ * <p>The ways to be refused are kept distinct. "No key configured" and "the
+ * configured value is not a key" are operator mistakes with different fixes, and
+ * neither should look like "your key is not an administrator's". Note that those
+ * two are reported only after the stored list has been consulted: a deployment
+ * whose master key is missing or unreadable still admits added administrators,
+ * so a misconfiguration does not also revoke everybody else.
  */
 @Component
 @Slf4j
 public class ConfiguredAdminAclResolver implements AclResolver {
-
-    private static final Pattern HEX_64 = Pattern.compile("[0-9a-f]{64}");
-
-    private static final String NPUB_PREFIX = "npub1";
 
     /**
      * Everything the dashboard can do. The super administrator is the only role
@@ -46,6 +54,15 @@ public class ConfiguredAdminAclResolver implements AclResolver {
             List.of(AdminPermissions.READ, AdminPermissions.WRITE, AdminPermissions.MANAGE_ADMINS);
 
     /**
+     * Everything an added administrator can do: the whole dashboard except
+     * managing administrators. The absence of {@link AdminPermissions#MANAGE_ADMINS}
+     * here is the entire difference between the two roles, and it is enforced by
+     * the permission interceptor rather than by which controls a page renders.
+     */
+    private static final List<String> ADMIN_PERMISSIONS =
+            List.of(AdminPermissions.READ, AdminPermissions.WRITE);
+
+    /**
      * The configured administrator in canonical hex, or null when the
      * configuration is absent or unusable — in which case {@link #keyState}
      * says which.
@@ -54,11 +71,17 @@ public class ConfiguredAdminAclResolver implements AclResolver {
 
     private final AdminKeyState keyState;
 
-    public ConfiguredAdminAclResolver(@Value("${bottin.admin.npub:}") String configuredKey) {
+    /** The administrators added by the super administrator, consulted after configuration. */
+    private final AdminUserService storedAdministrators;
+
+    public ConfiguredAdminAclResolver(@Value("${bottin.admin.npub:}") String configuredKey,
+                                      AdminUserService storedAdministrators) {
+        this.storedAdministrators = storedAdministrators;
+
         if (configuredKey == null || configuredKey.isBlank()) {
             this.administratorHex = null;
             this.keyState = AdminKeyState.NOT_CONFIGURED;
-            log.warn("admin_key_configuration state=not_configured impact=no administrator can sign in");
+            log.warn("admin_key_configuration state=not_configured impact=no super administrator can sign in");
             return;
         }
 
@@ -92,27 +115,35 @@ public class ConfiguredAdminAclResolver implements AclResolver {
      */
     @Override
     public AclDecision resolve(String npub, String pubkey) {
-        if (administratorHex == null) {
-            String reason = keyState == AdminKeyState.NOT_CONFIGURED
-                    ? "no_admin_key_configured"
-                    : "admin_key_unreadable";
-            log.warn("admin_signin_rejected reason={}", reason);
-            return AclDecision.denied(reason);
-        }
-
         String provenHex = provenKeyAsHex(npub, pubkey);
         if (provenHex == null) {
             log.warn("admin_signin_rejected reason=no_key_proven");
             return AclDecision.denied("no_key_proven");
         }
 
-        if (!administratorHex.equals(provenHex)) {
-            log.warn("admin_signin_rejected reason=not_authorised pubkey={}", provenHex);
-            return AclDecision.denied("not_authorised");
+        if (provenHex.equals(administratorHex)) {
+            log.info("admin_signin_succeeded pubkey={} role={}", provenHex, AdminPermissions.SUPER_ADMIN);
+            return AclDecision.allowed(List.of(AdminPermissions.SUPER_ADMIN), SUPER_ADMIN_PERMISSIONS);
         }
 
-        log.info("admin_signin_succeeded pubkey={} role={}", provenHex, AdminPermissions.SUPER_ADMIN);
-        return AclDecision.allowed(List.of(AdminPermissions.SUPER_ADMIN), SUPER_ADMIN_PERMISSIONS);
+        if (storedAdministrators.isAdministrator(provenHex)) {
+            log.info("admin_signin_succeeded pubkey={} role={}", provenHex, AdminPermissions.ADMIN);
+            return AclDecision.allowed(List.of(AdminPermissions.ADMIN), ADMIN_PERMISSIONS);
+        }
+
+        if (administratorHex == null) {
+            // Worth distinguishing: with no usable master key, nobody can manage
+            // the administrator list, so an operator seeing this needs to fix
+            // configuration rather than look for a missing entry.
+            String reason = keyState == AdminKeyState.NOT_CONFIGURED
+                    ? "no_admin_key_configured"
+                    : "admin_key_unreadable";
+            log.warn("admin_signin_rejected reason={} pubkey={}", reason, provenHex);
+            return AclDecision.denied(reason);
+        }
+
+        log.warn("admin_signin_rejected reason=not_authorised pubkey={}", provenHex);
+        return AclDecision.denied("not_authorised");
     }
 
     /**
@@ -126,31 +157,19 @@ public class ConfiguredAdminAclResolver implements AclResolver {
      * because both arguments denote the same key.
      */
     private static String provenKeyAsHex(String npub, String pubkey) {
-        String fromPubkey = normalise(pubkey);
-        return fromPubkey != null ? fromPubkey : normalise(npub);
-    }
-
-    private static String normalise(String key) {
-        return key == null || key.isBlank() ? null : toCanonicalHex(key.trim());
+        String fromPubkey = toCanonicalHex(pubkey);
+        return fromPubkey != null ? fromPubkey : toCanonicalHex(npub);
     }
 
     /**
-     * Normalises an {@code npub} or hex public key to canonical lowercase hex,
-     * or returns null when the value is not a public key at all.
+     * Canonical lowercase hex, or null when the value is not a public key.
      *
-     * <p>Bech32 decoding is nostr-java's; Principle VI forbids hand-rolling it.
+     * <p>Delegates to {@link NostrPublicKeys}, which is also what decides
+     * whether a key being added is one the deployment already knows. Two copies
+     * of this rule would let the page and the sign-in disagree about whether two
+     * spellings are the same administrator.
      */
-    private static String toCanonicalHex(String configuredKey) {
-        String candidate = configuredKey.toLowerCase();
-
-        if (candidate.startsWith(NPUB_PREFIX)) {
-            try {
-                candidate = Bech32.fromBech32(candidate).toLowerCase();
-            } catch (Exception e) {
-                return null;
-            }
-        }
-
-        return HEX_64.matcher(candidate).matches() ? candidate : null;
+    private static String toCanonicalHex(String key) {
+        return NostrPublicKeys.toCanonicalHex(key).orElse(null);
     }
 }
