@@ -6,9 +6,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
+import xyz.tcheeric.bottin.core.exception.AdministratorNotFoundException;
 import xyz.tcheeric.bottin.core.model.AdminRole;
 import xyz.tcheeric.bottin.persistence.entity.AdminUserEntity;
 import xyz.tcheeric.bottin.persistence.repository.AdminUserRepository;
+import xyz.tcheeric.bottin.service.port.AdministratorSessionRevoker;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,6 +19,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,8 +50,22 @@ class AdminUserServiceTest {
     @Mock
     private AdminUserRepository repository;
 
+    @Mock
+    private AdministratorSessionRevoker sessionRevoker;
+
+    @SuppressWarnings("unchecked")
     private AdminUserService service(String configuredMasterKey) {
-        return new AdminUserService(repository, configuredMasterKey);
+        ObjectProvider<AdministratorSessionRevoker> provider = mock(ObjectProvider.class);
+        lenient().when(provider.getIfAvailable()).thenReturn(sessionRevoker);
+        return new AdminUserService(repository, provider, configuredMasterKey);
+    }
+
+    /** A deployment with no session store, as bottin-api is. */
+    @SuppressWarnings("unchecked")
+    private AdminUserService serviceWithoutRevoker(String configuredMasterKey) {
+        ObjectProvider<AdministratorSessionRevoker> absent = mock(ObjectProvider.class);
+        lenient().when(absent.getIfAvailable()).thenReturn(null);
+        return new AdminUserService(repository, absent, configuredMasterKey);
     }
 
     /**
@@ -240,5 +259,109 @@ class AdminUserServiceTest {
         when(repository.findByPubkey(HEX)).thenReturn(java.util.Optional.empty());
 
         assertThat(service(MASTER_NPUB).isAdministrator(HEX)).isFalse();
+    }
+
+    /**
+     * Tests that removal deletes the administrator and ends their sessions in
+     * one operation. Removal that leaves a live session is not removal, and the
+     * two must not be separable by a future caller.
+     */
+    @Test
+    void shouldDeleteAndRevokeSessionsAsOneOperation() {
+        // Given: a stored administrator
+        when(repository.existsByPubkey(HEX)).thenReturn(true);
+
+        // When: they are removed
+        service(MASTER_NPUB).remove(HEX, ADDED_BY);
+
+        // Then: both happened
+        verify(repository).deleteByPubkey(HEX);
+        verify(sessionRevoker).revokeSessionsFor(HEX);
+    }
+
+    /**
+     * Tests that the revoker is given the canonical hex.
+     *
+     * <p>The session store matches on the hex principal, so passing an npub
+     * would revoke nothing while reporting success — a removal that looks
+     * complete and leaves the administrator working.
+     */
+    @Test
+    void shouldRevokeByCanonicalHexEvenWhenRemovalIsRequestedByNpub() {
+        when(repository.existsByPubkey(HEX)).thenReturn(true);
+
+        service(MASTER_NPUB).remove(NPUB, ADDED_BY);
+
+        verify(sessionRevoker).revokeSessionsFor(HEX);
+    }
+
+    /**
+     * Tests that removing a key which is not an administrator is refused rather
+     * than quietly succeeding, so a mistyped or stale removal is visible.
+     */
+    @Test
+    void shouldRefuseRemovingAKeyThatIsNotAnAdministrator() {
+        when(repository.existsByPubkey(HEX)).thenReturn(false);
+
+        assertThatThrownBy(() -> service(MASTER_NPUB).remove(HEX, ADDED_BY))
+                .isInstanceOf(AdministratorNotFoundException.class);
+
+        verify(repository, never()).deleteByPubkey(any());
+        verify(sessionRevoker, never()).revokeSessionsFor(any());
+    }
+
+    /**
+     * Tests that the configured master key cannot be removed, even by a request
+     * made directly rather than through a page that offers no such control.
+     */
+    @Test
+    void shouldRefuseRemovingTheConfiguredMasterKey() {
+        assertThatThrownBy(() -> service(MASTER_NPUB).remove(MASTER_HEX, ADDED_BY))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(repository, never()).deleteByPubkey(any());
+        verify(sessionRevoker, never()).revokeSessionsFor(any());
+    }
+
+    /**
+     * Tests that the master key is protected however it is written, so its
+     * bech32 form cannot slip past a check its hex form fails.
+     */
+    @Test
+    void shouldRefuseRemovingTheMasterKeyInEitherEncoding() {
+        assertThatThrownBy(() -> service(MASTER_HEX).remove(MASTER_NPUB, ADDED_BY))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(repository, never()).deleteByPubkey(any());
+    }
+
+    /**
+     * Tests that removal fails loudly where no session store exists, rather than
+     * deleting the administrator and quietly leaving their session alive.
+     *
+     * <p>Every bottin application scans this service, but only the dashboard
+     * holds sessions. Treating the absent revoker as "nothing to revoke" would
+     * be the silent non-revocation the port exists to prevent.
+     */
+    @Test
+    void shouldRefuseToRemoveWhereSessionsCannotBeEnded() {
+        when(repository.existsByPubkey(HEX)).thenReturn(true);
+
+        assertThatThrownBy(() -> serviceWithoutRevoker(MASTER_NPUB).remove(HEX, ADDED_BY))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("no session store");
+    }
+
+    /**
+     * Tests that a removal naming something which is not a key is refused before
+     * anything is deleted.
+     */
+    @Test
+    void shouldRejectARemovalOfAValueThatIsNotAKey() {
+        assertThatThrownBy(() -> service(MASTER_NPUB).remove("not-a-key", ADDED_BY))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not-a-key");
+
+        verify(repository, never()).deleteByPubkey(any());
     }
 }

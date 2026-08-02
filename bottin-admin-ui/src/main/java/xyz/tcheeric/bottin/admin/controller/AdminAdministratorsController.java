@@ -7,11 +7,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
 import xyz.tcheeric.bottin.admin.dto.AddAdministratorForm;
+import xyz.tcheeric.bottin.core.exception.AdministratorNotFoundException;
 import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.nap.spring.annotation.RequiresPermission;
 
@@ -74,6 +76,36 @@ public class AdminAdministratorsController {
             report(outcome, form, redirectAttributes);
         } catch (IllegalArgumentException e) {
             log.warn("administrator_add_rejected reason=invalid_key attempted_by={}", actingAdministrator);
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+
+        return SETTINGS_REDIRECT;
+    }
+
+    /**
+     * Removes an administrator and, in the same operation, ends any session they
+     * hold — see {@code AdminUserService#remove}. On return their next request to
+     * any admin page is refused, without waiting for the session to expire.
+     *
+     * <p>The key is in the path rather than a row id because it is the value
+     * revocation matches on, so the handler cannot end one administrator's
+     * sessions while deleting another's entry.
+     */
+    @PostMapping("/{pubkey}/remove")
+    public String removeAdministrator(@PathVariable String pubkey,
+                                      Authentication authentication,
+                                      RedirectAttributes redirectAttributes) {
+
+        String actingAdministrator = authentication == null ? null : authentication.getName();
+
+        try {
+            adminUserService.remove(pubkey, actingAdministrator);
+            redirectAttributes.addFlashAttribute("success", "Administrator removed. Any session they held has ended.");
+        } catch (AdministratorNotFoundException e) {
+            log.warn("administrator_remove_rejected reason=not_found attempted_by={}", actingAdministrator);
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.warn("administrator_remove_rejected reason=refused attempted_by={}", actingAdministrator);
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
 

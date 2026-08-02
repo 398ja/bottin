@@ -90,19 +90,19 @@ them from another, and confirm the first can no longer load an admin page.
 
 ### Tests for User Story 2 ⚠️ Write first, confirm they fail
 
-- [ ] T021 [P] [US2] Extend `bottin-service/src/test/java/xyz/tcheeric/bottin/service/AdminUserServiceTest.java` for `remove`: deletes and revokes as one operation; an absent key raises `AdministratorNotFoundException`; the configured master key is refused; the revoker receives the canonical **hex**, never the npub (research D4)
-- [ ] T022 [P] [US2] `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/security/NapAdministratorSessionRevokerTest.java`: passes the hex pubkey to `revokeByPrincipal` and returns the count it reports
+- [X] T021 [P] [US2] Extend `bottin-service/src/test/java/xyz/tcheeric/bottin/service/AdminUserServiceTest.java` for `remove`: deletes and revokes as one operation; an absent key raises `AdministratorNotFoundException`; the configured master key is refused; the revoker receives the canonical **hex**, never the npub (research D4)
+- [X] T022 [P] [US2] `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/security/NapAdministratorSessionRevokerTest.java`: passes the hex pubkey to `revokeByPrincipal` and returns the count it reports
 - [ ] T023 [US2] `bottin-tests/bottin-it/src/test/java/.../AdministratorLifecycleIT.java` proving revocation against a **real session and a real store**: sign in as an added administrator, confirm an admin page loads, remove them, confirm the very next request is refused. Asserting that the service called the revoker proves the call and not the effect, which is where this feature's risk lives (contracts, research D5)
 - [ ] T024 [P] [US2] In `bottin-tests/bottin-it/src/test/java/.../AdministratorLifecycleIT.java`, add a test that removal does not wait for the ACL refresh interval — the removed administrator is refused immediately, not once the cached decision expires (research D5)
 
 ### Implementation for User Story 2
 
-- [ ] T025 [US2] Add the port `bottin-service/src/main/java/xyz/tcheeric/bottin/service/port/AdministratorSessionRevoker.java` — one method returning the number of sessions ended for a canonical hex pubkey (research D4)
-- [ ] T026 [US2] Add `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/security/NapAdministratorSessionRevoker.java` implementing the port over nap's `SessionStore.revokeByPrincipal`, passing the **hex** pubkey because the store matches on `principalPubkey` — an npub would revoke nothing while reporting success. Include the `ponytail:` comment naming the single-instance ceiling and the shared-store upgrade path (research D4, D6)
-- [ ] T027 [US2] Add `remove(String pubkey, String removedByPubkey)` to `bottin-service/src/main/java/xyz/tcheeric/bottin/service/AdminUserService.java`, performing the delete **and** the revocation as one operation so no future caller can do one without the other; refuse an absent key and refuse the configured master key (FR-006, FR-007, FR-009)
-- [ ] T028 [US2] Add `POST /admin/settings/administrators/{pubkey}/remove` to `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/AdminAdministratorsController.java`, guarded by `@RequiresPermission(MANAGE_ADMINS)`, redirecting with a flash (contracts)
-- [ ] T029 [US2] Add the remove control to the administrators section of `bottin-admin-ui/src/main/resources/templates/admin/settings.html`, absent on the super administrator row and for viewers who may not manage
-- [ ] T030 [US2] In `bottin-service/src/main/java/xyz/tcheeric/bottin/service/AdminUserService.java`, log `administrator_removed` with `sessions_revoked`, so a removal that ended nothing is visible rather than silent (FR-010, research D6)
+- [X] T025 [US2] Add the port `bottin-service/src/main/java/xyz/tcheeric/bottin/service/port/AdministratorSessionRevoker.java` — one method returning the number of sessions ended for a canonical hex pubkey (research D4)
+- [X] T026 [US2] Add `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/security/NapAdministratorSessionRevoker.java` implementing the port over nap's `SessionStore.revokeByPrincipal`, passing the **hex** pubkey because the store matches on `principalPubkey` — an npub would revoke nothing while reporting success. Include the `ponytail:` comment naming the single-instance ceiling and the shared-store upgrade path (research D4, D6)
+- [X] T027 [US2] Add `remove(String pubkey, String removedByPubkey)` to `bottin-service/src/main/java/xyz/tcheeric/bottin/service/AdminUserService.java`, performing the delete **and** the revocation as one operation so no future caller can do one without the other; refuse an absent key and refuse the configured master key (FR-006, FR-007, FR-009)
+- [X] T028 [US2] Add `POST /admin/settings/administrators/{pubkey}/remove` to `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/AdminAdministratorsController.java`, guarded by `@RequiresPermission(MANAGE_ADMINS)`, redirecting with a flash (contracts)
+- [X] T029 [US2] Add the remove control to the administrators section of `bottin-admin-ui/src/main/resources/templates/admin/settings.html`, absent on the super administrator row and for viewers who may not manage
+- [X] T030 [US2] In `bottin-service/src/main/java/xyz/tcheeric/bottin/service/AdminUserService.java`, log `administrator_removed` with `sessions_revoked`, so a removal that ended nothing is visible rather than silent (FR-010, research D6)
 
 **Checkpoint**: access can be granted and revoked, and revocation is real rather
 than eventual.

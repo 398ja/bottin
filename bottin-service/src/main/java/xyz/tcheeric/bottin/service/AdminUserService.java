@@ -1,12 +1,15 @@
 package xyz.tcheeric.bottin.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import xyz.tcheeric.bottin.core.exception.AdministratorNotFoundException;
 import xyz.tcheeric.bottin.core.model.AdminUserData;
 import xyz.tcheeric.bottin.persistence.entity.AdminUserEntity;
 import xyz.tcheeric.bottin.persistence.repository.AdminUserRepository;
+import xyz.tcheeric.bottin.service.port.AdministratorSessionRevoker;
 
 import java.util.List;
 import java.util.Optional;
@@ -48,10 +51,38 @@ public class AdminUserService {
      */
     private final String masterKeyHex;
 
+    /**
+     * The session revoker, if this application has one.
+     *
+     * <p>An {@code ObjectProvider} rather than a plain dependency because this
+     * service is component-scanned by every bottin application, while only the
+     * dashboard holds sessions. Required outright, it stopped {@code bottin-api}
+     * from starting at all — for a bean that application has no use for.
+     *
+     * <p>Absence is not treated as "nothing to revoke". Removal fails loudly
+     * instead, because a silent no-op here is exactly what this port exists to
+     * prevent: an application that grew an administrator-removal path would
+     * appear to revoke sessions and would not.
+     */
+    private final ObjectProvider<AdministratorSessionRevoker> sessionRevoker;
+
     public AdminUserService(AdminUserRepository repository,
+                            ObjectProvider<AdministratorSessionRevoker> sessionRevoker,
                             @Value("${bottin.admin.npub:}") String configuredMasterKey) {
         this.repository = repository;
+        this.sessionRevoker = sessionRevoker;
         this.masterKeyHex = NostrPublicKeys.toCanonicalHex(configuredMasterKey).orElse(null);
+    }
+
+    private AdministratorSessionRevoker sessionRevoker() {
+        AdministratorSessionRevoker revoker = sessionRevoker.getIfAvailable();
+        if (revoker == null) {
+            throw new IllegalStateException(
+                    "Cannot end administrator sessions. This application holds no session store, so a "
+                            + "removed administrator's session could not be ended here. Suggestion: remove "
+                            + "administrators from the admin dashboard, which owns the sessions.");
+        }
+        return revoker;
     }
 
     /**
@@ -115,6 +146,56 @@ public class AdminUserService {
         log.info("administrator_added pubkey={} added_by={} label_present={}",
                 pubkey, addedByPubkey, blankToNull(label) != null);
         return AdditionOutcome.ADDED;
+    }
+
+    /**
+     * Removes an administrator and ends every session they hold.
+     *
+     * <p>The two are one operation deliberately. Removal that leaves a live
+     * session is not removal, and separating them would let a future caller do
+     * the first without the second — the failure being invisible until somebody
+     * kept working after being removed.
+     *
+     * <p>Deleting before revoking, rather than the reverse: revoking first would
+     * leave a window in which the administrator, still stored, could sign in
+     * again and obtain a session that outlives the removal.
+     *
+     * <p>Removing a key that is not an administrator is refused rather than
+     * treated as already achieved, because the two ways to arrive there — a
+     * stale page and a mistyped key — are both worth seeing.
+     *
+     * @throws IllegalArgumentException          if the value is not a public key, or is
+     *                                           the configured master key
+     * @throws AdministratorNotFoundException    if no administrator holds that key
+     */
+    @Transactional
+    public void remove(String pubkey, String removedByPubkey) {
+        String canonical = canonicalOrRejectRemoval(pubkey);
+
+        if (isMasterKey(canonical)) {
+            log.warn("administrator_change_rejected reason=master_key_immutable pubkey={} attempted_by={}",
+                    canonical, removedByPubkey);
+            throw new IllegalArgumentException(
+                    "Administrator not removed. That key is the super administrator, which is set in "
+                            + "deployment configuration. Suggestion: change BOTTIN_ADMIN_NPUB and restart "
+                            + "to move the super administrator to another key.");
+        }
+
+        if (!repository.existsByPubkey(canonical)) {
+            throw new AdministratorNotFoundException(canonical);
+        }
+
+        repository.deleteByPubkey(canonical);
+        int revoked = sessionRevoker().revokeSessionsFor(canonical);
+
+        log.info("administrator_removed pubkey={} removed_by={} sessions_revoked={}",
+                canonical, removedByPubkey, revoked);
+    }
+
+    private String canonicalOrRejectRemoval(String keyInput) {
+        return NostrPublicKeys.toCanonicalHex(keyInput).orElseThrow(() -> new IllegalArgumentException(
+                "Administrator not removed. '" + keyInput + "' is not a Nostr public key. "
+                        + "Suggestion: use the remove control beside the administrator in the list."));
     }
 
     private String canonicalOrReject(String keyInput) {
