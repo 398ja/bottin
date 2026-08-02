@@ -5,7 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import xyz.tcheeric.nap.server.SessionStore;
+import xyz.tcheeric.nap.core.SessionStore;
 
 import java.time.Instant;
 

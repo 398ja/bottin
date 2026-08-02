@@ -5,7 +5,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import xyz.tcheeric.nap.server.AclResolver;
-import xyz.tcheeric.nap.server.SessionStore;
+import xyz.tcheeric.nap.core.SessionStore;
 import xyz.tcheeric.nap.spring.config.NapProperties;
 import xyz.tcheeric.nap.spring.filter.NapServletFilter;
 import xyz.tcheeric.nap.spring.filter.NapSessionFilter;

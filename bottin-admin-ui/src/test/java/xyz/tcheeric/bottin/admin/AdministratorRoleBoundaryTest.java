@@ -18,7 +18,7 @@ import xyz.tcheeric.bottin.admin.config.RefusedAdminRequestLogFilter;
 import xyz.tcheeric.bottin.persistence.repository.AdminUserRepository;
 import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.nap.core.SessionRecord;
-import xyz.tcheeric.nap.server.SessionStore;
+import xyz.tcheeric.nap.core.SessionStore;
 
 import java.time.Instant;
 import java.util.List;
@@ -205,6 +205,9 @@ class AdministratorRoleBoundaryTest {
      * {@link AdminPermissions#MANAGE_ADMINS}.
      */
     private Cookie sessionFor(String pubkeyHex) {
+        // The cookie carries the session id: NapSessionFilter resolves the
+        // session with getBySessionId, not by access token.
+        String sessionId = UUID.randomUUID().toString();
         String accessToken = UUID.randomUUID().toString().replace("-", "");
         long now = Instant.now().getEpochSecond();
 
@@ -215,7 +218,7 @@ class AdministratorRoleBoundaryTest {
                 : List.of(AdminPermissions.READ, AdminPermissions.WRITE);
 
         sessionStore.createForChallenge(SessionRecord.create(
-                UUID.randomUUID().toString(),
+                sessionId,
                 UUID.randomUUID().toString(),
                 accessToken,
                 pubkeyHex,
@@ -225,6 +228,6 @@ class AdministratorRoleBoundaryTest {
                 now,
                 now + 3600));
 
-        return new Cookie(SESSION_COOKIE, accessToken);
+        return new Cookie(SESSION_COOKIE, sessionId);
     }
 }

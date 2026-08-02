@@ -3,7 +3,7 @@ package xyz.tcheeric.bottin.admin.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import xyz.tcheeric.bottin.service.port.AdministratorSessionRevoker;
-import xyz.tcheeric.nap.server.SessionStore;
+import xyz.tcheeric.nap.core.SessionStore;
 
 import java.time.Instant;
 

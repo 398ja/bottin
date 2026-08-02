@@ -62,7 +62,7 @@
         <nostr-java.version>2.0.7</nostr-java.version>
 
         <!-- NAP (Nostr Authentication Protocol) -->
-        <nap-java.version>0.23.0</nap-java.version>
+        <nap-java.version>0.1.1</nap-java.version>
         <nostrdb-jni.version>0.23.0</nostrdb-jni.version>
 
         <!-- Database -->
