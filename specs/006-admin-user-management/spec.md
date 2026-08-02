@@ -35,8 +35,8 @@ private key in a clean browser, and reach every dashboard page.
    signs in, **Then** they reach the dashboard and can view and change records,
    domains, and settings.
 2. **Given** a key was added in `npub1…` form, **When** the same key is later
-   added in hex form, **Then** it is recognised as the administrator already
-   present rather than added a second time.
+   added in hex form, **Then** nothing changes and the page says the key can
+   already administer the deployment — no second entry is created.
 3. **Given** a value that is not a public key, **When** it is submitted, **Then**
    it is refused with the offending value named, and nothing is added.
 4. **Given** an administrator has just been added, **When** the security log is
@@ -122,9 +122,14 @@ the interface offers, and confirm each is refused.
    administrator and is offered no remove, edit, or demote control.
 2. **Given** the master key holder signed in, **When** they issue a request to
    remove or demote the master key directly, **Then** it is refused.
-3. **Given** the master key is already the super administrator, **When** anyone
-   adds that same key as an ordinary administrator, **Then** it is refused as
-   already present rather than creating a second, lesser entry for it.
+3. **Given** the master key is already the super administrator, **When** the
+   super administrator adds that same key as an ordinary administrator, **Then**
+   nothing happens: no entry is created, no error is raised, and the page says
+   the key already administers the deployment as the super administrator.
+4. **Given** the master key was added as an ordinary administrator by some other
+   route, **When** its holder signs in, **Then** they are the super
+   administrator; configuration decides the role, and the stored entry cannot
+   demote them.
 
 ---
 
@@ -139,8 +144,15 @@ the interface offers, and confirm each is refused.
   offering a control that cannot work.
 - **An administrator is removed while performing a change.** The in-flight
   request is refused like any other; no partial change is left behind.
-- **The same key is added twice at once.** One addition succeeds, the other is
-  refused as already present. The list never holds the same key twice.
+- **The same key is added twice at once.** One addition succeeds, the other
+  changes nothing. The list never holds the same key twice, and neither
+  submission reports a failure.
+- **The configured master key is also present as a stored administrator.** It
+  cannot arrive that way through the interface, but it can if the configured key
+  is later changed to one already added. Configuration decides: the holder is the
+  super administrator, and the stored entry neither demotes them nor grants them
+  anything they do not already have. Removing that stored entry is permitted and
+  leaves them the super administrator.
 - **The last added administrator is removed.** Permitted: the master key holder
   can always still sign in.
 - **A key is added that nobody holds the private half of.** Accepted — the
@@ -159,8 +171,14 @@ the interface offers, and confirm each is refused.
 - **FR-003**: The system MUST refuse a value that is not a public key, naming the
   offending value as the settings page already does for relay URLs, and MUST
   record nothing.
-- **FR-004**: The system MUST refuse a key that is already an administrator,
-  including the configured master key, stating that it is already present.
+- **FR-004**: Adding a key that can already administer the deployment — whether
+  it is already an administrator or is the configured master key — MUST change
+  nothing and MUST NOT be treated as an error. The system MUST say that the key
+  already administers the deployment, so that an operator who pasted the wrong
+  key learns it now rather than when their colleague cannot sign in.
+- **FR-004a**: The system MUST NOT create a second entry for a key that can
+  already administer the deployment, and MUST NOT record an ordinary
+  administrator entry for the configured master key.
 - **FR-005**: An added administrator MUST be able to sign in with their own key
   and reach every part of the dashboard the master key holder reaches, except
   the management of administrators.

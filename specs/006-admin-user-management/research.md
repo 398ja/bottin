@@ -185,6 +185,14 @@ The permission difference is what makes US3 real: the added administrator's
 session simply never carries `MANAGE_ADMINS`, so the interceptor refuses the
 management endpoints whether or not the interface offered them.
 
+Checking configuration **first** also settles what happens if a stored row ever
+matches the configured key — which the interface will not produce (FR-004a) but
+a later change of `BOTTIN_ADMIN_NPUB` to an already-added key would. The
+configured key wins, the stored row is shadowed, and the holder is the super
+administrator. Ordering gives this for free; no reconciliation step is needed,
+and none should be added, because a job that deleted the shadowed row would be
+editing the administrator list in response to a configuration change.
+
 **Verified**: nap-spring's auto-configuration declares both
 `napPermissionInterceptor` and a `napPermissionWebMvcConfigurer` that registers
 it, so `@RequiresPermission` is genuinely enforced rather than decorative. This

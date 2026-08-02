@@ -102,8 +102,12 @@ removed with the column.
 An administrator has a short life: **absent → present → absent**.
 
 - **absent → present**: the super administrator adds a key. Refused if the value
-  is not a public key (FR-003), if the key is already present, or if it is the
-  configured master key (FR-004).
+  is not a public key (FR-003).
+- **present → present** (no transition): adding a key that can already
+  administer — one already stored, or the configured master key — leaves the
+  store untouched and is reported informationally rather than as a failure
+  (FR-004, FR-004a). Adding is therefore **idempotent**: submitting the same key
+  any number of times yields exactly one entry, and the master key yields none.
 - **present → absent**: the super administrator removes the key. In the same
   operation, every session held by that pubkey is revoked (FR-007, research D4).
   Removal of a key that is not present is refused as not found rather than

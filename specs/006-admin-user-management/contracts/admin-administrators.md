@@ -59,9 +59,18 @@ template's absence of a button.
 |---|---|
 | Added | `302` to `/admin/settings`, flash success naming the label or the key. Logs `administrator_added`. |
 | Not a public key | Re-renders the settings page with the offending value named, as relay URLs already are. Nothing stored. |
-| Already an administrator | Re-renders with "already present". Nothing stored, no duplicate row. |
-| Is the configured master key | Re-renders with "already the super administrator" — not a second, lesser entry for it (FR-004, US4 scenario 3). |
+| Already an administrator | `302` to `/admin/settings` with an **informational** flash — not an error — saying the key already administers the deployment. Nothing stored, no duplicate row. Logs `administrator_add_ignored reason=already_administrator`. |
+| Is the configured master key | Same: informational flash saying the key is already the super administrator. No entry created, ordinary or otherwise (FR-004, FR-004a, US4 scenario 3). Logs `administrator_add_ignored reason=already_super_admin`. |
 | Caller lacks the permission | `403`. Logs `administrator_change_rejected reason=not_super_admin`. |
+
+**Why the two "already administers" cases are informational rather than errors,
+and rather than silent.** The request asks for a state that already holds, so
+there is nothing to fail — reporting an error would tell the operator to fix
+something that is not broken. But answering with a plain success would be worse
+than either: an operator who pasted their own key instead of a colleague's would
+believe access had been granted, and would discover otherwise only when the
+colleague cannot sign in, with nothing on the page to explain it. The
+informational flash is the one answer that is both true and useful.
 
 Re-rendering rather than redirecting on rejection keeps what the operator typed
 beside the error explaining it — the pattern `AdminSettingsController` already
@@ -108,9 +117,10 @@ none is a restatement of another.
 | Test | Proves |
 |---|---|
 | Super admin adds a key, it appears in the list | FR-001, FR-011 |
-| The same key added as npub then hex is refused as present | FR-002, FR-004 |
+| The same key added as npub then hex leaves one entry, and reports no error | FR-002, FR-004, FR-004a |
 | A non-key value is refused with the value named, nothing stored | FR-003 |
-| The configured master key cannot be added | FR-004, US4 |
+| Adding the configured master key creates no entry and reports no error | FR-004, FR-004a, US4 |
+| Adding the configured master key leaves the administrator list byte-identical | FR-004a — distinct from the above, which a handler that stored then deleted would also pass |
 | An added administrator reaches every admin page | FR-005 |
 | An added administrator gets `403` from both management endpoints, called directly | FR-008, US3 |
 | A removal request for the master key is refused | FR-009 |

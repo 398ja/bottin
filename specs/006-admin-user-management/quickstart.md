@@ -21,13 +21,19 @@ three times by a green build hiding a broken sign-in, so they are not optional.
 3. Save. The key appears in the list, labelled, below the master key which is
    marked as the super administrator and has no remove control.
 
-Expected refusals, each of which should leave the list unchanged:
+Each of the following leaves the list unchanged. Note that only the first is an
+error — the other two ask for a state that already holds, so they report it
+rather than failing:
 
 | Enter | Expect |
 |---|---|
-| `not-a-key` | Refused, with `not-a-key` named in the message. |
-| The same key again, in the other encoding | "Already present" — not a second row. |
-| Your own master key | "Already the super administrator". |
+| `not-a-key` | **Refused**, with `not-a-key` named in the message. |
+| The same key again, in the other encoding | **Notice**, not an error: the key already administers the deployment. Still exactly one entry. |
+| Your own master key | **Notice**: already the super administrator. No entry is created — check the list has not grown by a row for your own key. |
+
+That last check is the one worth doing by eye. A handler that stored the master
+key and then deleted it would show the same message and pass a "no error" test,
+while briefly having written a row that shadows nothing but should never exist.
 
 ## Sign in as the added administrator
 
