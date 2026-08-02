@@ -104,3 +104,78 @@ describe('stored identity', () => {
     expect(AdminSignIn.stored()).toBeNull();
   });
 });
+
+describe('unlocking a stored key', () => {
+  beforeEach(() => {
+    window.NostrCrypto.verifyPassword = vi.fn(() => Promise.resolve(true));
+    window.NostrCrypto.decryptPrivateKey = vi.fn(() => Promise.resolve(HEX));
+  });
+
+  async function withStoredIdentity() {
+    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE);
+    window.NapClient.login = vi.fn(() => Promise.resolve());
+  }
+
+  // The everyday path: the key is already here, so only the passphrase is asked
+  // for. A raw nsec is handled once per device rather than once per session.
+  it('decrypts with the right passphrase and proves control', async () => {
+    await withStoredIdentity();
+
+    await AdminSignIn.unlock(PASSPHRASE);
+
+    expect(window.NostrCrypto.decryptPrivateKey).toHaveBeenCalled();
+    expect(window.NapClient.login).toHaveBeenCalledWith(HEX, NPUB);
+  });
+
+  // A wrong passphrase must not cost the administrator their stored key.
+  it('rejects a wrong passphrase and leaves the stored key untouched', async () => {
+    await withStoredIdentity();
+    const before = localStorage.getItem(AdminSignIn.STORAGE_KEY);
+    window.NostrCrypto.verifyPassword = vi.fn(() => Promise.resolve(false));
+
+    await expect(AdminSignIn.unlock('wrong')).rejects.toThrow();
+
+    expect(localStorage.getItem(AdminSignIn.STORAGE_KEY)).toBe(before);
+  });
+
+  // Verified before decryption is attempted, so a wrong passphrase fails fast
+  // and cannot be distinguished from a corrupt key by timing alone.
+  it('does not attempt decryption when the passphrase is wrong', async () => {
+    await withStoredIdentity();
+    window.NostrCrypto.verifyPassword = vi.fn(() => Promise.resolve(false));
+
+    await expect(AdminSignIn.unlock('wrong')).rejects.toThrow();
+
+    expect(window.NostrCrypto.decryptPrivateKey).not.toHaveBeenCalled();
+  });
+
+  // One wrong attempt must not lock the administrator out of their own device.
+  it('allows another attempt after a wrong passphrase', async () => {
+    await withStoredIdentity();
+    window.NostrCrypto.verifyPassword = vi.fn(() => Promise.resolve(false));
+    await expect(AdminSignIn.unlock('wrong')).rejects.toThrow();
+
+    window.NostrCrypto.verifyPassword = vi.fn(() => Promise.resolve(true));
+    await AdminSignIn.unlock(PASSPHRASE);
+
+    expect(window.NapClient.login).toHaveBeenCalled();
+  });
+
+  // Nothing to unlock is a different situation from a wrong passphrase, and the
+  // page needs to tell them apart to choose which form to show.
+  it('reports clearly when this device holds no key', async () => {
+    await expect(AdminSignIn.unlock(PASSPHRASE)).rejects.toThrow(/no stored key/i);
+  });
+
+  // The contrast that the whole design rests on. firstSignIn discards a refused
+  // key; unlock must not, or an unreachable server would cost the administrator
+  // their stored key and force them to find their nsec again.
+  it('keeps the stored key when the handshake fails', async () => {
+    await withStoredIdentity();
+    window.NapClient.login = vi.fn(() => Promise.reject(new Error('Authentication failed')));
+
+    await expect(AdminSignIn.unlock(PASSPHRASE)).rejects.toThrow();
+
+    expect(AdminSignIn.stored()).not.toBeNull();
+  });
+});

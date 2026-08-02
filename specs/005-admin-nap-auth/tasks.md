@@ -154,14 +154,14 @@ T028 was written to be additive rather than a rerun of `ConfiguredAdminAclResolv
 
 ### Tests for User Story 4
 
-- [ ] T033 [US4] Write the unlock tests in `bottin-admin-ui/src/test/js/admin-signin.test.js` per `contracts/browser-identity.md` — a wrong passphrase is rejected with the stored identity byte-identical afterwards, the right one decrypts to the original key, and **session expiry does not erase the identity** so the passphrase alone resumes; confirm they FAIL
+- [X] T033 [US4] Write the unlock tests in `bottin-admin-ui/src/test/js/admin-signin.test.js` per `contracts/browser-identity.md` — a wrong passphrase is rejected with the stored identity byte-identical afterwards, the right one decrypts to the original key, and **session expiry does not erase the identity** so the passphrase alone resumes; confirm they FAIL
 
 ### Implementation for User Story 4
 
-- [ ] T034 [US4] Implement the unlock path in `bottin-admin-ui/src/main/resources/static/js/admin-signin.js` — verify against `passwordHash` before attempting decryption, decrypt, re-run the handshake — and never request the nsec while an identity is stored (FR-019, FR-021) (depends on T033)
-- [ ] T035 [US4] Render the passphrase-only state in `bottin-admin-ui/src/main/resources/templates/admin/login.html`, chosen by whether the browser holds an identity, per the state table in `contracts/admin-access-contract.md`
-- [ ] T036 [US4] Add the discard-stored-identity affordance to `bottin-admin-ui/src/main/resources/templates/admin/login.html` and `admin-signin.js` for a forgotten passphrase, returning the browser to first sign-in (FR-023, US4.4) (depends on T034)
-- [ ] T037 [US4] Run the admin JS suite and `mvn -q verify -pl bottin-admin-ui -am`, confirm PASS, and commit as `feat(admin-ui): unlock a stored key with a passphrase` (depends on T034–T036)
+- [X] T034 [US4] Implement the unlock path in `bottin-admin-ui/src/main/resources/static/js/admin-signin.js` — verify against `passwordHash` before attempting decryption, decrypt, re-run the handshake — and never request the nsec while an identity is stored (FR-019, FR-021) (depends on T033)
+- [X] T035 [US4] Render the passphrase-only state in `bottin-admin-ui/src/main/resources/templates/admin/login.html`, chosen by whether the browser holds an identity, per the state table in `contracts/admin-access-contract.md`
+- [X] T036 [US4] Add the discard-stored-identity affordance to `bottin-admin-ui/src/main/resources/templates/admin/login.html` and `admin-signin.js` for a forgotten passphrase, returning the browser to first sign-in (FR-023, US4.4) (depends on T034)
+- [X] T037 [US4] Run the admin JS suite and `mvn -q verify -pl bottin-admin-ui -am`, confirm PASS, and commit as `feat(admin-ui): unlock a stored key with a passphrase` (depends on T034–T036)
 
 **Checkpoint**: The everyday path works. A raw key is handled once per device, not once per session.
 

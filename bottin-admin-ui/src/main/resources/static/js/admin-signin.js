@@ -50,6 +50,44 @@ var AdminSignIn = {
                 throw error;
             });
         });
+    },
+
+    /**
+     * Signing in again on a device that already holds the key: the passphrase
+     * unlocks it, and the key itself is never asked for again.
+     *
+     * Used both when returning to the dashboard and when a session expires
+     * mid-work.
+     *
+     * Unlike firstSignIn, a failed handshake here leaves the stored key alone. A
+     * key that was accepted once is worth keeping through an unreachable server
+     * or an expired session; discarding it would send the administrator looking
+     * for their nsec because the network blipped. A key that has genuinely
+     * stopped being accepted is handled by forget(), which the page offers.
+     */
+    unlock: function (passphrase) {
+        var identity = AdminSignIn.stored();
+        if (!identity) {
+            return Promise.reject(new Error('There is no stored key on this device.'));
+        }
+
+        return NostrCrypto.verifyPassword(identity.passwordHash, identity.passwordSalt, passphrase)
+            .then(function (valid) {
+                // Checked before decryption is attempted, so a wrong passphrase
+                // costs nothing and fails for a reason the page can state.
+                if (!valid) {
+                    throw new Error('Wrong passphrase.');
+                }
+                return NostrCrypto.decryptPrivateKey(
+                    identity.privateKeyEncrypted,
+                    identity.privateKeyIv,
+                    identity.privateKeySalt,
+                    passphrase
+                );
+            })
+            .then(function (hexKey) {
+                return NapClient.login(hexKey, identity.npub);
+            });
     }
 };
 
