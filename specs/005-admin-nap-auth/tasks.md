@@ -198,7 +198,7 @@ T028 was written to be additive rather than a rerun of `ConfiguredAdminAclResolv
 - [X] T048 Sweep for dead references with `grep -rn "admin.username\|admin.password\|formLogin\|/admin/logout" --include=*.java --include=*.yml --include=*.html . | grep -v /target/` and resolve every hit outside `docs/superpowers/` and `specs/`
 - [X] T049 Run the full [quickstart.md](./quickstart.md) developer verification — the handshake, all five refusal causes, the route-guard enumeration, and the devtools checks that the nsec and passphrase appear in zero requests (depends on T042–T048)
 - [X] T050 Bump the project version in the parent `pom.xml` per semantic versioning, add the `CHANGELOG.md` entry noting the breaking configuration change, and run `graphify update .` (depends on T049)
-- [ ] T051 Create and update the card on the kan `bottin` board with the commit ids and a note, per the `kan-tracking` skill (depends on T050)
+- [X] T051 Create and update the card on the kan `bottin` board with the commit ids and a note, per the `kan-tracking` skill (depends on T050)
 
 ---
 
