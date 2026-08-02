@@ -1,6 +1,13 @@
 package xyz.tcheeric.bottin.admin.security;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
+
+import java.util.stream.Collectors;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
 import xyz.tcheeric.nap.core.AclDecision;
 
@@ -183,5 +190,106 @@ class ConfiguredAdminAclResolverTest {
 
         // Then: it is admitted
         assertThat(decision.allowed()).isTrue();
+    }
+
+    // ---- Security logging -------------------------------------------------
+    //
+    // The three ways to be refused have to be told apart by whoever is looking
+    // into it. AclDecision.denied(reason) does not carry the reason back to the
+    // caller — the record holds only allowed, roles and permissions — so the log
+    // is where that distinction has to live, and therefore where it is asserted.
+
+    private ListAppender<ILoggingEvent> logAppender;
+
+    private ListAppender<ILoggingEvent> captureLogs() {
+        Logger logger = (Logger) LoggerFactory.getLogger(ConfiguredAdminAclResolver.class);
+        logAppender = new ListAppender<>();
+        logAppender.start();
+        logger.addAppender(logAppender);
+        return logAppender;
+    }
+
+    @AfterEach
+    void detachAppender() {
+        if (logAppender != null) {
+            ((Logger) LoggerFactory.getLogger(ConfiguredAdminAclResolver.class)).detachAppender(logAppender);
+        }
+    }
+
+    private String loggedMessages() {
+        return logAppender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .collect(Collectors.joining("\n"));
+    }
+
+    /**
+     * Tests that a key which is simply not the administrator's is logged as
+     * such, and not as a configuration problem an operator would go hunting for.
+     */
+    @Test
+    void shouldLogAnUnauthorisedKeyDistinctly() {
+        // Given: a configured deployment and a different key
+        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        captureLogs();
+
+        // When
+        resolver.resolve(AdminPermissions.APP_ID, OTHER_HEX);
+
+        // Then
+        assertThat(loggedMessages()).contains("admin_signin_rejected", "reason=not_authorised");
+    }
+
+    /**
+     * Tests that an unconfigured deployment says so in the log, so the operator
+     * looks at their configuration rather than at the person signing in.
+     */
+    @Test
+    void shouldLogAMissingKeyDistinctly() {
+        // Given: no administrator key configured
+        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(null);
+        captureLogs();
+
+        // When
+        resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX);
+
+        // Then
+        assertThat(loggedMessages()).contains("reason=no_admin_key_configured");
+        assertThat(loggedMessages()).doesNotContain("reason=not_authorised");
+    }
+
+    /**
+     * Tests that an unusable configured value is logged as its own problem,
+     * since the fix differs from both of the above.
+     */
+    @Test
+    void shouldLogAnUnreadableKeyDistinctly() {
+        // Given: a configured value that is not a key
+        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver("not-a-key");
+        captureLogs();
+
+        // When
+        resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX);
+
+        // Then
+        assertThat(loggedMessages()).contains("reason=admin_key_unreadable");
+        assertThat(loggedMessages()).doesNotContain("reason=no_admin_key_configured");
+    }
+
+    /**
+     * Tests that a successful sign-in is recorded too, with the public key and
+     * the role granted. Every attempt appears in the log, not only the failures.
+     */
+    @Test
+    void shouldLogASuccessfulSignIn() {
+        // Given: the configured administrator
+        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        captureLogs();
+
+        // When
+        resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX);
+
+        // Then
+        assertThat(loggedMessages()).contains("admin_signin_succeeded", ADMIN_HEX,
+                AdminPermissions.SUPER_ADMIN);
     }
 }

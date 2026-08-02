@@ -103,17 +103,21 @@ tests, `src/main/resources/templates/admin/` for pages. Browser JS currently liv
 
 ### Tests for User Story 2
 
-- [ ] T022 [US2] Extend `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/security/ConfiguredAdminAclResolverTest.java` to assert the refusal reason for a non-matching key is `not_authorised` and is distinct from the unconfigured and unusable reasons (FR-006); confirm the new cases FAIL
-- [ ] T023 [P] [US2] Write the refused-key browser test in `bottin-admin-ui/src/test/js/admin-signin.test.js` asserting that a key refused at `complete` leaves **no** stored identity, so the next visit does not show an unlock prompt guaranteed to fail; confirm it FAILS
+- [X] T022 [US2] Extend `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/security/ConfiguredAdminAclResolverTest.java` to assert the refusal reason for a non-matching key is `not_authorised` and is distinct from the unconfigured and unusable reasons (FR-006); confirm the new cases FAIL
+- [X] T023 [P] [US2] Write the refused-key browser test in `bottin-admin-ui/src/test/js/admin-signin.test.js` asserting that a key refused at `complete` leaves **no** stored identity, so the next visit does not show an unlock prompt guaranteed to fail; confirm it FAILS
 
 ### Implementation for User Story 2
 
-- [ ] T024 [US2] Add structured security logging to `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/security/ConfiguredAdminAclResolver.java` — `admin_signin_succeeded` and `admin_signin_rejected` with `reason`, `client_ip`, and the proven `pubkey`, and never key material — per the logging table in `contracts/admin-access-contract.md` (depends on T022)
-- [ ] T025 [US2] Discard the stored identity before reporting failure in `bottin-admin-ui/src/main/resources/static/js/admin-signin.js`, so a refused key is not left encrypted on the device (depends on T023)
-- [ ] T026 [US2] Make the refusal message in `bottin-admin-ui/src/main/resources/templates/admin/login.html` state that the key is not authorised without revealing which key would be (US2.3)
-- [ ] T027 [US2] Run `mvn -q verify -pl bottin-admin-ui -am` and the admin JS suite, confirm PASS, and commit as `feat(admin-ui): refuse and record any key that is not the configured administrator` (depends on T024–T026)
+- [X] T024 [US2] Add structured security logging to `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/security/ConfiguredAdminAclResolver.java` — `admin_signin_succeeded` and `admin_signin_rejected` with `reason`, `client_ip`, and the proven `pubkey`, and never key material — per the logging table in `contracts/admin-access-contract.md` (depends on T022)
+- [X] T025 [US2] Discard the stored identity before reporting failure in `bottin-admin-ui/src/main/resources/static/js/admin-signin.js`, so a refused key is not left encrypted on the device (depends on T023)
+- [X] T026 [US2] Make the refusal message in `bottin-admin-ui/src/main/resources/templates/admin/login.html` state that the key is not authorised without revealing which key would be (US2.3)
+- [X] T027 [US2] Run `mvn -q verify -pl bottin-admin-ui -am` and the admin JS suite, confirm PASS, and commit as `feat(admin-ui): refuse and record any key that is not the configured administrator` (depends on T024–T026)
 
 **Checkpoint**: US1 and US2 both work. The change is now safe, not merely different.
+
+**US2 implementation notes**: most of this story was already satisfied by earlier phases — the structured logging (T024) landed with the resolver, the discard-on-refusal and its test (T023, T025) with the sign-in module, and the non-revealing message (T026) with the sign-in page. Audited rather than reimplemented.
+
+Only T022 needed doing, and it needed a different approach than the task assumed. `AclDecision.denied(String reason)` does not carry the reason back — the record holds only `allowed`, `roles`, `permissions` — so the three refusal reasons cannot be asserted through the return value. FR-006 requires the distinction to live in the log, so that is where it is asserted, with a Logback `ListAppender`.
 
 ---
 
