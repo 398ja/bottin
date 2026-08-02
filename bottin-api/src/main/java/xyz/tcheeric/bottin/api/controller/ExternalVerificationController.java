@@ -41,7 +41,10 @@ public class ExternalVerificationController {
             summary = "Verify external NIP-05",
             description = "Verifies an external NIP-05 identifier by fetching the remote nostr.json file. " +
                     "Results are cached for 5 minutes by default to reduce load on external servers. " +
-                    "Rate limited to 30 requests per minute per IP."
+                    "Rate limited per client address; the allowance is the deployment's configured rate " +
+                    "limit, set at /admin/settings and applied without a restart. " +
+                    "'valid' means the identifier resolved to a well-formed pubkey — callers must still " +
+                    "compare the returned pubkey against the one they expect."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Verification completed (check 'valid' field for result)"),

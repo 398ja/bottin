@@ -8,7 +8,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>bottin</artifactId>
-        <version>0.7.0</version>
+        <version>0.8.0</version>
     </parent>
 
     <artifactId>bottin-service</artifactId>
@@ -53,6 +53,14 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <!-- nostr-java: NIP-19 bech32 decoding for administrator public keys.
+             Principle VI forbids hand-rolling bech32, so the library does it
+             here as it does in the admin dashboard. -->
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>nostr-java-core</artifactId>
         </dependency>
 
         <!-- Testing -->

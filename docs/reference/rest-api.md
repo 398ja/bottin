@@ -20,13 +20,29 @@ Authorization: Basic base64(username:password)
 
 ### GET /.well-known/nostr.json
 
-Resolves NIP-05 identities. **Public endpoint - no authentication required.**
+Resolves NIP-05 identities per [NIP-05](https://github.com/nostr-protocol/nips/blob/master/05.md).
+**Public endpoint - no authentication required.**
 
 **Query Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `name` | string | Yes | Username to resolve |
+| `name` | string | No | Username to resolve. **Omitted, the response contains every enabled record for the domain.** |
+
+**Which domain is served** is taken from the `Host` header, falling back to
+`BOTTIN_DEFAULT_DOMAIN`. One deployment therefore serves many domains, and a
+reverse proxy in front of it MUST pass the original `Host` through unchanged or
+every request resolves against the wrong domain.
+
+**A name with no record returns `200` with `{"names": {}}`, not `404`.** Clients
+must check for the key rather than the status code.
+
+Responses carry `Cache-Control: public, max-age=3600`.
+
+**CORS:** this endpoint does not set `Access-Control-Allow-Origin`. NIP-05
+requires it for browser clients, and it is expected from the edge proxy — setting
+it in both places makes browsers reject the response as "Multiple CORS header not
+allowed". See [Integrate NIP-05 Validation](../how-to/integrate-nip05-validation.md).
 
 **Response:**
 
@@ -216,9 +232,19 @@ Verify an external NIP-05 identifier.
 
 **Query Parameters:**
 
+**Public endpoint - no authentication required.** Rate limited per client
+address; the allowance is the deployment's configured rate limit, set at
+`/admin/settings` and applied without a restart. Exceeding it returns `429`.
+
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `nip05` | string | Yes | NIP-05 identifier to verify |
+| `noCache` | boolean | No | Skip the 5-minute result cache and fetch fresh (default `false`) |
+
+> **`valid` is not "matches my key".** It means the identifier resolved to a
+> well-formed 64-character hex pubkey. There is no expected-pubkey parameter, so
+> a caller validating an identity MUST compare the returned `pubkey` with the one
+> it holds. Treating `valid` as the answer accepts any identifier that merely exists.
 
 **Response:**
 
@@ -227,7 +253,10 @@ Verify an external NIP-05 identifier.
   "nip05": "alice@example.com",
   "valid": true,
   "pubkey": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
-  "relays": ["wss://relay.example.com"]
+  "relays": ["wss://relay.example.com"],
+  "message": "Verification successful",
+  "verifiedAt": "2026-08-02T10:30:00Z",
+  "cached": true
 }
 ```
 

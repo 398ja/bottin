@@ -11,10 +11,13 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.core.Authentication;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.bottin.admin.dto.AddAdministratorForm;
 import xyz.tcheeric.nap.spring.annotation.RequiresPermission;
 import xyz.tcheeric.bottin.admin.dto.SettingsForm;
 import xyz.tcheeric.bottin.core.model.SettingsData;
+import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.bottin.service.SettingsService;
 
 /**
@@ -36,12 +39,39 @@ public class AdminSettingsController {
 
     private final SettingsService settingsService;
 
+    private final AdminUserService adminUserService;
+
     @GetMapping
-    public String viewSettings(Model model) {
+    public String viewSettings(Model model, Authentication authentication) {
         SettingsData settings = settingsService.find();
         model.addAttribute("settingsForm", SettingsForm.from(settings));
         model.addAttribute("updatedAt", settings.getUpdatedAt());
+        addAdministratorsSection(model, authentication);
         return SETTINGS_VIEW;
+    }
+
+    /**
+     * Puts the administrator list on the page.
+     *
+     * <p>Shown to every administrator, so anyone with access can see who else
+     * has it. Only a viewer holding {@code MANAGE_ADMINS} is offered the
+     * controls — which is presentation, not enforcement: the same permission is
+     * checked again by {@link AdminAdministratorsController}, so a request made
+     * without going through this page is refused just the same.
+     *
+     * <p>Collections are always present, never null, so the template never has
+     * to guard against absence.
+     */
+    private void addAdministratorsSection(Model model, Authentication authentication) {
+        model.addAttribute("administrators", adminUserService.list());
+        model.addAttribute("superAdminPubkey", adminUserService.superAdministratorKey().orElse(null));
+        model.addAttribute("canManageAdministrators", holdsManageAdmins(authentication));
+        model.addAttribute("addAdministratorForm", new AddAdministratorForm());
+    }
+
+    private boolean holdsManageAdmins(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(granted -> AdminPermissions.MANAGE_ADMINS.equals(granted.getAuthority()));
     }
 
     /**
@@ -56,11 +86,16 @@ public class AdminSettingsController {
             @Valid @ModelAttribute("settingsForm") SettingsForm form,
             BindingResult bindingResult,
             Model model,
+            Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
         if (bindingResult.hasErrors()) {
             log.warn("admin_settings_update_rejected reason=validation error_count={}",
                     bindingResult.getErrorCount());
+            // Re-rendering means rebuilding the whole page, administrators
+            // included — the section is part of this view whatever went wrong
+            // with the settings form.
+            addAdministratorsSection(model, authentication);
             return SETTINGS_VIEW;
         }
 
@@ -74,6 +109,7 @@ public class AdminSettingsController {
         } catch (IllegalArgumentException e) {
             log.warn("admin_settings_update_rejected reason=invalid_value error={}", e.getMessage());
             model.addAttribute("error", e.getMessage());
+            addAdministratorsSection(model, authentication);
             return SETTINGS_VIEW;
         }
     }

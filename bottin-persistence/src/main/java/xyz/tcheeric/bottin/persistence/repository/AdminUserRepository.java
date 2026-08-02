@@ -2,50 +2,29 @@ package xyz.tcheeric.bottin.persistence.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import xyz.tcheeric.bottin.core.model.AdminRole;
 import xyz.tcheeric.bottin.persistence.entity.AdminUserEntity;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Spring Data repository for AdminUserEntity.
+ * Repository for administrators permitted to sign in to the dashboard.
+ *
+ * <p>Every query is by public key, because that is the only question asked of
+ * this table: sign-in asks whether a proven key is an administrator, and the
+ * settings page asks for the whole list. The unique index on {@code pubkey}
+ * serves the first.
  */
 @Repository
 public interface AdminUserRepository extends JpaRepository<AdminUserEntity, Long> {
 
-    /**
-     * Finds an admin user by username.
-     */
-    Optional<AdminUserEntity> findByUsername(String username);
-
-    /**
-     * Checks if an admin user with the given username exists.
-     */
-    boolean existsByUsername(String username);
-
-    /**
-     * Finds all enabled admin users.
-     */
-    List<AdminUserEntity> findByEnabledTrue();
-
-    /**
-     * Finds admin users by role.
-     */
-    List<AdminUserEntity> findByRole(AdminRole role);
-
-    /**
-     * Finds an admin user by Nostr pubkey.
-     */
+    /** The sign-in question, asked on every ACL resolution. */
     Optional<AdminUserEntity> findByPubkey(String pubkey);
 
-    /**
-     * Counts enabled admin users.
-     */
-    long countByEnabledTrue();
+    boolean existsByPubkey(String pubkey);
 
-    /**
-     * Counts admin users by role.
-     */
-    long countByRole(AdminRole role);
+    /** Oldest first, so the list does not reorder itself between visits. */
+    List<AdminUserEntity> findAllByOrderByCreatedAtAsc();
+
+    void deleteByPubkey(String pubkey);
 }

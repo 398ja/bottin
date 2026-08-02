@@ -1,7 +1,22 @@
 <!--
   Sync Impact Report
   ==================
-  Version change: 0.0.0 (template) -> 1.0.0 -> 1.1.0
+  Version change: 0.0.0 (template) -> 1.0.0 -> 1.1.0 -> 1.2.0
+  1.2.0 amendment (sourced from the 004-006 feature cycle):
+    - Principle III: corrected `bottin-web` to `bottin-api` — the named
+      module did not exist. Added `bottin-client-ui` and
+      `bottin-web-assets`, and the rule that the starter MUST NOT scan
+      delivery layers (an auto-configuration contributing controllers and
+      a security chain broke every consuming application).
+    - Principle IV: added "a green build is not evidence that the
+      deployment works" — runtime verification, assert-the-effect,
+      mutation-check security tests, both database engines, and the
+      warning that an unrunnable test is worse than a failing one. Each
+      clause traces to a defect that passed the full suite.
+    - Security Requirements: admin authentication is key-based (NAP), and
+      authorization decisions live at a single point where a refusal holds
+      against a direct request rather than a hidden control.
+    - Development Workflow: commit scopes corrected to real modules.
   1.1.0 amendment (sourced from AGENTS.md):
     - Expanded Principle III (Clean Architecture) with the Component
       Principles (REP/CCP/CRP cohesion; ADP/SDP/SAP coupling) and the
@@ -116,6 +131,8 @@ Nostr protocol repository:
   - [NIP-02 — Follow List (contact lists)](https://github.com/nostr-protocol/nips/blob/master/02.md)
   - [NIP-65 — Relay List Metadata](https://github.com/nostr-protocol/nips/blob/master/65.md)
   - [NIP-11 — Relay Information Document](https://github.com/nostr-protocol/nips/blob/master/11.md)
+  - [NIP-98 — HTTP Auth](https://github.com/nostr-protocol/nips/blob/master/98.md) — the signed
+    proof that admin and client sign-in rest on (NAP)
 
 Compliance rules:
 
@@ -151,12 +168,21 @@ matching bottin's established module layout:
 - **bottin-service** and feature modules (**bottin-verification**,
   **bottin-reach**): Use cases depending only on core abstractions and
   repository/gateway ports
-- **bottin-web**: REST controllers and DTOs (the delivery layer); controllers
+- **bottin-api**: REST controllers and DTOs (the delivery layer); controllers
   MUST delegate to services and MUST NOT contain business or protocol logic
 - **bottin-persistence**: JPA entities, Spring Data repositories, and Flyway
   migrations — adapters behind repository ports
-- **bottin-admin-ui**: Presentation only (Thymeleaf/HTMX); no business logic
-- **bottin-spring-boot-starter**: Composition and auto-configuration
+- **bottin-admin-ui** and **bottin-client-ui**: Presentation only
+  (Thymeleaf/HTMX); no business logic. A rule that decides who may do what
+  belongs in a service or a single security decision point, never in a template
+  or a controller
+- **bottin-web-assets**: Browser code shared by both user interfaces (key
+  handling, the authentication handshake). A second copy of security-relevant
+  browser code drifts, and the copy that drifts silently is the one without tests
+- **bottin-spring-boot-starter**: Composition and auto-configuration. It MUST NOT
+  scan delivery layers: an auto-configuration that contributes controllers or a
+  security filter chain imposes them on every application that merely has the
+  starter on its classpath
 
 The Ports & Adapters, Repository, and Factory patterns are mandatory.
 Infrastructure (JPA, relay clients, DNS/HTTP clients) MUST NOT leak into the
@@ -196,6 +222,31 @@ All code MUST meet the following testing standards:
   verification paths MUST be covered by both unit and integration tests
 - Mocked approximations are forbidden for verification-state and serving
   transitions where a real container or fixture is feasible
+
+**A green build is not evidence that the deployment works.** Changes that alter
+wiring, security filters, schema, or served assets MUST be exercised against a
+running deployment before they are called done. This is not belt-and-braces: it
+is the only thing that has caught a repeated class of defect here — an ACL check
+that refused every key, a principal discarded by the security chain, a required
+bean that stopped a sibling application from starting, and a migration that only
+one database engine accepted. Every one passed the full suite.
+
+- **Assert the effect, not the call.** A test proving a collaborator was invoked
+  does not prove what it was invoked for. Where a requirement is about an outcome
+  — a session ending, a row not being written — the test MUST observe the outcome
+- **A test that has never failed has not been shown to work.** For any test
+  guarding a security property or a hard-won bug fix, break the code deliberately
+  once and confirm the test fails. Record that in the commit message
+- **Tests MUST NOT encode the same assumption as the code they guard.** Where
+  behaviour depends on an external contract, derive the test from the contract —
+  the library's own signatures and documentation — not from the implementation's
+  reading of it
+- **Both database engines MUST be exercised** for schema changes: H2 backs the
+  test suite and PostgreSQL backs production, and a statement only one accepts
+  passes the build and fails on deploy
+- **A test that cannot run is worse than one that fails.** Placing a test where
+  no execution is bound, or naming it so no runner selects it, produces a green
+  build that asserts nothing
 
 All tests MUST follow Clean Code (Chapter 9) discipline:
 
@@ -306,7 +357,12 @@ review:
 
 - **Authentication on admin paths**: all admin endpoints (`bottin-admin-ui` and
   any admin REST surface) MUST require authentication and MUST NOT be exposed on
-  public networks
+  public networks. Administrators authenticate by proving control of a Nostr key
+  (NAP); the deployment MUST NOT hold a credential that could sign on an
+  administrator's behalf
+- **Authorization at a single decision point**: who may do what MUST be decided
+  in one place. A control hidden from a page is not a permission — a refusal MUST
+  hold when the endpoint is addressed directly, and MUST be logged when it does
 - **Rate limiting on public paths**: public endpoints (external verification,
   profile stats) MUST enforce per-client rate limiting
 - **No secrets in commits**: `.env`, credentials, and private keys MUST be
@@ -356,8 +412,9 @@ Documentation MUST follow the [Diataxis](https://diataxis.fr/) framework:
 
 - **Commits**: Conventional Commits format (`feat(scope):`, `fix(scope):`,
   `docs(scope):`, etc.); `scope` SHOULD identify the affected module
-  (`web`, `service`, `persistence`, `verification`, `reach`, `core`,
-  `admin-ui`, `starter`). Prefer multiple small commits; avoid grouped commits
+  (`api`, `service`, `persistence`, `verification`, `reach`, `core`,
+  `admin-ui`, `client-ui`, `web-assets`, `starter`), or the feature number for
+  spec-driven work (`006`). Prefer multiple small commits; avoid grouped commits
 - **Builds**: `mvn -q verify` MUST pass before committing
 - **Integration tests**: PRs that touch verification, relay interaction, or
   `.well-known` serving MUST run the integration tests locally before merge
@@ -390,4 +447,4 @@ It supersedes ad-hoc practices and informal conventions.
 - **Runtime guidance**: See `CLAUDE.md` and `AGENTS.md` for build commands,
   module structure, coding standards, and operational patterns.
 
-**Version**: 1.1.0 | **Ratified**: 2026-06-25 | **Last Amended**: 2026-06-25
+**Version**: 1.2.0 | **Ratified**: 2026-06-25 | **Last Amended**: 2026-08-02

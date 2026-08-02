@@ -9,6 +9,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import xyz.tcheeric.bottin.admin.config.AdminSecurityConfig;
 import xyz.tcheeric.bottin.core.model.SettingsData;
+import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.bottin.service.SettingsService;
 
 import java.time.Instant;
@@ -45,6 +46,9 @@ class AdminSettingsControllerTest {
 
     @MockBean
     private SettingsService settingsService;
+
+    @MockBean
+    private AdminUserService adminUserService;
 
     /**
      * Tests that the settings page is not reachable without signing in, since

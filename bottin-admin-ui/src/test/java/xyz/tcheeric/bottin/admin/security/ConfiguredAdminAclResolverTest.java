@@ -9,9 +9,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.stream.Collectors;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.nap.core.AclDecision;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for ConfiguredAdminAclResolver.
@@ -37,13 +40,98 @@ class ConfiguredAdminAclResolverTest {
             "npub1antwcjptjquv5k2wkh6mkr2gzayzeg046spy97guwu2p9cy2s8ush27znn";
 
     /**
+     * The stored administrator list. Answers false for every key unless a test
+     * says otherwise, so the configured-key cases stay unaffected by it.
+     */
+    private final AdminUserService storedAdministrators = mock(AdminUserService.class);
+
+    private ConfiguredAdminAclResolver resolverFor(String configuredKey) {
+        return new ConfiguredAdminAclResolver(configuredKey, storedAdministrators);
+    }
+
+    /**
+     * Tests that an administrator added to the stored list is admitted, which is
+     * the whole point of the feature.
+     */
+    @Test
+    void shouldAdmitAStoredAdministrator() {
+        // Given: a key that is not the configured one but is a stored administrator
+        when(storedAdministrators.isAdministrator(OTHER_HEX)).thenReturn(true);
+
+        // When: that key proves itself
+        AclDecision decision = resolverFor(ADMIN_NPUB).resolve(OTHER_NPUB, OTHER_HEX);
+
+        // Then: it is admitted as an ordinary administrator
+        assertThat(decision.allowed()).isTrue();
+        assertThat(decision.roles()).containsExactly(AdminPermissions.ADMIN);
+    }
+
+    /**
+     * Tests that a stored administrator is not granted the permission that
+     * manages administrators. This is what makes the two roles differ where the
+     * decision is made rather than only in the rendered page.
+     */
+    @Test
+    void shouldNotGrantManageAdminsToAStoredAdministrator() {
+        when(storedAdministrators.isAdministrator(OTHER_HEX)).thenReturn(true);
+
+        AclDecision decision = resolverFor(ADMIN_NPUB).resolve(OTHER_NPUB, OTHER_HEX);
+
+        assertThat(decision.permissions())
+                .contains(AdminPermissions.READ, AdminPermissions.WRITE)
+                .doesNotContain(AdminPermissions.MANAGE_ADMINS);
+    }
+
+    /**
+     * Tests that a key which is neither configured nor stored is still refused,
+     * so consulting the list did not open a second way in.
+     */
+    @Test
+    void shouldRefuseAKeyThatIsNeitherConfiguredNorStored() {
+        AclDecision decision = resolverFor(ADMIN_NPUB).resolve(OTHER_NPUB, OTHER_HEX);
+
+        assertThat(decision.allowed()).isFalse();
+    }
+
+    /**
+     * Tests that the configured key wins over a stored entry for the same key.
+     *
+     * <p>The interface cannot produce that state, but changing the configured
+     * key to one already added would. Configuration decides, so the holder stays
+     * the super administrator and a stored row cannot demote them.
+     */
+    @Test
+    void shouldPreferConfigurationWhenTheMasterKeyIsAlsoStored() {
+        when(storedAdministrators.isAdministrator(ADMIN_HEX)).thenReturn(true);
+
+        AclDecision decision = resolverFor(ADMIN_NPUB).resolve(ADMIN_NPUB, ADMIN_HEX);
+
+        assertThat(decision.roles()).containsExactly(AdminPermissions.SUPER_ADMIN);
+        assertThat(decision.permissions()).contains(AdminPermissions.MANAGE_ADMINS);
+    }
+
+    /**
+     * Tests that added administrators still work when the configured master key
+     * is unreadable. A misconfiguration should not also revoke everyone else.
+     */
+    @Test
+    void shouldAdmitAStoredAdministratorWhenTheMasterKeyIsUnreadable() {
+        when(storedAdministrators.isAdministrator(OTHER_HEX)).thenReturn(true);
+
+        AclDecision decision = resolverFor("not-a-key").resolve(OTHER_NPUB, OTHER_HEX);
+
+        assertThat(decision.allowed()).isTrue();
+        assertThat(decision.roles()).containsExactly(AdminPermissions.ADMIN);
+    }
+
+    /**
      * Tests that the configured administrator is admitted as the super
      * administrator, which is the role the whole dashboard is gated on.
      */
     @Test
     void shouldAdmitTheConfiguredKeyAsSuperAdmin() {
         // Given: a deployment configured with an administrator npub
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_NPUB);
 
         // When: that key proves itself
         AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
@@ -60,7 +148,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldGrantTheSuperAdminEveryPermission() {
         // Given: the configured administrator
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_NPUB);
 
         // When: that key proves itself
         AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
@@ -77,7 +165,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldAdmitTheConfiguredKeyWhenGivenAsHex() {
         // Given: the administrator key configured in hex form
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_HEX);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_HEX);
 
         // When: that key proves itself
         AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
@@ -94,7 +182,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldRefuseAKeyThatIsNotTheConfiguredOne() {
         // Given: a deployment configured with one administrator
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_NPUB);
 
         // When: a different key proves itself
         AclDecision decision = resolver.resolve(OTHER_HEX, OTHER_HEX);
@@ -112,7 +200,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldRefuseEverybodyWhenNoKeyIsConfigured() {
         // Given: no administrator key configured
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(null);
+        ConfiguredAdminAclResolver resolver = resolverFor(null);
 
         // When: any key proves itself
         AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
@@ -129,7 +217,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldTreatABlankConfiguredValueAsUnconfigured() {
         // Given: an administrator key configured as blank
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver("   ");
+        ConfiguredAdminAclResolver resolver = resolverFor("   ");
 
         // When & Then: nobody is admitted, and the state says why
         assertThat(resolver.resolve(ADMIN_NPUB, ADMIN_HEX).allowed()).isFalse();
@@ -143,7 +231,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldReportAnUnusableConfiguredValueAsMisconfiguration() {
         // Given: a configured value that is not a public key
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver("not-a-key");
+        ConfiguredAdminAclResolver resolver = resolverFor("not-a-key");
 
         // When & Then: nobody is admitted, and the state distinguishes this from
         // "not configured" so an operator is not sent looking for a missing value
@@ -158,7 +246,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldReportConfiguredWhenTheKeyIsUsable() {
         // Given: a usable administrator key
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_NPUB);
 
         // When & Then
         assertThat(resolver.keyState()).isEqualTo(AdminKeyState.CONFIGURED);
@@ -177,7 +265,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldAdmitTheConfiguredKeyGivenOnlyInBech32Form() {
         // Given: the configured administrator
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_NPUB);
 
         // When: only the bech32 form of the identity is supplied
         AclDecision decision = resolver.resolve(ADMIN_NPUB, null);
@@ -193,7 +281,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldRefuseAnotherKeyGivenOnlyInBech32Form() {
         // Given: the configured administrator
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_NPUB);
 
         // When: a different key proves itself in bech32 form
         AclDecision decision = resolver.resolve(OTHER_NPUB, null);
@@ -209,7 +297,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldIgnoreCaseWhenComparingTheProvenKey() {
         // Given: the configured administrator
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_NPUB);
 
         // When: the same key is proven in upper case
         AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX.toUpperCase());
@@ -255,7 +343,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldLogAnUnauthorisedKeyDistinctly() {
         // Given: a configured deployment and a different key
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_NPUB);
         captureLogs();
 
         // When
@@ -272,7 +360,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldLogAMissingKeyDistinctly() {
         // Given: no administrator key configured
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(null);
+        ConfiguredAdminAclResolver resolver = resolverFor(null);
         captureLogs();
 
         // When
@@ -290,7 +378,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldLogAnUnreadableKeyDistinctly() {
         // Given: a configured value that is not a key
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver("not-a-key");
+        ConfiguredAdminAclResolver resolver = resolverFor("not-a-key");
         captureLogs();
 
         // When
@@ -308,7 +396,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldLogASuccessfulSignIn() {
         // Given: the configured administrator
-        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+        ConfiguredAdminAclResolver resolver = resolverFor(ADMIN_NPUB);
         captureLogs();
 
         // When

@@ -6,91 +6,71 @@ import lombok.Value;
 import java.time.Instant;
 
 /**
- * Immutable value object representing an admin dashboard user.
+ * An administrator permitted to sign in to the dashboard.
+ *
+ * <p>Identified by a public key, not a username and password. The deployment
+ * holds nothing that could sign on this administrator's behalf, which is the
+ * property that makes keeping a stored administrator list safe at all.
+ *
+ * <p>The configured master key is deliberately <em>not</em> represented here.
+ * Its authority comes from deployment configuration, and a stored copy could
+ * disagree with it with no correct way to resolve the difference.
  */
 @Value
 @Builder(toBuilder = true)
 public class AdminUserData {
 
-    /**
-     * Unique identifier for the user.
-     */
     Long id;
 
     /**
-     * Username for login.
-     */
-    String username;
-
-    /**
-     * BCrypt hashed password.
-     */
-    String passwordHash;
-
-    /**
-     * Optional Nostr public key for the admin.
+     * Canonical lowercase hex (NIP-01). The identity, and the only field that
+     * decides anything.
      */
     String pubkey;
 
     /**
-     * User's role.
+     * What a person calls this administrator. Descriptive only — never consulted
+     * at sign-in, so a misleading label cannot grant anybody anything.
      */
+    String label;
+
     AdminRole role;
 
-    /**
-     * Whether the user account is enabled.
-     */
     boolean enabled;
 
     /**
-     * When the user was created.
+     * The administrator who added this one, in canonical hex, so a change of
+     * access is attributable.
      */
+    String addedByPubkey;
+
     Instant createdAt;
 
     /**
-     * Creates a new admin user.
+     * A new administrator, enabled from the outset.
+     *
+     * @param pubkey        canonical lowercase hex; callers normalise before calling
+     * @param label         optional human-readable description
+     * @param addedByPubkey the administrator performing the addition, canonical hex
      */
-    public static AdminUserData createNew(String username, String passwordHash, AdminRole role) {
+    public static AdminUserData createNew(String pubkey, String label, String addedByPubkey) {
         return AdminUserData.builder()
-                .username(username)
-                .passwordHash(passwordHash)
-                .role(role)
+                .pubkey(pubkey)
+                .label(label)
+                .role(AdminRole.ADMIN)
                 .enabled(true)
+                .addedByPubkey(addedByPubkey)
                 .createdAt(Instant.now())
                 .build();
     }
 
     /**
-     * Returns this user with enabled status changed.
+     * This administrator with their enabled state changed. Retained because the
+     * column exists so suspension can be added without a migration.
      */
     public AdminUserData withEnabled(boolean enabled) {
         return this.toBuilder()
                 .enabled(enabled)
                 .build();
-    }
-
-    /**
-     * Returns this user with updated password.
-     */
-    public AdminUserData withPasswordHash(String passwordHash) {
-        return this.toBuilder()
-                .passwordHash(passwordHash)
-                .build();
-    }
-
-    /**
-     * Returns this user with updated role.
-     */
-    public AdminUserData withRole(AdminRole role) {
-        return this.toBuilder()
-                .role(role)
-                .build();
-    }
-
-    /**
-     * Checks if this user has admin privileges.
-     */
-    public boolean isAdmin() {
-        return role == AdminRole.ADMIN;
     }
 }

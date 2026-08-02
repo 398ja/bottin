@@ -96,9 +96,67 @@ the passphrase alone resumes work.
   the sign-in page says so rather than showing a form that cannot work. A value
   that is set but is not a key reads differently again, because it is a different
   mistake with a different fix.
-- **One administrator per deployment.** Supporting several is tracked separately;
-  until then, two operators would have to share a private key, which is the
-  shared secret this change removes.
+- **The configured key is the super administrator.** Further administrators are
+  added from the settings page — see [Manage administrators](#manage-administrators).
+  Nobody has to share a private key.
+
+## Manage administrators
+
+The configured key is the **super administrator**. From `/admin/settings` it can
+grant the same access to colleagues, each signing in with their own key.
+
+### Two roles
+
+| | Super administrator | Administrator |
+|---|---|---|
+| Where it comes from | `BOTTIN_ADMIN_NPUB` | Added on the settings page |
+| How many | Exactly one | Any number |
+| Dashboard, records, domains, settings | Yes | Yes |
+| Add and remove administrators | Yes | **No** |
+
+The refusal is enforced where the decision is made, not by hiding a button: an
+administrator who issues the request directly is refused just the same, and the
+attempt is logged.
+
+### Add someone
+
+1. Ask for their **public** key — never their nsec. `npub1…` or hex, either works.
+2. On `/admin/settings`, under **Administrators**, enter the key and a label.
+3. They sign in at `/admin/login` with their own nsec, exactly as you did.
+
+Adding a key that already administers the deployment — one already listed, or
+your own — changes nothing and says so. It is not an error, but it is worth
+reading: if you meant to add a colleague and pasted your own key, nothing was
+granted and they still cannot sign in.
+
+### Remove someone
+
+Use **Remove** beside them. Their access ends immediately: any session they hold
+stops working on their very next request, rather than lasting until it expires.
+
+**The super administrator cannot be removed, edited, or demoted here.** It is
+deployment configuration, which is what admits you when the database is empty,
+wrong, or freshly restored — if a save could remove it, one mistake could lock
+out everybody with nothing able to undo it. To move it to a different key, change
+`BOTTIN_ADMIN_NPUB` and restart.
+
+### Things worth knowing
+
+- **Removal reaches the sessions this instance holds.** The deployment runs one
+  admin instance, so removal is immediate as described. If you ever run several
+  behind a load balancer, a removed administrator would keep working on the
+  instances that did not process the removal until their session expires. The
+  removal log records `sessions_revoked`, so a removal that ended nothing is
+  visible.
+- **Changing `BOTTIN_ADMIN_NPUB` does not rewrite the list.** Added
+  administrators keep their access; the previous holder simply stops being the
+  super administrator. If the new key was already an added administrator,
+  configuration wins and they become the super administrator.
+- **An unreadable `BOTTIN_ADMIN_NPUB` does not lock everyone out.** Added
+  administrators still sign in; nobody can manage the list until the
+  configuration is fixed.
+- **Labels grant nothing.** They exist so the list can be read without comparing
+  64-character keys by eye, and are never consulted at sign-in.
 
 ## Troubleshoot
 
@@ -111,6 +169,11 @@ the passphrase alone resumes work.
 | "The passphrases do not match" | The two passphrase fields differ. Nothing was stored; retype both. |
 | "Wrong passphrase" | The stored key is untouched; try again, or discard it and start from your nsec. |
 | "Too many sign-in attempts" | The handshake is rate limited per client address. Wait a minute. |
+| An added administrator cannot sign in | Check the key in the list is theirs — compare the hex, not the label. A key added for the wrong person grants that person nothing. |
+| "That key already administers this deployment" | Nothing was added because the key is already listed, or is your own super-administrator key. If you meant to add a colleague, check what you pasted. |
+| The administrators section shows no add or remove controls | You are signed in as an ordinary administrator, not the super administrator. |
+| A removed administrator can still use the dashboard | Check `sessions_revoked` in the `administrator_removed` log line. `0` means no session was ended — expected if they were not signed in, and otherwise a sign that another instance holds it. |
+| "No administrator is registered with public key …" | The removal named a key that is not on the list. Reload the settings page; it may already have been removed. |
 
 ## Related
 

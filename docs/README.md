@@ -15,6 +15,7 @@ Learning-oriented guides that take you through a series of steps to complete a p
 Problem-oriented guides that show you how to achieve a specific goal.
 
 - [Deploy with Docker](how-to/docker-deployment.md) - Deploy Bottin services using Docker Compose
+- [Integrate NIP-05 Validation](how-to/integrate-nip05-validation.md) - Serve `.well-known/nostr.json` for your domain, and validate identities from a client
 - [Configure Deployment Settings](how-to/configure-deployment-settings.md) - Set the media server, relays, and rate limit from the admin UI
 - [Configure Admin Access](how-to/configure-admin-access.md) - Set who may administer the deployment, and sign in with a Nostr key
 - [Running E2E Tests](how-to/running-e2e-tests.md) - Run end-to-end tests with Testcontainers
