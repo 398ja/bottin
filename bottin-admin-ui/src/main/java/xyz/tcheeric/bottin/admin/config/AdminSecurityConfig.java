@@ -1,12 +1,21 @@
 package xyz.tcheeric.bottin.admin.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import xyz.tcheeric.nap.server.AclResolver;
+import xyz.tcheeric.nap.server.SessionStore;
+import xyz.tcheeric.nap.spring.config.NapProperties;
+import xyz.tcheeric.nap.spring.filter.NapSessionFilter;
+
+import java.time.Duration;
+import java.util.Optional;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -21,15 +30,28 @@ import java.util.LinkedHashMap;
  * Security configuration for the admin dashboard.
  *
  * <p>There is no username, no password, and no user store. An administrator is
- * whoever proves control of the configured Nostr key: {@link AdminNapConfig}
- * registers the filters that establish that principal, and
+ * whoever proves control of the configured Nostr key, and
  * {@code ConfiguredAdminAclResolver} decides whether it is the administrator's.
  *
- * <p>This chain remains as a backstop rather than as the primary guard. The NAP
- * filters run ahead of it and turn anonymous callers away first; if they were
- * ever disabled, this chain would still refuse rather than serve the dashboard
- * to anybody. It also keeps CSRF protection and the {@code sec:} Thymeleaf
- * integration the layout uses.
+ * <p>{@link NapSessionFilter} runs <em>inside</em> this chain, in a window with a
+ * wall on each side. Both were found by an administrator being refused with a
+ * valid key.
+ *
+ * <p>It must come <b>after</b> {@code SecurityContextHolderFilter}, which begins
+ * by replacing the {@code SecurityContext} with one loaded from its own
+ * repository. Registered as a plain servlet filter ahead of the chain, NAP
+ * established the principal and Spring Security then discarded it: sign-in
+ * succeeded and every page bounced back to the sign-in form.
+ *
+ * <p>It must come <b>before</b> {@link AnonymousAuthenticationFilter}, which
+ * populates the context with an anonymous token. {@code NapSessionFilter} steps
+ * aside whenever an authentication is already present and reports itself
+ * authenticated — which an anonymous token does — so behind it the session
+ * cookie is never read at all.
+ *
+ * <p>In that window the NAP principal is what {@code .anyRequest().authenticated()},
+ * the {@code @RequiresPermission} interceptor, and the {@code sec:} Thymeleaf
+ * integration in the layout all read.
  */
 @Configuration
 @EnableWebSecurity
@@ -38,9 +60,42 @@ public class AdminSecurityConfig {
 
     private static final String SIGN_IN_PATH = "/admin/login";
 
+    private final ObjectProvider<SessionStore> sessionStoreProvider;
+
+    private final ObjectProvider<AclResolver> aclResolverProvider;
+
+    private final ObjectProvider<NapProperties> napPropertiesProvider;
+
+    /**
+     * The NAP session filter, or empty where nap-spring's beans are absent — a
+     * {@code @WebMvcTest} slice, for instance. Built here rather than injected
+     * because Spring Boot registers any {@code Filter} bean into the servlet
+     * chain, which is the placement this class exists to avoid.
+     */
+    private Optional<NapSessionFilter> napSessionFilter() {
+        SessionStore sessionStore = sessionStoreProvider.getIfAvailable();
+        AclResolver aclResolver = aclResolverProvider.getIfAvailable();
+        NapProperties properties = napPropertiesProvider.getIfAvailable();
+
+        if (sessionStore == null || aclResolver == null || properties == null) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new NapSessionFilter(
+                sessionStore,
+                aclResolver,
+                properties.cookie().name(),
+                properties.protectedPathPrefixes(),
+                Duration.ofSeconds(properties.aclRefreshIntervalSeconds())
+        ));
+    }
+
     @Bean
     @Order(1)
     public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
+        napSessionFilter().ifPresent(filter ->
+                http.addFilterBefore(filter, AnonymousAuthenticationFilter.class));
+
         return http
                 .securityMatcher("/admin/**", "/api/v1/auth/**")
                 .authorizeHttpRequests(auth -> auth
@@ -67,9 +122,10 @@ public class AdminSecurityConfig {
     /**
      * Sends a browser to the sign-in page and everything else a 401.
      *
-     * <p>Mirrors {@link RequireAdminSessionFilter}, which normally answers first;
-     * the two must agree, or a request that slipped past the filter would get a
-     * different answer here.
+     * <p>A bare 401 in a browser is a blank error page rather than an invitation
+     * to sign in; a fetch, on the other hand, has nothing to do with a redirect
+     * to an HTML form. The two are told apart by whether the request accepts
+     * HTML.
      */
     private DelegatingAuthenticationEntryPoint adminAuthenticationEntryPoint() {
         MediaTypeRequestMatcher browserRequest = new MediaTypeRequestMatcher(MediaType.TEXT_HTML);
