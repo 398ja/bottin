@@ -62,3 +62,8 @@ graph.json
 
 # Node dependencies for the Vitest suites (bottin-client-ui, bottin-admin-ui)
 node_modules/
+
+# Spec-driven development working files: kept on disk, not versioned
+docs/superpowers/
+.superpowers/
+specs/
