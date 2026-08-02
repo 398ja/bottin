@@ -40,6 +40,20 @@ address it is being sent to; if the configured value disagrees — a container p
 rather than the published one, say — the proof is rejected and sign-in fails with
 no obvious cause.
 
+### Serving over plain HTTP
+
+The session cookie is marked `Secure`, so a browser will not store it over plain
+HTTP. Sign-in then appears to work and every page immediately returns to the
+sign-in form. Deployments should be served over HTTPS; for a local stack that is
+not, set:
+
+```bash
+COOKIE_SECURE=false
+```
+
+Do not set this on anything reachable beyond your machine — it allows the session
+cookie to travel in the clear.
+
 ### What to remove
 
 Delete `BOTTIN_ADMIN_USER` and `BOTTIN_ADMIN_PASSWORD` from the **`bottin-admin`**
@@ -51,10 +65,14 @@ leaves the API starting with a random password that changes on every restart.
 
 ## Sign in
 
-1. Open `/admin/login`. It asks for your nsec and a passphrase.
+1. Open `/admin/login`. It asks for your nsec and a passphrase, entered twice.
 2. Your key is encrypted with that passphrase and kept **in your browser**. It is
    never sent to the deployment.
 3. You reach the dashboard.
+
+The passphrase is confirmed because it cannot be recovered. A typo does not fail
+at sign-in — it encrypts your key under something you do not know, and you find
+out on your next visit, when only your nsec can get you back in.
 
 Afterwards that browser asks only for the passphrase — on returning, and whenever
 a session expires.
@@ -89,9 +107,10 @@ the passphrase alone resumes work.
 | "No administrator key is configured" | `BOTTIN_ADMIN_NPUB` is unset. |
 | "The configured administrator key is not readable" | It is set but is not an `npub1…` or 64-character hex key. |
 | "That key is not authorised for this deployment" | The key signed with is not the configured one. The message does not say which key would be. |
-| Sign-in fails with no message | Check `BOTTIN_ADMIN_EXTERNAL_URL` matches the URL in the browser's address bar. |
+| Sign-in succeeds, then every page returns to the sign-in form | The session cookie is not being stored. Over plain HTTP, set `COOKIE_SECURE=false`; otherwise check `BOTTIN_ADMIN_EXTERNAL_URL` matches the browser's address bar. |
+| "The passphrases do not match" | The two passphrase fields differ. Nothing was stored; retype both. |
 | "Wrong passphrase" | The stored key is untouched; try again, or discard it and start from your nsec. |
-| Sign-in refused after many attempts | The handshake is rate limited per client address. Wait a minute. |
+| "Too many sign-in attempts" | The handshake is rate limited per client address. Wait a minute. |
 
 ## Related
 
