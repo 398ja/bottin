@@ -129,16 +129,20 @@ Only T022 needed doing, and it needed a different approach than the task assumed
 
 ### Tests for User Story 3
 
-- [ ] T028 [US3] Write `AdminKeyConfigurationTest` in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/security/AdminKeyConfigurationTest.java` asserting that an absent key and an unusable value each refuse every sign-in and produce distinct reasons, and that neither falls back to admitting anybody (FR-005, FR-006); confirm it FAILS
+- [X] T028 [US3] Write `AdminKeyConfigurationTest` in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/security/AdminKeyConfigurationTest.java` asserting that an absent key and an unusable value each refuse every sign-in and produce distinct reasons, and that neither falls back to admitting anybody (FR-005, FR-006); confirm it FAILS
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Add startup validation in `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/security/ConfiguredAdminAclResolver.java` (or a small component beside it) that logs `admin_key_unreadable` or `no_admin_key_configured` once at startup, so a misconfigured deployment is discoverable from the logs rather than only when somebody fails to sign in — data-model.md, Validation (depends on T028)
-- [ ] T030 [US3] Render the unconfigured and misconfigured states in `bottin-admin-ui/src/main/resources/templates/admin/login.html` — say that no administrator key is set and how to set one, rather than showing a form that cannot succeed (FR-014, US3.2), and distinguish "not configured" from "configured but unusable"
-- [ ] T031 [US3] Pass the configuration state to the sign-in page from `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/AdminLoginController.java`, reading the same source the resolver does so the two cannot disagree (depends on T029, T030)
-- [ ] T032 [US3] Run `mvn -q verify -pl bottin-admin-ui -am`, confirm PASS, and commit as `feat(admin-ui): admit nobody when no administrator key is configured` (depends on T029–T031)
+- [X] T029 [US3] Add startup validation in `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/security/ConfiguredAdminAclResolver.java` (or a small component beside it) that logs `admin_key_unreadable` or `no_admin_key_configured` once at startup, so a misconfigured deployment is discoverable from the logs rather than only when somebody fails to sign in — data-model.md, Validation (depends on T028)
+- [X] T030 [US3] Render the unconfigured and misconfigured states in `bottin-admin-ui/src/main/resources/templates/admin/login.html` — say that no administrator key is set and how to set one, rather than showing a form that cannot succeed (FR-014, US3.2), and distinguish "not configured" from "configured but unusable"
+- [X] T031 [US3] Pass the configuration state to the sign-in page from `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/AdminLoginController.java`, reading the same source the resolver does so the two cannot disagree (depends on T029, T030)
+- [X] T032 [US3] Run `mvn -q verify -pl bottin-admin-ui -am`, confirm PASS, and commit as `feat(admin-ui): admit nobody when no administrator key is configured` (depends on T029–T031)
 
 **Checkpoint**: The safe failure direction is guaranteed and diagnosable.
+
+**US3 implementation notes**: as with US2, most of this story was already satisfied. Startup validation logging (T029) landed with the resolver; the unconfigured and unreadable page states (T030) and the controller reading the resolver's own view of configuration (T031) landed with the sign-in page, tested by `AdminLoginControllerTest`. Audited rather than rebuilt.
+
+T028 was written to be additive rather than a rerun of `ConfiguredAdminAclResolverTest`, which already covers the resolver's decisions one at a time. It asserts the *property* instead: a misconfigured deployment refuses **every** key offered — including the one that would have been the administrator — rather than the single key a happy-path test happens to sample. A deployment does not become permissive because its configuration is broken.
 
 ---
 
