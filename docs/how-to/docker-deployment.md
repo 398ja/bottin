@@ -69,6 +69,21 @@ BOTTIN_SWAGGER_ENABLED=false
 The media server, the relay sets, and the API rate limit are **not** set here.
 They are edited in the admin UI after the stack is up; see the next section.
 
+## Configure Admin Access
+
+**Before deploying**, set the public key of whoever administers the deployment:
+
+```bash
+BOTTIN_ADMIN_NPUB=npub1...
+BOTTIN_ADMIN_EXTERNAL_URL=https://admin.example.com
+```
+
+There is no username or password for the dashboard any more, and no default
+administrator — an unconfigured deployment admits nobody. Set this before
+upgrading or you will be locked out. Full guidance, including why
+`BOTTIN_ADMIN_PASSWORD` must stay for `bottin-api`, is in
+[Configure Admin Access](configure-admin-access.md).
+
 ## Configure Deployment Settings
 
 A fresh deployment comes up unconfigured by design: until you set them, image

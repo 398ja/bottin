@@ -52,6 +52,24 @@ public class AdminNapConfig {
 
     private static final int REQUIRE_SESSION_ORDER = -108;
 
+    /** Ahead of everything, so a flood is turned away before any work is done. */
+    private static final int AUTH_RATE_LIMIT_ORDER = -111;
+
+    private static final String AUTH_PATH_PATTERN = "/api/v1/auth/*";
+
+    /**
+     * Rate limits the sign-in handshake, the dashboard's only unauthenticated
+     * surface, as Principle VI requires of public endpoints.
+     */
+    @Bean
+    public FilterRegistrationBean<AuthRateLimitFilter> authRateLimitFilter() {
+        FilterRegistrationBean<AuthRateLimitFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new AuthRateLimitFilter());
+        registration.addUrlPatterns(AUTH_PATH_PATTERN);
+        registration.setOrder(AUTH_RATE_LIMIT_ORDER);
+        return registration;
+    }
+
     /**
      * Captures the raw request body of the NAP challenge-completion request.
      *

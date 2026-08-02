@@ -189,15 +189,15 @@ T028 was written to be additive rather than a rerun of `ConfiguredAdminAclResolv
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T042 Add a fixed-window rate limiter for `/api/v1/auth/**` local to `bottin-admin-ui`, keyed on client address per research.md R4, logging `admin_signin_rate_limited`; do **not** reuse `bottin-api`'s `RateLimitService`, which now reads its allowance from the settings row and would drag a service dependency into a presentation module
-- [ ] T043 Confirm `/api/v1/auth/init` issues a challenge for any well-formed npub, not only the configured one, with a test in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAuthEndpointTest.java` — answering differently would tell an anonymous caller which npub administers the deployment (research.md R4)
-- [ ] T044 Add `BOTTIN_ADMIN_NPUB` to the `bottin-admin` service in `docker-compose.yml` and to `.env`, and remove `BOTTIN_ADMIN_USER` and `BOTTIN_ADMIN_PASSWORD` **from that service only** — `bottin-api` reads `BOTTIN_ADMIN_PASSWORD` for its own HTTP Basic credentials and will start with a random password if it is deleted wholesale (research.md, Scope boundary)
-- [ ] T045 [P] Write `docs/how-to/configure-admin-access.md` (Diátaxis how-to: configuring the administrator key, first sign-in, what happens when the key or passphrase is lost) and link it from the How-To section of `docs/README.md`
-- [ ] T046 [P] Update `docs/reference/docker-compose-configuration.md` — `BOTTIN_ADMIN_NPUB` in, the admin password out of the dashboard's row, with a note that `bottin-api` still uses it
-- [ ] T047 [P] Update `docs/how-to/docker-deployment.md` with the pre-upgrade step: configure the administrator key **before** deploying, or nobody can sign in
-- [ ] T048 Sweep for dead references with `grep -rn "admin.username\|admin.password\|formLogin\|/admin/logout" --include=*.java --include=*.yml --include=*.html . | grep -v /target/` and resolve every hit outside `docs/superpowers/` and `specs/`
-- [ ] T049 Run the full [quickstart.md](./quickstart.md) developer verification — the handshake, all five refusal causes, the route-guard enumeration, and the devtools checks that the nsec and passphrase appear in zero requests (depends on T042–T048)
-- [ ] T050 Bump the project version in the parent `pom.xml` per semantic versioning, add the `CHANGELOG.md` entry noting the breaking configuration change, and run `graphify update .` (depends on T049)
+- [X] T042 Add a fixed-window rate limiter for `/api/v1/auth/**` local to `bottin-admin-ui`, keyed on client address per research.md R4, logging `admin_signin_rate_limited`; do **not** reuse `bottin-api`'s `RateLimitService`, which now reads its allowance from the settings row and would drag a service dependency into a presentation module
+- [X] T043 Confirm `/api/v1/auth/init` issues a challenge for any well-formed npub, not only the configured one, with a test in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAuthEndpointTest.java` — answering differently would tell an anonymous caller which npub administers the deployment (research.md R4)
+- [X] T044 Add `BOTTIN_ADMIN_NPUB` to the `bottin-admin` service in `docker-compose.yml` and to `.env`, and remove `BOTTIN_ADMIN_USER` and `BOTTIN_ADMIN_PASSWORD` **from that service only** — `bottin-api` reads `BOTTIN_ADMIN_PASSWORD` for its own HTTP Basic credentials and will start with a random password if it is deleted wholesale (research.md, Scope boundary)
+- [X] T045 [P] Write `docs/how-to/configure-admin-access.md` (Diátaxis how-to: configuring the administrator key, first sign-in, what happens when the key or passphrase is lost) and link it from the How-To section of `docs/README.md`
+- [X] T046 [P] Update `docs/reference/docker-compose-configuration.md` — `BOTTIN_ADMIN_NPUB` in, the admin password out of the dashboard's row, with a note that `bottin-api` still uses it
+- [X] T047 [P] Update `docs/how-to/docker-deployment.md` with the pre-upgrade step: configure the administrator key **before** deploying, or nobody can sign in
+- [X] T048 Sweep for dead references with `grep -rn "admin.username\|admin.password\|formLogin\|/admin/logout" --include=*.java --include=*.yml --include=*.html . | grep -v /target/` and resolve every hit outside `docs/superpowers/` and `specs/`
+- [X] T049 Run the full [quickstart.md](./quickstart.md) developer verification — the handshake, all five refusal causes, the route-guard enumeration, and the devtools checks that the nsec and passphrase appear in zero requests (depends on T042–T048)
+- [X] T050 Bump the project version in the parent `pom.xml` per semantic versioning, add the `CHANGELOG.md` entry noting the breaking configuration change, and run `graphify update .` (depends on T049)
 - [ ] T051 Create and update the card on the kan `bottin` board with the commit ids and a note, per the `kan-tracking` skill (depends on T050)
 
 ---

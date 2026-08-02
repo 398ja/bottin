@@ -51,8 +51,14 @@ services:
       - BOTTIN_DATABASE_URL=jdbc:postgresql://postgres:5432/bottin
       - BOTTIN_DATABASE_USER=bottin
       - BOTTIN_DATABASE_PASSWORD=${BOTTIN_DATABASE_PASSWORD:-bottin}
-      - BOTTIN_ADMIN_USER=${BOTTIN_ADMIN_USER:-admin}
-      - BOTTIN_ADMIN_PASSWORD=${BOTTIN_ADMIN_PASSWORD:-changeme}
+      # Administrators sign in by proving control of a Nostr key. This is the
+      # public key the deployment accepts — not a secret, which is what makes it
+      # safe here where a password was not. There is no default: an unconfigured
+      # deployment admits nobody rather than somebody known.
+      - BOTTIN_ADMIN_NPUB=${BOTTIN_ADMIN_NPUB:-}
+      # Must match the URL the browser uses, or the signed proof names a
+      # different address than it is sent to and is rejected.
+      - BOTTIN_ADMIN_EXTERNAL_URL=${BOTTIN_ADMIN_EXTERNAL_URL:-http://localhost:${BOTTIN_ADMIN_PORT:-8081}}
       - BOTTIN_DEFAULT_DOMAIN=${BOTTIN_DEFAULT_DOMAIN:-${BOTTIN_DOMAIN:-}}
     depends_on:
       postgres:
