@@ -158,12 +158,12 @@ the interface offers; each is refused.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T042 Update `docs/how-to/configure-admin-access.md` for adding and removing administrators, the two roles, that removal is immediate, and the single-instance ceiling on revocation. Correct the existing "One administrator per deployment" statement, which this feature makes false (research D6)
-- [ ] T043 [P] Add troubleshooting rows to `docs/how-to/configure-admin-access.md`: an added administrator cannot sign in; `sessions_revoked=0` when a removal should have ended a session; management controls absent because the viewer is not the super administrator
-- [ ] T044 Run `mvn -q verify` from the repository root and confirm it passes before committing (Development Workflow)
-- [ ] T045 Walk `specs/006-admin-user-management/quickstart.md` against the running local stack in a browser. A green build has hidden a broken admin sign-in three times in this feature's history; this walk-through is the acceptance gate, not the suite
-- [ ] T046 Bump the version in the parent `pom.xml` per semantic versioning and record the change in `CHANGELOG.md` (Development Workflow)
-- [ ] T047 Run `graphify update .` so the knowledge graph reflects the new and reshaped classes
+- [X] T042 Update `docs/how-to/configure-admin-access.md` for adding and removing administrators, the two roles, that removal is immediate, and the single-instance ceiling on revocation. Correct the existing "One administrator per deployment" statement, which this feature makes false (research D6)
+- [X] T043 [P] Add troubleshooting rows to `docs/how-to/configure-admin-access.md`: an added administrator cannot sign in; `sessions_revoked=0` when a removal should have ended a session; management controls absent because the viewer is not the super administrator
+- [X] T044 Run `mvn -q verify` from the repository root and confirm it passes before committing (Development Workflow)
+- [X] T045 Walk `specs/006-admin-user-management/quickstart.md` against the running local stack in a browser. A green build has hidden a broken admin sign-in three times in this feature's history; this walk-through is the acceptance gate, not the suite
+- [ ] T046 Bump the version in the parent `pom.xml` and record the change in `CHANGELOG.md` — **deferred at the maintainer's instruction** ("No bump up needed"). 0.7.0 is untagged and unpushed, so there is no released boundary to bump from; do this when the release is cut.
+- [X] T047 Run `graphify update .` so the knowledge graph reflects the new and reshaped classes
 
 ---
 
