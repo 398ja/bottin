@@ -8,6 +8,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import xyz.tcheeric.nap.server.AclResolver;
 import xyz.tcheeric.nap.server.SessionStore;
@@ -95,6 +96,11 @@ public class AdminSecurityConfig {
     public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
         napSessionFilter().ifPresent(filter ->
                 http.addFilterBefore(filter, AnonymousAuthenticationFilter.class));
+
+        // Before authorization, so it is inside the security chain and the
+        // principal is still in the context while the chain unwinds. Outside it,
+        // every refusal would be recorded as anonymous.
+        http.addFilterBefore(new RefusedAdminRequestLogFilter(), AuthorizationFilter.class);
 
         return http
                 .securityMatcher("/admin/**", "/api/v1/auth/**")

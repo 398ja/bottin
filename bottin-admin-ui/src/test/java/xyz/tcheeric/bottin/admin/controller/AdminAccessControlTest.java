@@ -114,7 +114,13 @@ class AdminAccessControlTest {
             "/admin/domains/1/verify",
             "/admin/domains/1/verify/attempt",
             "/admin/domains/1/delete",
-            "/admin/settings"
+            "/admin/settings",
+            // Administrator management. Enumerated here as well as guarded by
+            // MANAGE_ADMINS, because that permission only distinguishes one
+            // administrator from another — it says nothing about a caller with
+            // no session at all.
+            "/admin/settings/administrators",
+            "/admin/settings/administrators/3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d/remove"
     })
     void shouldRefuseEveryAdminActionWithoutASession(String path) throws Exception {
         // Asserts the redirect specifically, not merely a non-2xx status: an

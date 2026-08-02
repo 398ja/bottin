@@ -119,15 +119,15 @@ absent, then issue both management requests directly and confirm each is refused
 
 ### Tests for User Story 3 ⚠️ Write first, confirm they fail
 
-- [ ] T031 [P] [US3] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAdministratorsControllerTest.java`, assert an administrator without manage-admins receives 403 from **both** endpoints when calling them directly — not merely that the buttons are hidden (FR-008)
-- [ ] T032 [P] [US3] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminSettingsControllerTest.java`, assert the settings page renders for an added administrator with the list visible but no add form and no remove controls (US3 scenario 1)
-- [ ] T033 [P] [US3] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAdministratorsControllerTest.java`, assert an added administrator cannot promote themselves (US3 scenario 3)
-- [ ] T034 [US3] Extend the route-enumeration test in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAccessControlTest.java` to cover the two new routes, so a future management route added without a guard fails the build
+- [X] T031 [P] [US3] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAdministratorsControllerTest.java`, assert an administrator without manage-admins receives 403 from **both** endpoints when calling them directly — not merely that the buttons are hidden (FR-008)
+- [X] T032 [P] [US3] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminSettingsControllerTest.java`, assert the settings page renders for an added administrator with the list visible but no add form and no remove controls (US3 scenario 1)
+- [X] T033 [P] [US3] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAdministratorsControllerTest.java`, assert an added administrator cannot promote themselves (US3 scenario 3)
+- [X] T034 [US3] Extend the route-enumeration test in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAccessControlTest.java` to cover the two new routes, so a future management route added without a guard fails the build
 
 ### Implementation for User Story 3
 
-- [ ] T035 [US3] Confirm in `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/security/ConfiguredAdminAclResolver.java` that the added administrator's session never carries `MANAGE_ADMINS` — this falls out of T015 and needs asserting rather than implementing; if a change is required, it belongs in the resolver and nowhere else
-- [ ] T036 [US3] In `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/AdminAdministratorsController.java`, log `administrator_change_rejected reason=not_super_admin` with the attempting administrator (FR-010, data-model.md)
+- [X] T035 [US3] Confirm in `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/security/ConfiguredAdminAclResolver.java` that the added administrator's session never carries `MANAGE_ADMINS` — this falls out of T015 and needs asserting rather than implementing; if a change is required, it belongs in the resolver and nowhere else
+- [X] T036 [US3] In `bottin-admin-ui/src/main/java/xyz/tcheeric/bottin/admin/controller/AdminAdministratorsController.java`, log `administrator_change_rejected reason=not_super_admin` with the attempting administrator (FR-010, data-model.md)
 
 **Checkpoint**: the two roles differ in enforcement, not only in appearance.
 
@@ -143,14 +143,14 @@ the interface offers; each is refused.
 
 ### Tests for User Story 4 ⚠️ Write first, confirm they fail
 
-- [ ] T037 [P] [US4] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAdministratorsControllerTest.java`, assert a direct remove request naming the configured master key is refused (FR-009, US4 scenario 2)
-- [ ] T038 [P] [US4] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/security/ConfiguredAdminAclResolverTest.java`, assert the master key holder signs in and reaches the dashboard with the administrator list empty (FR-012)
-- [ ] T039 [P] [US4] In `bottin-tests/bottin-it/src/test/java/.../AdministratorLifecycleIT.java`, assert that removing every added administrator leaves the master key working — the lock-out scenario in full (SC-005)
-- [ ] T040 [P] [US4] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminSettingsControllerTest.java`, assert the rendered settings markup offers no remove, edit, or demote control on the super administrator row, by assertion rather than by eye (FR-009, US4 scenario 1)
+- [X] T037 [P] [US4] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAdministratorsControllerTest.java`, assert a direct remove request naming the configured master key is refused (FR-009, US4 scenario 2)
+- [X] T038 [P] [US4] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/security/ConfiguredAdminAclResolverTest.java`, assert the master key holder signs in and reaches the dashboard with the administrator list empty (FR-012)
+- [X] T039 [P] [US4] In `bottin-tests/bottin-it/src/test/java/.../AdministratorLifecycleIT.java`, assert that removing every added administrator leaves the master key working — the lock-out scenario in full (SC-005)
+- [X] T040 [P] [US4] In `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminSettingsControllerTest.java`, assert the rendered settings markup offers no remove, edit, or demote control on the super administrator row, by assertion rather than by eye (FR-009, US4 scenario 1)
 
 ### Implementation for User Story 4
 
-- [ ] T041 [US4] Ensure the master-key guard is in `bottin-service/src/main/java/xyz/tcheeric/bottin/service/AdminUserService.java` rather than only the controller, so a direct request cannot bypass it; most of this story is assertion over behaviour T013–T027 already produce (FR-009, FR-013)
+- [X] T041 [US4] Ensure the master-key guard is in `bottin-service/src/main/java/xyz/tcheeric/bottin/service/AdminUserService.java` rather than only the controller, so a direct request cannot bypass it; most of this story is assertion over behaviour T013–T027 already produce (FR-009, FR-013)
 
 **Checkpoint**: all four stories are independently functional.
 
