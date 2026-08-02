@@ -20,7 +20,9 @@ var NapClient = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ npub: npub })
         }).then(function (response) {
-            if (!response.ok) throw new Error('Could not start authentication');
+            if (!response.ok) {
+                throw NapClient.failure('Could not start authentication', response.status);
+            }
             return response.json();
         });
     },
@@ -37,9 +39,23 @@ var NapClient = {
             },
             body: JSON.stringify({ challenge_id: challengeId })
         }).then(function (response) {
-            if (!response.ok) throw new Error('Authentication failed');
+            if (!response.ok) throw NapClient.failure('Authentication failed', response.status);
             return response;
         });
+    },
+
+    /**
+     * An error carrying the status that caused it.
+     *
+     * <p>Callers need it to tell a refused key apart from a rate limit or an
+     * unreachable deployment. Without it a page can only report one guess for
+     * every failure, and the wrong guess sends an operator looking for a key
+     * problem that is not there.
+     */
+    failure: function (message, status) {
+        var error = new Error(message);
+        error.status = status;
+        return error;
     },
 
     // The whole handshake, given a decrypted key. Resolves on success and
