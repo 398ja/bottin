@@ -88,6 +88,31 @@ var AdminSignIn = {
             .then(function (hexKey) {
                 return NapClient.login(hexKey, identity.npub);
             });
+    },
+
+    /**
+     * Signing out: end the session and erase the stored key, as one action.
+     *
+     * Either half alone is a bug worth naming. Ending the session while leaving
+     * the key means the device still holds something unlockable after the
+     * administrator was told they had signed out. Erasing the key while leaving
+     * the session means a live cookie the browser keeps presenting.
+     *
+     * The erase is not conditional on the server answering. A key left on a
+     * device is the worse outcome, and an abandoned session expires on its own —
+     * so a failed request still erases, and is then reported so the
+     * administrator knows the server side did not complete.
+     */
+    signOut: function () {
+        return NapClient.logout().then(
+            function () {
+                AdminSignIn.forget();
+            },
+            function (error) {
+                AdminSignIn.forget();
+                throw error;
+            }
+        );
     }
 };
 

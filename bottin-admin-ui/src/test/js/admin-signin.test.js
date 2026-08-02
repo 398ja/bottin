@@ -179,3 +179,54 @@ describe('unlocking a stored key', () => {
     expect(AdminSignIn.stored()).not.toBeNull();
   });
 });
+
+describe('signing out', () => {
+  beforeEach(() => {
+    window.NapClient.logout = vi.fn(() => Promise.resolve());
+  });
+
+  async function signedIn() {
+    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE);
+  }
+
+  // Ending the session and removing the key are one action. Either half alone
+  // is a bug: a session left alive keeps a cookie the browser presents, and a
+  // key left behind means "signed out" was a false reassurance.
+  it('ends the session and erases the key', async () => {
+    await signedIn();
+
+    await AdminSignIn.signOut();
+
+    expect(window.NapClient.logout).toHaveBeenCalled();
+    expect(AdminSignIn.stored()).toBeNull();
+    expect(localStorage.length).toBe(0);
+  });
+
+  // A key left on a device is the worse outcome, and the session expires on its
+  // own — so the erase is not conditional on the server answering.
+  it('erases the key even when the logout request fails', async () => {
+    await signedIn();
+    window.NapClient.logout = vi.fn(() => Promise.reject(new Error('offline')));
+
+    await expect(AdminSignIn.signOut()).rejects.toThrow();
+
+    expect(AdminSignIn.stored()).toBeNull();
+  });
+
+  // The administrator has to be able to learn that the server side did not
+  // complete, even though the local half did.
+  it('reports a failed logout rather than swallowing it', async () => {
+    await signedIn();
+    window.NapClient.logout = vi.fn(() => Promise.reject(new Error('offline')));
+
+    await expect(AdminSignIn.signOut()).rejects.toThrow('offline');
+  });
+
+  // Signing out on a device with nothing stored must not fail; the session may
+  // still exist even when the key has already been discarded.
+  it('still ends the session when nothing is stored locally', async () => {
+    await AdminSignIn.signOut();
+
+    expect(window.NapClient.logout).toHaveBeenCalled();
+  });
+});

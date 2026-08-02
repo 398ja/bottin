@@ -175,13 +175,13 @@ T028 was written to be additive rather than a rerun of `ConfiguredAdminAclResolv
 
 ### Tests for User Story 5
 
-- [ ] T038 [US5] Write the sign-out tests in `bottin-admin-ui/src/test/js/admin-signin.test.js` — storage is empty afterwards and the logout request was sent; storage is **still** emptied when the logout request fails, with the failure reported; and the pair that distinguishes sign-out from expiry, since collapsing the two is the most likely mistake; confirm they FAIL
+- [X] T038 [US5] Write the sign-out tests in `bottin-admin-ui/src/test/js/admin-signin.test.js` — storage is empty afterwards and the logout request was sent; storage is **still** emptied when the logout request fails, with the failure reported; and the pair that distinguishes sign-out from expiry, since collapsing the two is the most likely mistake; confirm they FAIL
 
 ### Implementation for User Story 5
 
-- [ ] T039 [US5] Implement sign-out in `bottin-admin-ui/src/main/resources/static/js/admin-signin.js` — `POST /api/v1/auth/logout` **and** erase the stored identity as one action, erasing even if the request fails, because a key left on a device is the worse outcome and the session expires on its own (FR-022) (depends on T038)
-- [ ] T040 [US5] Add the sign-out control to `bottin-admin-ui/src/main/resources/templates/fragments/layout.html`, replacing the existing form POST to `/admin/logout` which belonged to the removed form login, and make it prominent enough to be used on a shared machine
-- [ ] T041 [US5] Run the admin JS suite and `mvn -q verify`, confirm PASS, and commit as `feat(admin-ui): erase the stored key on sign-out` (depends on T039, T040)
+- [X] T039 [US5] Implement sign-out in `bottin-admin-ui/src/main/resources/static/js/admin-signin.js` — `POST /api/v1/auth/logout` **and** erase the stored identity as one action, erasing even if the request fails, because a key left on a device is the worse outcome and the session expires on its own (FR-022) (depends on T038)
+- [X] T040 [US5] Add the sign-out control to `bottin-admin-ui/src/main/resources/templates/fragments/layout.html`, replacing the existing form POST to `/admin/logout` which belonged to the removed form login, and make it prominent enough to be used on a shared machine
+- [X] T041 [US5] Run the admin JS suite and `mvn -q verify`, confirm PASS, and commit as `feat(admin-ui): erase the stored key on sign-out` (depends on T039, T040)
 
 **Checkpoint**: All five stories work. "Signed out" means the device holds nothing.
 
