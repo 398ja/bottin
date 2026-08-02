@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-02
+
+### Added
+- The super administrator can add further administrators from the settings page. Each signs in with
+  their own Nostr key and uses the whole dashboard, so two people can administer one deployment
+  without sharing a private key — the shared secret that key-based sign-in existed to remove.
+- Two roles. The **super administrator** is the key in `BOTTIN_ADMIN_NPUB`, exactly one per
+  deployment, and the only role that may manage administrators. An **administrator** is added from
+  the settings page and can do everything else. The distinction is enforced where the decision is
+  made: an added administrator's session never carries the managing permission, so addressing the
+  endpoints directly is refused exactly as the absent button implies.
+- Removing an administrator ends any session they hold immediately, on their next request rather
+  than at expiry. Revocation that waits is not revocation.
+- Administrator keys are accepted as `npub1…` or hex and stored in one canonical form, so the same
+  key entered either way is one administrator rather than two.
+- Additions, removals, and refused management attempts are recorded in the security log with the
+  administrator who acted.
+
+### Changed
+- The `admin_users` table, dormant since V1, is now used. `V5` drops its `username` and
+  `password_hash` columns — the latter being `NOT NULL` made it impossible to add an administrator
+  without inventing a password, for a feature whose point is that there are none. The table has
+  never held a row in any deployment, so the migration destroys nothing.
+- Adding a key that already administers the deployment, including your own, changes nothing and says
+  so rather than failing. The state asked for already holds. It is reported rather than passed over
+  in silence, so an operator who pasted the wrong key learns nothing was granted.
+
+### Security
+- The master key cannot be removed, edited, or demoted through the interface, and is refused if a
+  request names it directly. Its authority stays in deployment configuration, which is what admits
+  an operator when the database is empty, wrong, or freshly restored.
+
 ## [0.7.0] - 2026-08-02
 
 ### Added
@@ -17,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the NAP handshake. A second copy of key encryption would drift, and the copy that drifts
   silently is the one without tests.
 - Rate limiting on the sign-in handshake, the dashboard's only unauthenticated surface.
+- The passphrase is confirmed at first sign-in. It encrypts the key, is stored nowhere, and cannot be
+  recovered, so a typo did not fail at sign-in — it locked the key away under something the
+  administrator did not know, discovered on their next visit.
 
 ### Changed
 - **BREAKING (deployment):** the admin dashboard no longer accepts a username and password.
@@ -35,6 +70,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The client served shared scripts from its own `static/` directory in preference to the shared
   module, and an explicit `/js/**` resource handler hid the shared location entirely. Both surfaced
   only when checking what the running application actually served.
+- No key could sign in at all. The ACL resolver reads one identity supplied in two encodings; it was
+  written as though the first argument named an application and refused every call. The unit tests
+  asserted the same misreading, so the suite stayed green while the dashboard admitted nobody.
+- Signing in succeeded and every page then returned to the sign-in form. The session filter ran
+  ahead of Spring Security, which begins by replacing the security context — the principal was
+  established and immediately discarded.
+- Every sign-in failure was reported as "That key is not authorised for this deployment", including
+  the rate limit, an unreachable deployment, and the defect above. Naming the one cause an operator
+  cannot act on is why it went unlooked-for. The page now distinguishes them.
 
 ## [0.6.0] - 2026-08-01
 
@@ -141,7 +185,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spring Boot starter for easy integration
 - Docker support with Jib
 
-[Unreleased]: https://github.com/tcheeric/bottin/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/tcheeric/bottin/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/tcheeric/bottin/compare/v0.7.0...v0.8.0
 [0.2.1]: https://github.com/tcheeric/bottin/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/tcheeric/bottin/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/tcheeric/bottin/releases/tag/v0.1.0
