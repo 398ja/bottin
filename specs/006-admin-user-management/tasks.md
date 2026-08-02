@@ -28,7 +28,7 @@ repository root.
 
 **Purpose**: The one dependency the rest of the work needs.
 
-- [ ] T001 Add the nostr-java dependency to `bottin-service/pom.xml`, using the version already managed in the parent `pom.xml` rather than declaring a new one (research D8)
+- [X] T001 Add the nostr-java dependency to `bottin-service/pom.xml`, using the version already managed in the parent `pom.xml` rather than declaring a new one (research D8)
 
 ---
 
@@ -38,14 +38,14 @@ repository root.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Write `bottin-persistence/src/main/resources/db/migration/V5__admin_users_key_based.sql` in the order data-model.md gives: drop index `idx_admin_users_username`, drop column `username`, drop column `password_hash`, add `label VARCHAR(100)`, add `added_by_pubkey VARCHAR(64)`, set `pubkey NOT NULL`, create unique index on `pubkey`
-- [ ] T003 Verify V5 applies on **both** engines — H2 via the test suite, PostgreSQL against the local container. A statement only one accepts passes `mvn verify` and fails on deploy (data-model.md)
-- [ ] T004 [P] Reshape `bottin-core/src/main/java/xyz/tcheeric/bottin/core/model/AdminUserData.java`: drop `username`, `passwordHash`, `withPasswordHash()` and `isAdmin()`; add `label` and `addedByPubkey`; replace `createNew` with one taking canonical pubkey, label, and adder
-- [ ] T005 [P] Add `bottin-core/src/main/java/xyz/tcheeric/bottin/core/exception/AdministratorNotFoundException.java` extending `BottinException`, with an error code, `retryable=false`, and the `{WHAT}. {WHY}. Suggestion: {ACTIONABLE}.` message shape (Principle VI)
-- [ ] T006 Reshape `bottin-persistence/src/main/java/xyz/tcheeric/bottin/persistence/entity/AdminUserEntity.java` to the new columns, removing the `username` index declaration and the `passwordHash` field
-- [ ] T007 Rewrite `bottin-persistence/src/main/java/xyz/tcheeric/bottin/persistence/repository/AdminUserRepository.java` with `findByPubkey`, `existsByPubkey`, `findAllByOrderByCreatedAtAsc`, `deleteByPubkey`; delete the `username`-based methods
-- [ ] T008 [P] Write `bottin-service/src/test/java/xyz/tcheeric/bottin/service/NostrPublicKeysTest.java` first and confirm it fails: npub round-trip, uppercase hex, an npub with a broken checksum, 63- and 65-character strings, empty, and null
-- [ ] T009 Add `bottin-service/src/main/java/xyz/tcheeric/bottin/service/NostrPublicKeys.java` converting `npub1…` or 64-character hex to canonical lowercase hex via nostr-java `Bech32`, returning `Optional.empty()` rather than null for anything else (Principle VIII)
+- [X] T002 Write `bottin-persistence/src/main/resources/db/migration/V5__admin_users_key_based.sql` in the order data-model.md gives: drop index `idx_admin_users_username`, drop column `username`, drop column `password_hash`, add `label VARCHAR(100)`, add `added_by_pubkey VARCHAR(64)`, set `pubkey NOT NULL`, create unique index on `pubkey`
+- [X] T003 Verify V5 applies on **both** engines — H2 via the test suite, PostgreSQL against the local container. A statement only one accepts passes `mvn verify` and fails on deploy (data-model.md)
+- [X] T004 [P] Reshape `bottin-core/src/main/java/xyz/tcheeric/bottin/core/model/AdminUserData.java`: drop `username`, `passwordHash`, `withPasswordHash()` and `isAdmin()`; add `label` and `addedByPubkey`; replace `createNew` with one taking canonical pubkey, label, and adder
+- [X] T005 [P] Add `bottin-core/src/main/java/xyz/tcheeric/bottin/core/exception/AdministratorNotFoundException.java` extending `BottinException`, with an error code, `retryable=false`, and the `{WHAT}. {WHY}. Suggestion: {ACTIONABLE}.` message shape (Principle VI)
+- [X] T006 Reshape `bottin-persistence/src/main/java/xyz/tcheeric/bottin/persistence/entity/AdminUserEntity.java` to the new columns, removing the `username` index declaration and the `passwordHash` field
+- [X] T007 Rewrite `bottin-persistence/src/main/java/xyz/tcheeric/bottin/persistence/repository/AdminUserRepository.java` with `findByPubkey`, `existsByPubkey`, `findAllByOrderByCreatedAtAsc`, `deleteByPubkey`; delete the `username`-based methods
+- [X] T008 [P] Write `bottin-service/src/test/java/xyz/tcheeric/bottin/service/NostrPublicKeysTest.java` first and confirm it fails: npub round-trip, uppercase hex, an npub with a broken checksum, 63- and 65-character strings, empty, and null
+- [X] T009 Add `bottin-service/src/main/java/xyz/tcheeric/bottin/service/NostrPublicKeys.java` converting `npub1…` or 64-character hex to canonical lowercase hex via nostr-java `Bech32`, returning `Optional.empty()` rather than null for anything else (Principle VIII)
 
 **Checkpoint**: schema, model, and canonicalisation exist and are tested.
 
