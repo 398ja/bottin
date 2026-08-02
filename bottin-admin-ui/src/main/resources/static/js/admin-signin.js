@@ -36,11 +36,24 @@ var AdminSignIn = {
      * First sign-in on this device: encrypt the key under the passphrase, keep
      * it here, and prove control of it.
      *
+     * The passphrase is asked for twice and must match. It is the only thing
+     * that can decrypt the key, is stored nowhere, and cannot be recovered — so
+     * a typo here is not a nuisance, it silently locks the key away and the
+     * administrator finds out on the next visit, when they can no longer get
+     * back in without their nsec.
+     *
+     * The check lives here rather than in the page so that no caller can skip
+     * it, and so that it is testable.
+     *
      * A key the deployment refuses is discarded before the failure is reported.
      * Leaving it would mean the next visit shows an unlock prompt that cannot
      * succeed, with no obvious way out.
      */
-    firstSignIn: function (nsec, passphrase) {
+    firstSignIn: function (nsec, passphrase, confirmation) {
+        if (passphrase !== confirmation) {
+            return Promise.reject(new Error('The passphrases do not match.'));
+        }
+
         return NostrCrypto.buildEncryptedIdentity(nsec, passphrase).then(function (identity) {
             localStorage.setItem(AdminSignIn.STORAGE_KEY, JSON.stringify(identity));
 

@@ -59,6 +59,16 @@
                     </p>
                 </div>
 
+                <!-- Asked twice because it cannot be recovered: a typo here does
+                     not fail now, it locks the key away and is discovered on the
+                     next visit, when only the nsec can get the administrator
+                     back in. -->
+                <div class="mb-4">
+                    <label for="admin-passphrase-confirm" class="block text-sm font-medium text-gray-700">Confirm passphrase</label>
+                    <input type="password" id="admin-passphrase-confirm" autocomplete="new-password"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+
                 <button type="button" id="first-signin-btn"
                         class="w-full inline-flex justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
                     Sign in
@@ -130,9 +140,31 @@
                 window.location.href = '/admin/dashboard';
             }
 
+            // What went wrong, as far as the deployment is willing to say.
+            //
+            // Reporting every failure as an unauthorised key is what hid a bug
+            // that refused all keys: the message named the one cause an operator
+            // could do nothing about, so the real cause went unlooked-for. A
+            // rate limit and an unreachable server are ordinary and worth
+            // distinguishing.
+            function failureMessage(error) {
+                if (!error) {
+                    return 'Could not sign in.';
+                }
+                if (error.status === 401 || error.status === 403) {
+                    // Deliberately does not name the key that would be accepted.
+                    return 'That key is not authorised for this deployment.';
+                }
+                if (error.status === 429) {
+                    return 'Too many sign-in attempts. Wait a minute and try again.';
+                }
+                return error.message || 'Could not sign in.';
+            }
+
             firstSignInBtn.addEventListener('click', function () {
                 var nsec = document.getElementById('admin-nsec').value.trim();
                 var passphrase = document.getElementById('admin-passphrase').value;
+                var confirmation = document.getElementById('admin-passphrase-confirm').value;
 
                 clearError();
                 if (!nsec || !passphrase) {
@@ -141,12 +173,11 @@
                 }
 
                 firstSignInBtn.disabled = true;
-                AdminSignIn.firstSignIn(nsec, passphrase)
+                AdminSignIn.firstSignIn(nsec, passphrase, confirmation)
                     .then(onSignedIn)
-                    .catch(function () {
+                    .catch(function (error) {
                         firstSignInBtn.disabled = false;
-                        // Deliberately does not name the key that would be accepted.
-                        showError('That key is not authorised for this deployment.');
+                        showError(failureMessage(error));
                     });
             });
 
@@ -165,7 +196,7 @@
                     .catch(function (error) {
                         unlockBtn.disabled = false;
                         document.getElementById('unlock-passphrase').value = '';
-                        showError(error && error.message ? error.message : 'Could not sign in.');
+                        showError(failureMessage(error));
                     });
             });
 

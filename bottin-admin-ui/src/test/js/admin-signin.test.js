@@ -38,10 +38,28 @@ beforeEach(() => {
 });
 
 describe('first sign-in', () => {
+  // A mistyped passphrase does not fail now — it encrypts the key under
+  // something the administrator does not know, and is discovered on the next
+  // visit when only the nsec can get them back in. Nothing on the server can
+  // help, so the typo has to be caught here.
+  it('refuses when the passphrase and its confirmation differ', async () => {
+    await expect(AdminSignIn.firstSignIn(NSEC, PASSPHRASE, 'mistyped'))
+      .rejects.toThrow('The passphrases do not match.');
+  });
+
+  // Refusing but storing anyway would be the same trap by a different route.
+  it('stores nothing when the confirmation does not match', async () => {
+    await expect(AdminSignIn.firstSignIn(NSEC, PASSPHRASE, 'mistyped')).rejects.toThrow();
+
+    expect(AdminSignIn.stored()).toBeNull();
+    expect(window.NostrCrypto.buildEncryptedIdentity).not.toHaveBeenCalled();
+    expect(window.NapClient.login).not.toHaveBeenCalled();
+  });
+
   // The key is kept so the administrator is not asked for it every session,
   // which is the habit that gets an nsec pasted somewhere it should not be.
   it('stores the encrypted identity on this device', async () => {
-    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE);
+    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE, PASSPHRASE);
 
     const stored = AdminSignIn.stored();
     expect(stored).not.toBeNull();
@@ -52,7 +70,7 @@ describe('first sign-in', () => {
   // The whole security argument: the deployment learns the administrator holds
   // the key without ever receiving it.
   it('never stores the plaintext key or the passphrase', async () => {
-    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE);
+    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE, PASSPHRASE);
 
     const everything = JSON.stringify(localStorage) + JSON.stringify(sessionStorage);
     expect(everything).not.toContain(NSEC);
@@ -62,7 +80,7 @@ describe('first sign-in', () => {
   // Signing proves control of the key; the key itself is the input to signing,
   // not to the request.
   it('proves control of the key it just stored', async () => {
-    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE);
+    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE, PASSPHRASE);
 
     expect(window.NapClient.login).toHaveBeenCalledWith(HEX, NPUB);
   });
@@ -72,7 +90,7 @@ describe('first sign-in', () => {
   it('leaves nothing stored when the key is refused', async () => {
     window.NapClient.login = vi.fn(() => Promise.reject(new Error('Authentication failed')));
 
-    await expect(AdminSignIn.firstSignIn(NSEC, PASSPHRASE)).rejects.toThrow();
+    await expect(AdminSignIn.firstSignIn(NSEC, PASSPHRASE, PASSPHRASE)).rejects.toThrow();
 
     expect(AdminSignIn.stored()).toBeNull();
     expect(localStorage.length).toBe(0);
@@ -82,7 +100,7 @@ describe('first sign-in', () => {
   it('reports the refusal rather than swallowing it', async () => {
     window.NapClient.login = vi.fn(() => Promise.reject(new Error('Authentication failed')));
 
-    await expect(AdminSignIn.firstSignIn(NSEC, PASSPHRASE))
+    await expect(AdminSignIn.firstSignIn(NSEC, PASSPHRASE, PASSPHRASE))
       .rejects.toThrow('Authentication failed');
   });
 });
@@ -96,7 +114,7 @@ describe('stored identity', () => {
 
   // The way back from a forgotten passphrase, which cannot be recovered.
   it('can be discarded deliberately', async () => {
-    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE);
+    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE, PASSPHRASE);
     expect(AdminSignIn.stored()).not.toBeNull();
 
     AdminSignIn.forget();
@@ -112,7 +130,7 @@ describe('unlocking a stored key', () => {
   });
 
   async function withStoredIdentity() {
-    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE);
+    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE, PASSPHRASE);
     window.NapClient.login = vi.fn(() => Promise.resolve());
   }
 
@@ -186,7 +204,7 @@ describe('signing out', () => {
   });
 
   async function signedIn() {
-    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE);
+    await AdminSignIn.firstSignIn(NSEC, PASSPHRASE, PASSPHRASE);
   }
 
   // Ending the session and removing the key are one action. Either half alone
