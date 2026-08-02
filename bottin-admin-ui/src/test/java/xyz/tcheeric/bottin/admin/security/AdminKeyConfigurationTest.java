@@ -77,7 +77,7 @@ class AdminKeyConfigurationTest {
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(null);
 
         // When & Then: whoever asks is refused
-        assertThat(resolver.resolve(AdminPermissions.APP_ID, pubkey).allowed()).isFalse();
+        assertThat(resolver.resolve(pubkey, pubkey).allowed()).isFalse();
     }
 
     /**
@@ -95,7 +95,7 @@ class AdminKeyConfigurationTest {
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver("not-a-key");
 
         // When & Then: whoever asks is refused
-        assertThat(resolver.resolve(AdminPermissions.APP_ID, pubkey).allowed()).isFalse();
+        assertThat(resolver.resolve(pubkey, pubkey).allowed()).isFalse();
     }
 
     /**
@@ -109,7 +109,7 @@ class AdminKeyConfigurationTest {
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
 
         // When & Then
-        assertThat(resolver.resolve(AdminPermissions.APP_ID, null).allowed()).isFalse();
+        assertThat(resolver.resolve(null, null).allowed()).isFalse();
     }
 
     /**

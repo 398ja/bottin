@@ -16,12 +16,6 @@ package xyz.tcheeric.bottin.admin.config;
  */
 public final class AdminPermissions {
 
-    /**
-     * The application this registry belongs to. NAP scopes an ACL record by
-     * application, so this must not collide with the client's.
-     */
-    public static final String APP_ID = "bottin-admin";
-
     /** View the dashboard, records, domains, and settings. */
     public static final String READ = "admin:read";
 

@@ -32,6 +32,10 @@ class ConfiguredAdminAclResolverTest {
     private static final String OTHER_HEX =
             "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
 
+    /** A second real key, for "somebody else" in bech32 form. */
+    private static final String OTHER_NPUB =
+            "npub1antwcjptjquv5k2wkh6mkr2gzayzeg046spy97guwu2p9cy2s8ush27znn";
+
     /**
      * Tests that the configured administrator is admitted as the super
      * administrator, which is the role the whole dashboard is gated on.
@@ -42,7 +46,7 @@ class ConfiguredAdminAclResolverTest {
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
 
         // When: that key proves itself
-        AclDecision decision = resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX);
+        AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
 
         // Then: it is admitted, holding the super administrator role
         assertThat(decision.allowed()).isTrue();
@@ -59,7 +63,7 @@ class ConfiguredAdminAclResolverTest {
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
 
         // When: that key proves itself
-        AclDecision decision = resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX);
+        AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
 
         // Then: read, write, and managing administrators are all granted
         assertThat(decision.permissions()).containsExactlyInAnyOrder(
@@ -76,7 +80,7 @@ class ConfiguredAdminAclResolverTest {
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_HEX);
 
         // When: that key proves itself
-        AclDecision decision = resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX);
+        AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
 
         // Then: it is admitted just as the npub form would be
         assertThat(decision.allowed()).isTrue();
@@ -93,7 +97,7 @@ class ConfiguredAdminAclResolverTest {
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
 
         // When: a different key proves itself
-        AclDecision decision = resolver.resolve(AdminPermissions.APP_ID, OTHER_HEX);
+        AclDecision decision = resolver.resolve(OTHER_HEX, OTHER_HEX);
 
         // Then: it is refused, with no role and no permission
         assertThat(decision.allowed()).isFalse();
@@ -111,7 +115,7 @@ class ConfiguredAdminAclResolverTest {
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(null);
 
         // When: any key proves itself
-        AclDecision decision = resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX);
+        AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
 
         // Then: it is refused
         assertThat(decision.allowed()).isFalse();
@@ -128,7 +132,7 @@ class ConfiguredAdminAclResolverTest {
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver("   ");
 
         // When & Then: nobody is admitted, and the state says why
-        assertThat(resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX).allowed()).isFalse();
+        assertThat(resolver.resolve(ADMIN_NPUB, ADMIN_HEX).allowed()).isFalse();
         assertThat(resolver.keyState()).isEqualTo(AdminKeyState.NOT_CONFIGURED);
     }
 
@@ -143,7 +147,7 @@ class ConfiguredAdminAclResolverTest {
 
         // When & Then: nobody is admitted, and the state distinguishes this from
         // "not configured" so an operator is not sent looking for a missing value
-        assertThat(resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX).allowed()).isFalse();
+        assertThat(resolver.resolve(ADMIN_NPUB, ADMIN_HEX).allowed()).isFalse();
         assertThat(resolver.keyState()).isEqualTo(AdminKeyState.UNREADABLE);
     }
 
@@ -161,16 +165,38 @@ class ConfiguredAdminAclResolverTest {
     }
 
     /**
-     * Tests that a request scoped to another application is refused, so an ACL
-     * record issued for the client cannot be honoured here.
+     * Tests that the administrator is admitted when the identity arrives only in
+     * bech32 form.
+     *
+     * <p>NAP passes the proven identity twice, as {@code (npub, pubkey)}. Reading
+     * that pair as {@code (appId, pubkey)} is what refused every administrator in
+     * 0.7.0 while the whole suite stayed green — the tests asserted the same
+     * misreading as the code. This one is written from the library's own
+     * parameter names.
      */
     @Test
-    void shouldRefuseWhenTheRequestIsForAnotherApplication() {
+    void shouldAdmitTheConfiguredKeyGivenOnlyInBech32Form() {
         // Given: the configured administrator
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
 
-        // When: the administrator's key is offered for a different application
-        AclDecision decision = resolver.resolve("some-other-app", ADMIN_HEX);
+        // When: only the bech32 form of the identity is supplied
+        AclDecision decision = resolver.resolve(ADMIN_NPUB, null);
+
+        // Then: it is admitted
+        assertThat(decision.allowed()).isTrue();
+    }
+
+    /**
+     * Tests that a key that is not the configured one is still refused when it
+     * arrives in bech32 form, so tolerating both encodings did not open a way in.
+     */
+    @Test
+    void shouldRefuseAnotherKeyGivenOnlyInBech32Form() {
+        // Given: the configured administrator
+        ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
+
+        // When: a different key proves itself in bech32 form
+        AclDecision decision = resolver.resolve(OTHER_NPUB, null);
 
         // Then: it is refused
         assertThat(decision.allowed()).isFalse();
@@ -186,7 +212,7 @@ class ConfiguredAdminAclResolverTest {
         ConfiguredAdminAclResolver resolver = new ConfiguredAdminAclResolver(ADMIN_NPUB);
 
         // When: the same key is proven in upper case
-        AclDecision decision = resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX.toUpperCase());
+        AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX.toUpperCase());
 
         // Then: it is admitted
         assertThat(decision.allowed()).isTrue();
@@ -233,7 +259,7 @@ class ConfiguredAdminAclResolverTest {
         captureLogs();
 
         // When
-        resolver.resolve(AdminPermissions.APP_ID, OTHER_HEX);
+        resolver.resolve(OTHER_HEX, OTHER_HEX);
 
         // Then
         assertThat(loggedMessages()).contains("admin_signin_rejected", "reason=not_authorised");
@@ -250,7 +276,7 @@ class ConfiguredAdminAclResolverTest {
         captureLogs();
 
         // When
-        resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX);
+        resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
 
         // Then
         assertThat(loggedMessages()).contains("reason=no_admin_key_configured");
@@ -268,7 +294,7 @@ class ConfiguredAdminAclResolverTest {
         captureLogs();
 
         // When
-        resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX);
+        resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
 
         // Then
         assertThat(loggedMessages()).contains("reason=admin_key_unreadable");
@@ -286,7 +312,7 @@ class ConfiguredAdminAclResolverTest {
         captureLogs();
 
         // When
-        resolver.resolve(AdminPermissions.APP_ID, ADMIN_HEX);
+        resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
 
         // Then
         assertThat(loggedMessages()).contains("admin_signin_succeeded", ADMIN_HEX,

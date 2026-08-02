@@ -85,13 +85,13 @@ public class ConfiguredAdminAclResolver implements AclResolver {
         return keyState;
     }
 
+    /**
+     * Both arguments are the same identity: NAP supplies it as bech32 and as
+     * hex. Neither names an application — there is nothing here to check a
+     * caller's identity <em>against</em> beyond the configured key.
+     */
     @Override
-    public AclDecision resolve(String appId, String pubkey) {
-        if (!AdminPermissions.APP_ID.equals(appId)) {
-            log.warn("admin_signin_rejected reason=wrong_application app_id={}", appId);
-            return AclDecision.denied("wrong_application");
-        }
-
+    public AclDecision resolve(String npub, String pubkey) {
         if (administratorHex == null) {
             String reason = keyState == AdminKeyState.NOT_CONFIGURED
                     ? "no_admin_key_configured"
@@ -100,13 +100,38 @@ public class ConfiguredAdminAclResolver implements AclResolver {
             return AclDecision.denied(reason);
         }
 
-        if (pubkey == null || !administratorHex.equalsIgnoreCase(pubkey.trim())) {
-            log.warn("admin_signin_rejected reason=not_authorised pubkey={}", pubkey);
+        String provenHex = provenKeyAsHex(npub, pubkey);
+        if (provenHex == null) {
+            log.warn("admin_signin_rejected reason=no_key_proven");
+            return AclDecision.denied("no_key_proven");
+        }
+
+        if (!administratorHex.equals(provenHex)) {
+            log.warn("admin_signin_rejected reason=not_authorised pubkey={}", provenHex);
             return AclDecision.denied("not_authorised");
         }
 
-        log.info("admin_signin_succeeded pubkey={} role={}", pubkey, AdminPermissions.SUPER_ADMIN);
+        log.info("admin_signin_succeeded pubkey={} role={}", provenHex, AdminPermissions.SUPER_ADMIN);
         return AclDecision.allowed(List.of(AdminPermissions.SUPER_ADMIN), SUPER_ADMIN_PERMISSIONS);
+    }
+
+    /**
+     * The proven identity in canonical hex, or null when neither argument
+     * carries one.
+     *
+     * <p>Each argument is normalised rather than trusted to hold the encoding
+     * its name suggests, so the comparison holds whichever way round the two
+     * arrive. This is not defensive padding: assuming the order is exactly what
+     * refused every administrator in 0.7.0, and the assumption bought nothing
+     * because both arguments denote the same key.
+     */
+    private static String provenKeyAsHex(String npub, String pubkey) {
+        String fromPubkey = normalise(pubkey);
+        return fromPubkey != null ? fromPubkey : normalise(npub);
+    }
+
+    private static String normalise(String key) {
+        return key == null || key.isBlank() ? null : toCanonicalHex(key.trim());
     }
 
     /**
