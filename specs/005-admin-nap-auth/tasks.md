@@ -80,7 +80,7 @@ tests, `src/main/resources/templates/admin/` for pages. Browser JS currently liv
 
 ### Tests for User Story 1
 
-- [ ] T015 [US1] Write `AdminAccessControlTest` in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAccessControlTest.java` enumerating every route in the table in `contracts/admin-access-contract.md` and asserting each is reachable with a `super-admin` session and redirects without one — written as an enumeration so a route added later without protection fails the suite; confirm it FAILS
+- [X] T015 [US1] Write `AdminAccessControlTest` in `bottin-admin-ui/src/test/java/xyz/tcheeric/bottin/admin/controller/AdminAccessControlTest.java` enumerating every route in the table in `contracts/admin-access-contract.md` and asserting each is reachable with a `super-admin` session and redirects without one — written as an enumeration so a route added later without protection fails the suite; confirm it FAILS
 - [X] T016 [P] [US1] Write the first-sign-in browser tests in `bottin-admin-ui/src/test/js/admin-signin.test.js` per `contracts/browser-identity.md` — an encrypted identity is stored, the plaintext nsec is absent from storage, and the passphrase appears in no storage key; confirm they FAIL
 
 ### Implementation for User Story 1
