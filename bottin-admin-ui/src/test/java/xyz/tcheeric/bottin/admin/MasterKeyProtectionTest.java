@@ -9,7 +9,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import xyz.tcheeric.bottin.admin.app.BottinAdminApplication;
+import xyz.tcheeric.bottin.admin.config.AdminPermissionRegistryConfig;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.nap.server.acl.PermissionRegistry;
+import xyz.tcheeric.nap.server.acl.RoleDefinition;
 import xyz.tcheeric.bottin.persistence.repository.AdminUserRepository;
 import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.nap.core.SessionRecord;
@@ -146,10 +149,9 @@ class MasterKeyProtectionTest {
         long now = Instant.now().getEpochSecond();
 
         boolean isMaster = MASTER_HEX.equals(pubkeyHex);
-        List<String> roles = List.of(isMaster ? AdminPermissions.SUPER_ADMIN : AdminPermissions.ADMIN);
-        List<String> permissions = isMaster
-                ? List.of(AdminPermissions.READ, AdminPermissions.WRITE, AdminPermissions.MANAGE_ADMINS)
-                : List.of(AdminPermissions.READ, AdminPermissions.WRITE);
+        String roleKey = isMaster ? AdminPermissions.SUPER_ADMIN : AdminPermissions.ADMIN;
+        List<String> roles = List.of(roleKey);
+        List<String> permissions = permissionsOf(roleKey);
 
         sessionStore.createForChallenge(SessionRecord.create(
                 sessionId,
@@ -164,4 +166,23 @@ class MasterKeyProtectionTest {
 
         return new Cookie(SESSION_COOKIE, sessionId);
     }
+
+    /**
+     * The permissions the deployment's registry grants a role.
+     *
+     * <p>Read from the registry rather than listed here, so this test cannot
+     * assert a permission set the application does not actually issue — which is
+     * how a session in a test can pass a route the same session would fail in
+     * production.
+     */
+    private static List<String> permissionsOf(String roleKey) {
+        PermissionRegistry registry = new AdminPermissionRegistryConfig().adminPermissionRegistry();
+        return registry.roles().stream()
+                .filter(role -> role.key().equals(roleKey))
+                .findFirst()
+                .map(RoleDefinition::permissions)
+                .map(List::copyOf)
+                .orElseThrow(() -> new IllegalStateException("registry declares no role " + roleKey));
+    }
+
 }
