@@ -103,18 +103,29 @@ the passphrase alone resumes work.
 ## Manage administrators
 
 The configured key is the **super administrator**. From `/admin/settings` it can
-grant the same access to colleagues, each signing in with their own key.
+grant access to colleagues, each signing in with their own key.
 
-### Two roles
+### The roles
 
-| | Super administrator | Administrator |
-|---|---|---|
-| Where it comes from | `BOTTIN_ADMIN_NPUB` | Added on the settings page |
-| How many | Exactly one | Any number |
-| Dashboard, records, domains, settings | Yes | Yes |
-| Add and remove administrators | Yes | **No** |
+| | Super administrator | Administrator | Read-only |
+|---|---|---|---|
+| Where it comes from | `BOTTIN_ADMIN_NPUB` | Added on the settings page | Set directly in the database |
+| How many | Exactly one | Any number | Any number |
+| View dashboard, records, domains, settings | Yes | Yes | Yes |
+| Create and change records and domains | Yes | Yes | **No** |
+| Change deployment settings | Yes | **No** | **No** |
+| Add and remove administrators | Yes | **No** | **No** |
 
-The refusal is enforced where the decision is made, not by hiding a button: an
+Deployment settings — relay topology and the media server — are the super
+administrator's alone. They apply to every request the registry serves and take
+effect without a restart, which is a wider reach than editing a record, so
+adding a colleague to maintain records does not also hand them the deployment.
+
+The read-only role has no control on the settings page; it is set by writing
+`READONLY` to `admin_users.role`. Every other administrator added through the
+page is an ordinary administrator.
+
+Each refusal is enforced where the decision is made, not by hiding a button: an
 administrator who issues the request directly is refused just the same, and the
 attempt is logged.
 
