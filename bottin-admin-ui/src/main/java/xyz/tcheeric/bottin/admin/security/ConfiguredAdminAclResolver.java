@@ -4,12 +4,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.bottin.core.model.AdminRole;
 import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.bottin.service.NostrPublicKeys;
 import xyz.tcheeric.nap.core.AclDecision;
 import xyz.tcheeric.nap.server.AclResolver;
+import xyz.tcheeric.nap.server.acl.PermissionRegistry;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Decides who administers this deployment.
@@ -26,10 +29,17 @@ import java.util.List;
  * behind — therefore cannot demote its holder. Only then is the stored list of
  * added administrators consulted.
  *
- * <p>The difference between the two roles lives here and nowhere else: an added
- * administrator's session never carries {@link AdminPermissions#MANAGE_ADMINS},
- * so the permission interceptor refuses them the management endpoints whether or
- * not a page offered the control.
+ * <p>What each role <em>may do</em> is not decided here. This class decides which
+ * role a proven key holds; {@link xyz.tcheeric.bottin.admin.config.AdminPermissionRegistryConfig}
+ * declares what that role grants, and is validated at startup. An added
+ * administrator's session still never carries
+ * {@link AdminPermissions#MANAGE_ADMINS} — the registry withholds it — so the
+ * permission interceptor refuses them the management endpoints whether or not a
+ * page offered the control.
+ *
+ * <p>The stored role is read rather than assumed. An entry recorded as
+ * {@code READONLY} is admitted as such, which it was not while this class
+ * granted every stored administrator the same fixed set.
  *
  * <p>A public key is not a secret, which is what makes it safe to hold in
  * configuration where a password should not be.
@@ -46,21 +56,12 @@ import java.util.List;
 public class ConfiguredAdminAclResolver implements AclResolver {
 
     /**
-     * Everything the dashboard can do. The super administrator is the only role
-     * this feature grants; the follow-up adds one holding all but
-     * {@link AdminPermissions#MANAGE_ADMINS}.
+     * Which role holds which permission. Consulted rather than restated, so a
+     * change to the registry reaches sign-in without an edit here, and a role
+     * naming an undeclared permission stops the application at startup instead
+     * of producing an unreachable route.
      */
-    private static final List<String> SUPER_ADMIN_PERMISSIONS =
-            List.of(AdminPermissions.READ, AdminPermissions.WRITE, AdminPermissions.MANAGE_ADMINS);
-
-    /**
-     * Everything an added administrator can do: the whole dashboard except
-     * managing administrators. The absence of {@link AdminPermissions#MANAGE_ADMINS}
-     * here is the entire difference between the two roles, and it is enforced by
-     * the permission interceptor rather than by which controls a page renders.
-     */
-    private static final List<String> ADMIN_PERMISSIONS =
-            List.of(AdminPermissions.READ, AdminPermissions.WRITE);
+    private final PermissionRegistry registry;
 
     /**
      * The configured administrator in canonical hex, or null when the
@@ -75,8 +76,10 @@ public class ConfiguredAdminAclResolver implements AclResolver {
     private final AdminUserService storedAdministrators;
 
     public ConfiguredAdminAclResolver(@Value("${bottin.admin.npub:}") String configuredKey,
-                                      AdminUserService storedAdministrators) {
+                                      AdminUserService storedAdministrators,
+                                      PermissionRegistry registry) {
         this.storedAdministrators = storedAdministrators;
+        this.registry = registry;
 
         if (configuredKey == null || configuredKey.isBlank()) {
             this.administratorHex = null;
@@ -122,13 +125,12 @@ public class ConfiguredAdminAclResolver implements AclResolver {
         }
 
         if (provenHex.equals(administratorHex)) {
-            log.info("admin_signin_succeeded pubkey={} role={}", provenHex, AdminPermissions.SUPER_ADMIN);
-            return AclDecision.allowed(List.of(AdminPermissions.SUPER_ADMIN), SUPER_ADMIN_PERMISSIONS);
+            return admit(provenHex, AdminPermissions.SUPER_ADMIN);
         }
 
-        if (storedAdministrators.isAdministrator(provenHex)) {
-            log.info("admin_signin_succeeded pubkey={} role={}", provenHex, AdminPermissions.ADMIN);
-            return AclDecision.allowed(List.of(AdminPermissions.ADMIN), ADMIN_PERMISSIONS);
+        Optional<AdminRole> storedRole = storedAdministrators.roleOf(provenHex);
+        if (storedRole.isPresent()) {
+            return admit(provenHex, registryRoleKey(storedRole.get()));
         }
 
         if (administratorHex == null) {
@@ -144,6 +146,51 @@ public class ConfiguredAdminAclResolver implements AclResolver {
 
         log.warn("admin_signin_rejected reason=not_authorised pubkey={}", provenHex);
         return AclDecision.denied("not_authorised");
+    }
+
+    /**
+     * Admits a proven key under a role, with the permissions the registry says
+     * that role holds.
+     *
+     * <p>A role the registry does not declare is refused rather than admitted
+     * with an empty permission set. The two are not the same: an empty set would
+     * pass every {@code allowed()} check while failing every route, which is far
+     * harder to diagnose than a refusal that names the role.
+     */
+    private AclDecision admit(String provenHex, String roleKey) {
+        Optional<List<String>> permissions = permissionsFor(roleKey);
+
+        if (permissions.isEmpty()) {
+            log.error("admin_signin_rejected reason=role_not_in_registry role={} pubkey={} "
+                    + "impact=this administrator cannot sign in until the registry declares the role",
+                    roleKey, provenHex);
+            return AclDecision.denied("role_not_in_registry");
+        }
+
+        log.info("admin_signin_succeeded pubkey={} role={}", provenHex, roleKey);
+        return AclDecision.allowed(List.of(roleKey), permissions.get());
+    }
+
+    /** The permissions the registry grants a role, or empty if it declares no such role. */
+    private Optional<List<String>> permissionsFor(String roleKey) {
+        return registry.roles().stream()
+                .filter(role -> role.key().equals(roleKey))
+                .findFirst()
+                .map(role -> List.copyOf(role.permissions()));
+    }
+
+    /**
+     * The registry key for a stored role.
+     *
+     * <p>An exhaustive switch with no default, so adding a constant to
+     * {@link AdminRole} is a compile error here rather than a new role silently
+     * inheriting an existing one's permissions.
+     */
+    private static String registryRoleKey(AdminRole role) {
+        return switch (role) {
+            case ADMIN -> AdminPermissions.ADMIN;
+            case READONLY -> AdminPermissions.READONLY;
+        };
     }
 
     /**

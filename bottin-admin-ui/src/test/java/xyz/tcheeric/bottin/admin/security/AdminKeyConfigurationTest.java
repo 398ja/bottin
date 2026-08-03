@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
+import xyz.tcheeric.bottin.admin.config.AdminPermissionRegistryConfig;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
 import xyz.tcheeric.bottin.service.AdminUserService;
 
@@ -40,7 +41,8 @@ class AdminKeyConfigurationTest {
     private final AdminUserService storedAdministrators = mock(AdminUserService.class);
 
     private ConfiguredAdminAclResolver resolverFor(String configuredKey) {
-        return new ConfiguredAdminAclResolver(configuredKey, storedAdministrators);
+        return new ConfiguredAdminAclResolver(configuredKey, storedAdministrators,
+                new AdminPermissionRegistryConfig().adminPermissionRegistry());
     }
 
     private static final String ADMIN_NPUB =

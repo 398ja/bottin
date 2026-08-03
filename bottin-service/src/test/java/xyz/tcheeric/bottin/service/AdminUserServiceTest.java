@@ -228,15 +228,30 @@ class AdminUserServiceTest {
     }
 
     /**
-     * Tests the question the ACL resolver asks on every sign-in: is this proven
-     * key an administrator?
+     * Tests the question the ACL resolver asks on every sign-in: which role does
+     * this proven key administer under?
      */
     @Test
     void shouldRecogniseAStoredAdministrator() {
         when(repository.findByPubkey(HEX)).thenReturn(java.util.Optional.of(
                 AdminUserEntity.builder().pubkey(HEX).role(AdminRole.ADMIN).enabled(true).build()));
 
-        assertThat(service(MASTER_NPUB).isAdministrator(HEX)).isTrue();
+        assertThat(service(MASTER_NPUB).roleOf(HEX)).contains(AdminRole.ADMIN);
+    }
+
+    /**
+     * Tests that the stored role is returned rather than a fixed one.
+     *
+     * <p>The role column has existed since V1 and was read by nothing, so a
+     * read-only administrator was granted write access. Asserting the value
+     * comes back is what makes the column mean something.
+     */
+    @Test
+    void shouldReturnTheStoredRoleRatherThanAssumingAdmin() {
+        when(repository.findByPubkey(HEX)).thenReturn(java.util.Optional.of(
+                AdminUserEntity.builder().pubkey(HEX).role(AdminRole.READONLY).enabled(true).build()));
+
+        assertThat(service(MASTER_NPUB).roleOf(HEX)).contains(AdminRole.READONLY);
     }
 
     /**
@@ -248,7 +263,7 @@ class AdminUserServiceTest {
         when(repository.findByPubkey(HEX)).thenReturn(java.util.Optional.of(
                 AdminUserEntity.builder().pubkey(HEX).role(AdminRole.ADMIN).enabled(false).build()));
 
-        assertThat(service(MASTER_NPUB).isAdministrator(HEX)).isFalse();
+        assertThat(service(MASTER_NPUB).roleOf(HEX)).isEmpty();
     }
 
     /**
@@ -258,7 +273,7 @@ class AdminUserServiceTest {
     void shouldRefuseAnUnknownKey() {
         when(repository.findByPubkey(HEX)).thenReturn(java.util.Optional.empty());
 
-        assertThat(service(MASTER_NPUB).isAdministrator(HEX)).isFalse();
+        assertThat(service(MASTER_NPUB).roleOf(HEX)).isEmpty();
     }
 
     /**

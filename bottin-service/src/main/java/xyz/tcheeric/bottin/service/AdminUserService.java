@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.tcheeric.bottin.core.exception.AdministratorNotFoundException;
+import xyz.tcheeric.bottin.core.model.AdminRole;
 import xyz.tcheeric.bottin.core.model.AdminUserData;
 import xyz.tcheeric.bottin.persistence.entity.AdminUserEntity;
 import xyz.tcheeric.bottin.persistence.repository.AdminUserRepository;
@@ -105,16 +106,24 @@ public class AdminUserService {
     }
 
     /**
-     * Whether a proven key is an administrator. The question the ACL resolver
-     * asks on every sign-in.
+     * The role a proven key administers under, or empty when it administers
+     * nothing. The question the ACL resolver asks on every sign-in.
+     *
+     * <p>Returns the role rather than a yes-or-no because the stored role is
+     * what distinguishes an administrator from a read-only one. Answering only
+     * "is an administrator" is what left {@code admin_users.role} unread, so a
+     * row saying {@code READONLY} was granted write access regardless.
+     *
+     * <p>A disabled administrator administers nothing, so their role is not
+     * returned — the filter is the suspension check, not a detail of the lookup.
      *
      * @param pubkeyHex canonical lowercase hex
      */
     @Transactional(readOnly = true)
-    public boolean isAdministrator(String pubkeyHex) {
+    public Optional<AdminRole> roleOf(String pubkeyHex) {
         return repository.findByPubkey(pubkeyHex)
                 .filter(AdminUserEntity::isEnabled)
-                .isPresent();
+                .map(AdminUserEntity::getRole);
     }
 
     /**

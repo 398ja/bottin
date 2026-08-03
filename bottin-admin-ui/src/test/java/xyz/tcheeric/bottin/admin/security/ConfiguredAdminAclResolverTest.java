@@ -7,10 +7,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
 import java.util.stream.Collectors;
+import xyz.tcheeric.bottin.admin.config.AdminPermissionRegistryConfig;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.bottin.core.model.AdminRole;
 import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.nap.core.AclDecision;
+import xyz.tcheeric.nap.server.acl.PermissionRegistry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -40,13 +44,27 @@ class ConfiguredAdminAclResolverTest {
             "npub1antwcjptjquv5k2wkh6mkr2gzayzeg046spy97guwu2p9cy2s8ush27znn";
 
     /**
-     * The stored administrator list. Answers false for every key unless a test
-     * says otherwise, so the configured-key cases stay unaffected by it.
+     * The stored administrator list. Answers {@code Optional.empty()} for every
+     * key unless a test says otherwise, so the configured-key cases stay
+     * unaffected by it.
      */
     private final AdminUserService storedAdministrators = mock(AdminUserService.class);
 
+    /**
+     * The production registry, not a stand-in. A registry written here could
+     * declare a mapping the deployment does not, and the tests below would then
+     * agree with themselves while the application granted something else.
+     */
+    private static final PermissionRegistry REGISTRY =
+            new AdminPermissionRegistryConfig().adminPermissionRegistry();
+
     private ConfiguredAdminAclResolver resolverFor(String configuredKey) {
-        return new ConfiguredAdminAclResolver(configuredKey, storedAdministrators);
+        return new ConfiguredAdminAclResolver(configuredKey, storedAdministrators, REGISTRY);
+    }
+
+    /** Stores {@code pubkey} as an administrator holding {@code role}. */
+    private void stored(String pubkey, AdminRole role) {
+        when(storedAdministrators.roleOf(pubkey)).thenReturn(Optional.of(role));
     }
 
     /**
@@ -56,7 +74,7 @@ class ConfiguredAdminAclResolverTest {
     @Test
     void shouldAdmitAStoredAdministrator() {
         // Given: a key that is not the configured one but is a stored administrator
-        when(storedAdministrators.isAdministrator(OTHER_HEX)).thenReturn(true);
+        stored(OTHER_HEX, AdminRole.ADMIN);
 
         // When: that key proves itself
         AclDecision decision = resolverFor(ADMIN_NPUB).resolve(OTHER_NPUB, OTHER_HEX);
@@ -73,7 +91,7 @@ class ConfiguredAdminAclResolverTest {
      */
     @Test
     void shouldNotGrantManageAdminsToAStoredAdministrator() {
-        when(storedAdministrators.isAdministrator(OTHER_HEX)).thenReturn(true);
+        stored(OTHER_HEX, AdminRole.ADMIN);
 
         AclDecision decision = resolverFor(ADMIN_NPUB).resolve(OTHER_NPUB, OTHER_HEX);
 
@@ -102,7 +120,7 @@ class ConfiguredAdminAclResolverTest {
      */
     @Test
     void shouldPreferConfigurationWhenTheMasterKeyIsAlsoStored() {
-        when(storedAdministrators.isAdministrator(ADMIN_HEX)).thenReturn(true);
+        stored(ADMIN_HEX, AdminRole.ADMIN);
 
         AclDecision decision = resolverFor(ADMIN_NPUB).resolve(ADMIN_NPUB, ADMIN_HEX);
 
@@ -116,7 +134,7 @@ class ConfiguredAdminAclResolverTest {
      */
     @Test
     void shouldAdmitAStoredAdministratorWhenTheMasterKeyIsUnreadable() {
-        when(storedAdministrators.isAdministrator(OTHER_HEX)).thenReturn(true);
+        stored(OTHER_HEX, AdminRole.ADMIN);
 
         AclDecision decision = resolverFor("not-a-key").resolve(OTHER_NPUB, OTHER_HEX);
 
@@ -153,9 +171,85 @@ class ConfiguredAdminAclResolverTest {
         // When: that key proves itself
         AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
 
-        // Then: read, write, and managing administrators are all granted
+        // Then: every declared permission is granted
         assertThat(decision.permissions()).containsExactlyInAnyOrder(
-                AdminPermissions.READ, AdminPermissions.WRITE, AdminPermissions.MANAGE_ADMINS);
+                AdminPermissions.READ, AdminPermissions.WRITE,
+                AdminPermissions.SETTINGS_WRITE, AdminPermissions.MANAGE_ADMINS);
+    }
+
+    /**
+     * Tests that an administrator stored as READONLY is admitted holding only
+     * the read permission.
+     *
+     * <p>The column has accepted READONLY since V1 and nothing read it, so such
+     * a row was granted write access. This is the assertion that the value now
+     * decides something.
+     */
+    @Test
+    void shouldGrantOnlyReadToAStoredReadonlyAdministrator() {
+        // Given: a stored administrator recorded as read-only
+        stored(OTHER_HEX, AdminRole.READONLY);
+
+        // When: that key proves itself
+        AclDecision decision = resolverFor(ADMIN_NPUB).resolve(OTHER_NPUB, OTHER_HEX);
+
+        // Then: admitted, but holding nothing that changes anything
+        assertThat(decision.allowed()).isTrue();
+        assertThat(decision.roles()).containsExactly(AdminPermissions.READONLY);
+        assertThat(decision.permissions()).containsExactly(AdminPermissions.READ);
+    }
+
+    /**
+     * Tests that the settings permission is withheld from a read-only
+     * administrator, asserted separately because it is the permission this
+     * change introduced and the one a role split exists to withhold.
+     */
+    @Test
+    void shouldNotGrantSettingsWriteToAStoredReadonlyAdministrator() {
+        stored(OTHER_HEX, AdminRole.READONLY);
+
+        AclDecision decision = resolverFor(ADMIN_NPUB).resolve(OTHER_NPUB, OTHER_HEX);
+
+        assertThat(decision.permissions())
+                .doesNotContain(AdminPermissions.SETTINGS_WRITE, AdminPermissions.WRITE);
+    }
+
+    /**
+     * Tests that an added administrator can write records but not settings.
+     *
+     * <p>Both halves in one test because the single assertion is the
+     * distinction: holding {@code admin:write} while lacking
+     * {@code admin:settings-write} is what the split means. Asserting only the
+     * absence would pass equally for a role that could do nothing at all.
+     */
+    @Test
+    void shouldGrantWriteButNotSettingsWriteToAStoredAdministrator() {
+        stored(OTHER_HEX, AdminRole.ADMIN);
+
+        AclDecision decision = resolverFor(ADMIN_NPUB).resolve(OTHER_NPUB, OTHER_HEX);
+
+        assertThat(decision.permissions())
+                .contains(AdminPermissions.WRITE)
+                .doesNotContain(AdminPermissions.SETTINGS_WRITE);
+    }
+
+    /**
+     * Tests that a disabled administrator is refused.
+     *
+     * <p>Asserted here rather than only on the service because the resolver is
+     * what a disabled administrator would reach: the service returns no role for
+     * them, and this confirms the resolver treats that as "not an administrator"
+     * rather than as a role to look up.
+     */
+    @Test
+    void shouldRefuseAnAdministratorTheStoreReportsNoRoleFor() {
+        // Given: the store answers empty, as it does for a disabled entry
+        // When
+        AclDecision decision = resolverFor(ADMIN_NPUB).resolve(OTHER_NPUB, OTHER_HEX);
+
+        // Then
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.permissions()).isEmpty();
     }
 
     /**
