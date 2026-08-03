@@ -13,8 +13,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import xyz.tcheeric.bottin.admin.app.BottinAdminApplication;
+import xyz.tcheeric.bottin.admin.config.AdminPermissionRegistryConfig;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.nap.server.acl.PermissionRegistry;
+import xyz.tcheeric.nap.server.acl.RoleDefinition;
 import xyz.tcheeric.bottin.admin.config.RefusedAdminRequestLogFilter;
+import xyz.tcheeric.bottin.core.model.AdminRole;
+import xyz.tcheeric.bottin.persistence.entity.AdminUserEntity;
 import xyz.tcheeric.bottin.persistence.repository.AdminUserRepository;
 import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.nap.core.SessionRecord;
@@ -54,6 +59,15 @@ class AdministratorRoleBoundaryTest {
     private static final String ADMIN_HEX = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
 
     private static final String OTHER_NPUB = "npub1sn0wdenkukak0d9dfczzeacvhkrgz92ak56egt7vdgzn8pv2wfqqhrjdv9";
+
+    /**
+     * The same key as {@link #OTHER_NPUB}, in canonical hex. Decoded rather than
+     * written out, because a hand-copied hex that is not that npub would store
+     * an administrator nobody signs in as, and the test would pass by admitting
+     * nothing rather than by refusing correctly.
+     */
+    private static final String OTHER_HEX =
+            xyz.tcheeric.bottin.service.NostrPublicKeys.toCanonicalHex(OTHER_NPUB).orElseThrow();
 
     private static final String SESSION_COOKIE = "admin_session";
 
@@ -205,17 +219,20 @@ class AdministratorRoleBoundaryTest {
      * {@link AdminPermissions#MANAGE_ADMINS}.
      */
     private Cookie sessionFor(String pubkeyHex) {
+        boolean isMaster = MASTER_HEX.equals(pubkeyHex);
+        return sessionForRole(pubkeyHex,
+                isMaster ? AdminPermissions.SUPER_ADMIN : AdminPermissions.ADMIN);
+    }
+
+    private Cookie sessionForRole(String pubkeyHex, String roleKey) {
         // The cookie carries the session id: NapSessionFilter resolves the
         // session with getBySessionId, not by access token.
         String sessionId = UUID.randomUUID().toString();
         String accessToken = UUID.randomUUID().toString().replace("-", "");
         long now = Instant.now().getEpochSecond();
 
-        boolean isMaster = MASTER_HEX.equals(pubkeyHex);
-        List<String> roles = List.of(isMaster ? AdminPermissions.SUPER_ADMIN : AdminPermissions.ADMIN);
-        List<String> permissions = isMaster
-                ? List.of(AdminPermissions.READ, AdminPermissions.WRITE, AdminPermissions.MANAGE_ADMINS)
-                : List.of(AdminPermissions.READ, AdminPermissions.WRITE);
+        List<String> roles = List.of(roleKey);
+        List<String> permissions = permissionsOf(roleKey);
 
         sessionStore.createForChallenge(SessionRecord.create(
                 sessionId,
@@ -230,4 +247,113 @@ class AdministratorRoleBoundaryTest {
 
         return new Cookie(SESSION_COOKIE, sessionId);
     }
+
+    /**
+     * Tests that a session without {@code admin:settings-write} is refused the
+     * settings write, by the interceptor rather than by the page.
+     *
+     * <p>Booted rather than sliced deliberately: a {@code @WebMvcTest} does not
+     * load nap's auto-configuration, so it would admit this request and pass
+     * while asserting nothing about the permission.
+     */
+    @Test
+    void shouldRefuseTheSettingsWriteToASessionWithoutSettingsWrite() throws Exception {
+        // Given: an administrator stored as read-only
+        Cookie readonly = readonlyAdministratorSession();
+
+        // When: it submits the settings form
+        // Then: the interceptor refuses it
+        mockMvc.perform(post("/admin/settings").cookie(readonly).with(csrf())
+                        .param("rateLimitPerMinute", "60"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Tests that a read-only session can still see the settings page.
+     *
+     * <p>Withholding the write must not withhold the read: a role that cannot be
+     * used to look at anything is not a read-only role, and the failure would be
+     * invisible if only the refusal above were asserted.
+     */
+    @Test
+    void shouldStillAllowAReadonlySessionToViewSettings() throws Exception {
+        Cookie readonly = readonlyAdministratorSession();
+
+        mockMvc.perform(get("/admin/settings").cookie(readonly))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * A session for an administrator stored as {@code READONLY}.
+     *
+     * <p>The row is written directly because no page offers the role, and
+     * because the row is what decides: {@code NapSessionFilter} re-resolves the
+     * ACL on every request and replaces the session's permissions with the
+     * resolver's answer. A session record built here with read-only permissions
+     * would be silently upgraded to whatever the stored role grants — which is
+     * exactly what made an earlier version of this test pass while asserting
+     * nothing.
+     */
+    private Cookie readonlyAdministratorSession() {
+        repository.save(AdminUserEntity.builder()
+                .pubkey(OTHER_HEX)
+                .label("Read-only")
+                .role(AdminRole.READONLY)
+                .enabled(true)
+                .addedByPubkey(MASTER_HEX)
+                .createdAt(Instant.now())
+                .build());
+        return sessionForRole(OTHER_HEX, AdminPermissions.READONLY);
+    }
+
+    /**
+     * Tests that an added administrator cannot change deployment settings.
+     *
+     * <p>This is the assertion that gives {@code admin:settings-write} a reason
+     * to exist. The administrator seeded by {@code @BeforeEach} holds
+     * {@code admin:write} and writes records freely; the settings write is
+     * refused because it is the one capability their role withholds. Revert the
+     * annotation on {@code saveSettings} to {@code admin:write} and this fails.
+     */
+    @Test
+    void shouldRefuseTheSettingsWriteToAnAddedAdministrator() throws Exception {
+        mockMvc.perform(post("/admin/settings").cookie(sessionFor(ADMIN_HEX)).with(csrf())
+                        .param("rateLimitPerMinute", "60"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Tests that the super administrator is allowed the same write, so the
+     * refusal above is about the role rather than about the request.
+     *
+     * <p>Asserting "not forbidden" rather than a status: the point is the
+     * permission boundary, and the form's own validation decides the rest.
+     */
+    @Test
+    void shouldAllowTheSuperAdministratorToWriteSettings() throws Exception {
+        mockMvc.perform(post("/admin/settings").cookie(sessionFor(MASTER_HEX)).with(csrf())
+                        .param("rateLimitPerMinute", "60"))
+                .andExpect(result -> assertThat(result.getResponse().getStatus())
+                        .as("the super administrator holds admin:settings-write")
+                        .isNotEqualTo(403));
+    }
+
+    /**
+     * The permissions the deployment's registry grants a role.
+     *
+     * <p>Read from the registry rather than listed here, so this test cannot
+     * assert a permission set the application does not actually issue — which is
+     * how a session in a test can pass a route the same session would fail in
+     * production.
+     */
+    private static List<String> permissionsOf(String roleKey) {
+        PermissionRegistry registry = new AdminPermissionRegistryConfig().adminPermissionRegistry();
+        return registry.roles().stream()
+                .filter(role -> role.key().equals(roleKey))
+                .findFirst()
+                .map(RoleDefinition::permissions)
+                .map(List::copyOf)
+                .orElseThrow(() -> new IllegalStateException("registry declares no role " + roleKey));
+    }
+
 }

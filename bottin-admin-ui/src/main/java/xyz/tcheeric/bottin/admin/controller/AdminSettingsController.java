@@ -80,7 +80,7 @@ public class AdminSettingsController {
      * <p>A rejected submission re-renders the form rather than redirecting, so
      * the operator keeps what they typed alongside the error that explains it.
      */
-    @RequiresPermission(AdminPermissions.WRITE)
+    @RequiresPermission(AdminPermissions.SETTINGS_WRITE)
     @PostMapping
     public String saveSettings(
             @Valid @ModelAttribute("settingsForm") SettingsForm form,
