@@ -40,7 +40,22 @@ nap:
   challenge-ttl-seconds: 60
   session-ttl-seconds: 3600
   max-clock-skew-seconds: 60
-  protected-path-prefixes: /api/v1/follow,/api/v1/block,/api/v1/relays,/api/v1/publish-contact-list,/api/v1/register
+  # Where a session is established, not what is guarded: NapSessionFilter authenticates a
+  # caller who has a cookie and lets everyone else through, and @RequiresSession on the
+  # handler is what refuses them. Every route whose handler needs a principal is listed,
+  # and only those - omitting one does not open it, it shuts it: the handler is left with
+  # no principal to recognise and refuses the signed-in user along with everyone else.
+  # ClientSessionGuardTest signs in on each entry so the omission fails the build.
+  #
+  # /api/v1/auth, /api/v1/search and /api/v1/resolve are deliberately absent. The filter
+  # answers 403 when a resolver denies a session it can read, and on /api/v1/auth that
+  # would strand the denied user: they could not sign in as anyone else, because the
+  # endpoint that signs them in is the one refusing them.
+  #
+  # Matched by prefix, so /api/v1/follow covers /api/v1/follows but not /api/v1/unfollow -
+  # the retired RequireNapAuthenticationFilter derived servlet patterns from this same
+  # list, where /api/v1/follow matched neither, and /api/v1/unfollow was open to anyone.
+  protected-path-prefixes: /api/v1/follow,/api/v1/unfollow,/api/v1/block,/api/v1/unblock,/api/v1/relays,/api/v1/register
   cookie:
     name: client_session
     http-only: true

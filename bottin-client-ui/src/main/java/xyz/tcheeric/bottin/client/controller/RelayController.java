@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import xyz.tcheeric.bottin.client.service.DirectorySettingsClient;
+import xyz.tcheeric.nap.spring.annotation.RequiresSession;
 
 import java.net.InetAddress;
 import java.net.URI;
@@ -27,17 +28,23 @@ public class RelayController {
      * copied once into a browser as a starting point. They carry no read/write
      * flags because they never enter a user's own relay list, which is the only
      * place those flags mean anything.
+     *
+     * <p>Deliberately the one route here carrying no {@link RequiresSession}: it
+     * describes the deployment rather than any user, and a reader who is not
+     * signed in needs it to read a profile off the relays.
      */
     @GetMapping("/system")
     public ResponseEntity<Map<String, Object>> getSystemRelays() {
         return ResponseEntity.ok(Map.of("relays", settingsClient.current().defaultRelays()));
     }
 
+    @RequiresSession
     @GetMapping
     public ResponseEntity<Map<String, Object>> getRelays() {
         return ResponseEntity.ok(Map.of("relays", Collections.emptyList()));
     }
 
+    @RequiresSession
     @PostMapping
     public ResponseEntity<Map<String, String>> addRelay(@RequestBody Map<String, Object> body) {
         String url = (String) body.get("url");
@@ -48,6 +55,7 @@ public class RelayController {
         return ResponseEntity.ok(Map.of("status", "added", "url", url));
     }
 
+    @RequiresSession
     @PutMapping
     public ResponseEntity<Map<String, String>> updateRelay(@RequestBody Map<String, Object> body) {
         String url = (String) body.get("url");
@@ -58,6 +66,7 @@ public class RelayController {
         return ResponseEntity.ok(Map.of("status", "updated", "url", url));
     }
 
+    @RequiresSession
     @DeleteMapping
     public ResponseEntity<Map<String, String>> removeRelay(@RequestBody Map<String, String> body) {
         String url = body.get("url");
@@ -67,6 +76,7 @@ public class RelayController {
         return ResponseEntity.ok(Map.of("status", "removed", "url", url));
     }
 
+    @RequiresSession
     @PostMapping("/publish")
     public ResponseEntity<Map<String, Object>> publish() {
         return ResponseEntity.ok(Map.of(
