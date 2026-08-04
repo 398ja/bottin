@@ -27,11 +27,28 @@ public class ClientSecurityConfig {
      * NIP-98 payload hash. Without it, completion fails with "Request body not captured"
      * and no login can succeed. nap-spring does not auto-register this filter, so the
      * application must — the companion registration to {@link #napSessionFilter}.
+     *
+     * <p>The cap is read from configuration and passed explicitly, because that is the
+     * only way it is honoured. nap-spring removed the constructors that defaulted it:
+     * registering without one silently ignored {@code nap.max-body-bytes}, so a
+     * deployment that tightened the cap ran on the default anyway and one that raised it
+     * refused bodies it had itself configured to accept.
+     *
+     * <p>Absent {@link NapProperties} the registration is disabled rather than given a
+     * default, matching {@link #napSessionFilter} and avoiding that same silence.
      */
     @Bean
-    public FilterRegistrationBean<NapServletFilter> napServletFilter() {
+    public FilterRegistrationBean<NapServletFilter> napServletFilter(
+            ObjectProvider<NapProperties> napPropertiesProvider) {
         FilterRegistrationBean<NapServletFilter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(new NapServletFilter());
+
+        NapProperties napProperties = napPropertiesProvider.getIfAvailable();
+        if (napProperties == null) {
+            registrationBean.setEnabled(false);
+            return registrationBean;
+        }
+
+        registrationBean.setFilter(new NapServletFilter(NAP_COMPLETE_PATH, napProperties.maxBodyBytes()));
         registrationBean.addUrlPatterns(NAP_COMPLETE_PATH);
         registrationBean.setOrder(0);
         return registrationBean;

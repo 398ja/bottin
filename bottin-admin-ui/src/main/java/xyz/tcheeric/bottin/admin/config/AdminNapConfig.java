@@ -1,8 +1,10 @@
 package xyz.tcheeric.bottin.admin.config;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import xyz.tcheeric.nap.spring.config.NapProperties;
 import xyz.tcheeric.nap.spring.filter.NapServletFilter;
 
 
@@ -62,11 +64,31 @@ public class AdminNapConfig {
      * it, completion fails with "Request body not captured" and no sign-in can
      * succeed. nap-spring does not auto-register this filter, so the application
      * must.
+     *
+     * <p>The cap is read from configuration and passed explicitly, because that
+     * is the only way it is honoured. nap-spring removed the constructors that
+     * defaulted it: registering without one silently ignored
+     * {@code nap.max-body-bytes}, so a deployment that tightened the cap ran on
+     * the default anyway and one that raised it refused bodies it had itself
+     * configured to accept.
+     *
+     * <p>Where no {@link NapProperties} bean exists the registration is disabled
+     * rather than given a default, which would reintroduce exactly that silence.
+     * Nothing is lost: without nap-spring there is no controller to read the
+     * captured body.
      */
     @Bean
-    public FilterRegistrationBean<NapServletFilter> adminNapServletFilter() {
+    public FilterRegistrationBean<NapServletFilter> adminNapServletFilter(
+            ObjectProvider<NapProperties> napPropertiesProvider) {
         FilterRegistrationBean<NapServletFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new NapServletFilter());
+
+        NapProperties properties = napPropertiesProvider.getIfAvailable();
+        if (properties == null) {
+            registration.setEnabled(false);
+            return registration;
+        }
+
+        registration.setFilter(new NapServletFilter(NAP_COMPLETE_PATH, properties.maxBodyBytes()));
         registration.addUrlPatterns(NAP_COMPLETE_PATH);
         registration.setOrder(NAP_BODY_CAPTURE_ORDER);
         return registration;
