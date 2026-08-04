@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import xyz.tcheeric.bottin.core.exception.AdministratorNotFoundException;
 import xyz.tcheeric.bottin.core.model.AdminRole;
 import xyz.tcheeric.bottin.core.model.AdminUserData;
+import xyz.tcheeric.bottin.core.nostr.NostrPublicKeys;
 import xyz.tcheeric.bottin.persistence.entity.AdminUserEntity;
 import xyz.tcheeric.bottin.persistence.repository.AdminUserRepository;
 import xyz.tcheeric.bottin.service.port.AdministratorSessionRevoker;

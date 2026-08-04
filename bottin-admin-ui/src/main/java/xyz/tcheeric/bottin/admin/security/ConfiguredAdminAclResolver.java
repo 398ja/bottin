@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
 import xyz.tcheeric.bottin.core.model.AdminRole;
 import xyz.tcheeric.bottin.service.AdminUserService;
-import xyz.tcheeric.bottin.service.NostrPublicKeys;
+import xyz.tcheeric.bottin.core.nostr.NostrPublicKeys;
 import xyz.tcheeric.nap.core.AclDecision;
 import xyz.tcheeric.nap.server.AclResolver;
 import xyz.tcheeric.nap.server.acl.PermissionRegistry;

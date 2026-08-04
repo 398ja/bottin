@@ -19,6 +19,7 @@ import xyz.tcheeric.nap.server.acl.PermissionRegistry;
 import xyz.tcheeric.nap.server.acl.RoleDefinition;
 import xyz.tcheeric.bottin.admin.config.RefusedAdminRequestLogFilter;
 import xyz.tcheeric.bottin.core.model.AdminRole;
+import xyz.tcheeric.bottin.core.nostr.NostrPublicKeys;
 import xyz.tcheeric.bottin.persistence.entity.AdminUserEntity;
 import xyz.tcheeric.bottin.persistence.repository.AdminUserRepository;
 import xyz.tcheeric.bottin.service.AdminUserService;
@@ -66,8 +67,7 @@ class AdministratorRoleBoundaryTest {
      * an administrator nobody signs in as, and the test would pass by admitting
      * nothing rather than by refusing correctly.
      */
-    private static final String OTHER_HEX =
-            xyz.tcheeric.bottin.service.NostrPublicKeys.toCanonicalHex(OTHER_NPUB).orElseThrow();
+    private static final String OTHER_HEX = NostrPublicKeys.toCanonicalHex(OTHER_NPUB).orElseThrow();
 
     private static final String SESSION_COOKIE = "admin_session";
 

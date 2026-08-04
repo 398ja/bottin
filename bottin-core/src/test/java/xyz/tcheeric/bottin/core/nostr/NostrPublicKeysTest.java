@@ -1,4 +1,4 @@
-package xyz.tcheeric.bottin.service;
+package xyz.tcheeric.bottin.core.nostr;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

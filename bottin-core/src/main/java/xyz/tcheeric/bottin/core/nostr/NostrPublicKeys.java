@@ -1,4 +1,4 @@
-package xyz.tcheeric.bottin.service;
+package xyz.tcheeric.bottin.core.nostr;
 
 import lombok.extern.slf4j.Slf4j;
 import nostr.crypto.bech32.Bech32;
