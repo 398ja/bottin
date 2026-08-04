@@ -179,3 +179,33 @@ describe('session key', () => {
     expect(APP.getSessionKey(USER)).toBeNull();
   });
 });
+
+describe('sign-in guard on page load', () => {
+  // The DOMContentLoaded handler registered when app.js was imported: firing the
+  // event re-runs the guard against whatever path the location now reports.
+  function loadPage(path) {
+    window.history.replaceState({}, '', path);
+    APP.checkSession = vi.fn();
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    return APP.checkSession;
+  }
+
+  // A stranger's profile is public: it renders from relays rather than from
+  // anything this browser holds, and sending a signed-out reader to /login turns
+  // a link someone shared into a demand that they sign up to see it. Asserted
+  // because the deployed page did exactly that - the guard matched /profile by
+  // prefix, and every test passed while the page was unreachable in a browser.
+  it('does not demand a session for another key\'s profile', () => {
+    expect(loadPage('/profile/' + 'b'.repeat(64))).not.toHaveBeenCalled();
+  });
+
+  // Your own profile is yours, and there is nothing to render without a session.
+  it('demands a session for the own-profile page', () => {
+    expect(loadPage('/profile')).toHaveBeenCalled();
+  });
+
+  // The edit form publishes as you, so it needs you.
+  it('demands a session for the profile edit form', () => {
+    expect(loadPage('/profile/edit')).toHaveBeenCalled();
+  });
+});

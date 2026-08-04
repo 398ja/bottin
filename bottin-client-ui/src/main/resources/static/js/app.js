@@ -303,9 +303,16 @@ if (!window.__appInitialized) {
 window.__appInitialized = true;
 document.addEventListener('DOMContentLoaded', function() {
     APP.revealAuthenticatedNav();
-    var authedPages = ['/apps', '/search', '/profile', '/settings'];
+    // Matched by prefix, so /profile is named exactly rather than listed here:
+    // /profile/{pubkey} is somebody else's page, renders from relays rather than
+    // from anything this browser holds, and is public. Bouncing a signed-out
+    // reader to /login turns a link someone shared into a demand that they sign
+    // up to see it.
+    var authedPages = ['/apps', '/search', '/settings'];
+    var authedProfilePages = ['/profile', '/profile/edit'];
     var currentPath = window.location.pathname;
-    var isAuthedPage = authedPages.some(function(p) { return currentPath.startsWith(p); });
+    var isAuthedPage = authedPages.some(function(p) { return currentPath.startsWith(p); })
+            || authedProfilePages.indexOf(currentPath) !== -1;
     if (isAuthedPage) {
         APP.checkSession();
     }
