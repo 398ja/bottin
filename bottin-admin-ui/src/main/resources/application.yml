@@ -37,8 +37,29 @@ spring:
     suffix: .html
 
 # Server configuration - admin runs on port 8081 by default
+# NAP's rate limiter and its outstanding-challenge caps key on the caller's
+# address, so what the container believes that address to be decides whether
+# they bound one caller or every caller at once.
+#
+# Tomcat's RemoteIpValve applies X-Forwarded-For, but only when the immediate
+# peer matches internal-proxies. That list is empty here, so by default nothing
+# is trusted to state the caller's address and a direct caller cannot mint a
+# fresh identity per request to walk past the limiter.
+#
+# Tomcat's own default trusts every private range, which is not safe for this
+# deployment: with the port published from Docker the peer is the bridge
+# gateway, a private address, so any caller reaching the port would be trusted.
+#
+# Behind a real proxy, set BOTTIN_TRUSTED_PROXIES to a regex matching it (e.g.
+# "10\.0\.0\.5" or "172\.18\.\d{1,3}\.\d{1,3}"). Until you do, every
+# administrator shares one bucket keyed on the proxy's address — 30 sign-in
+# attempts a minute between them, and 30 outstanding challenges in total.
 server:
   port: 8081
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      internal-proxies: ${BOTTIN_TRUSTED_PROXIES:}
 
 # NAP: administrators sign in by proving control of a Nostr key.
 #

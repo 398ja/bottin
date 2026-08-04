@@ -60,6 +60,10 @@ services:
       # different address than it is sent to and is rejected.
       - BOTTIN_ADMIN_EXTERNAL_URL=${BOTTIN_ADMIN_EXTERNAL_URL:-http://localhost:${BOTTIN_ADMIN_PORT:-8081}}
       - BOTTIN_DEFAULT_DOMAIN=${BOTTIN_DEFAULT_DOMAIN:-${BOTTIN_DOMAIN:-}}
+      # The proxy allowed to state a caller's address for NAP's sign-in rate
+      # limits. Empty means no peer is trusted and the limiter keys on the
+      # connection, as it does for bottin-api.
+      - BOTTIN_TRUSTED_PROXIES=${BOTTIN_TRUSTED_PROXIES:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,6 +88,11 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - NAP_ENABLED=true
       - BOTTIN_CLIENT_DOMAIN=${BOTTIN_CLIENT_DOMAIN:-${BOTTIN_DOMAIN:-bottin.example.com}}
+      # The proxy allowed to state a caller's address for NAP's sign-in rate
+      # limits. Empty means no peer is trusted and the limiter keys on the
+      # connection. This interface is public, so leaving it unset behind a real
+      # proxy caps every visitor's sign-ins against one shared bucket.
+      - BOTTIN_TRUSTED_PROXIES=${BOTTIN_TRUSTED_PROXIES:-}
       # Directory API used to register onboarded handles. Reached over the compose
       # network as the api user, whose credential must match the one bottin-api is
       # started with. Not the admin credential: this container only needs to write
