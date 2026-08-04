@@ -184,6 +184,21 @@ public class Nip05RecordService {
     }
 
     /**
+     * Searches records by username within one domain.
+     *
+     * <p>Distinct from {@link #searchByUsername} because the admin records page
+     * searches inside the domain the operator has chosen. Searching across every
+     * domain from a page that shows one would return records the operator cannot
+     * see in the table they are looking at.
+     */
+    @Transactional(readOnly = true)
+    public Page<Nip05RecordData> searchByUsernameInDomain(String domain, String username, Pageable pageable) {
+        return nip05RecordRepository
+                .findByDomainNameAndUsernameContaining(domain.toLowerCase(), username, pageable)
+                .map(Nip05RecordEntity::toNip05RecordData);
+    }
+
+    /**
      * Merges the app's configured default relays (union, de-duplicated,
      * app-relays-first) with any caller-supplied relays. Guarantees every
      * created record advertises the deployment's own relay while preserving

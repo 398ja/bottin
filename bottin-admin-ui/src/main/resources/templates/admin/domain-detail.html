@@ -165,7 +165,7 @@
                             <p class="text-sm text-gray-600">
                                 This domain has <span class="font-medium" th:text="${domain.recordCount}">0</span> NIP-05 records.
                             </p>
-                            <a th:href="@{/admin/records(search=${domain.name})}"
+                            <a th:href="@{/admin/records(domain=${domain.name})}"
                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200">
                                 View Records
                             </a>
@@ -177,7 +177,7 @@
                             <h3 class="mt-2 text-sm font-medium text-gray-900">No records</h3>
                             <p class="mt-1 text-sm text-gray-500">This domain has no NIP-05 records yet.</p>
                             <div class="mt-4">
-                                <a href="/admin/records"
+                                <a th:href="@{/admin/records(domain=${domain.name})}"
                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200">
                                     Add Record
                                 </a>

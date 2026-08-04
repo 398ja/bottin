@@ -58,6 +58,21 @@ public interface Nip05RecordRepository extends JpaRepository<Nip05RecordEntity, 
     Page<Nip05RecordEntity> findByDomainName(@Param("domainName") String domainName, Pageable pageable);
 
     /**
+     * Finds records under one domain whose username contains a fragment (paginated).
+     *
+     * <p>The two conditions belong in the query rather than in a filter over
+     * {@link #findByDomainName}'s result: filtering a page after the fact narrows
+     * only the rows that page happened to contain, leaving the total count and
+     * page count describing the unfiltered set.
+     */
+    @Query("SELECT r FROM Nip05RecordEntity r WHERE r.domain.name = :domainName "
+            + "AND LOWER(r.username) LIKE LOWER(CONCAT('%', :username, '%'))")
+    Page<Nip05RecordEntity> findByDomainNameAndUsernameContaining(
+            @Param("domainName") String domainName,
+            @Param("username") String username,
+            Pageable pageable);
+
+    /**
      * Finds all enabled records for a domain name.
      * Uses JOIN FETCH to eagerly load the domain for async context access.
      */

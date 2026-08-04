@@ -41,6 +41,76 @@ class Nip05RecordRepositoryTest {
     }
 
     /**
+     * Tests that a username search is confined to the domain asked for.
+     *
+     * <p>Two domains hold a record with the same username, which is legal — a
+     * NIP-05 identity is the pair. The search must return one, and the count must
+     * describe the same set, since the records page pages through this result.
+     */
+    @Test
+    void shouldSearchUsernamesWithinOneDomainOnly() {
+        // Arrange: the same username under two different domains
+        DomainEntity otherDomain = domainRepository.save(
+                DomainEntity.builder().name("other.test").verified(true).build());
+        recordRepository.save(record(testDomain, "alice"));
+        recordRepository.save(record(otherDomain, "alice"));
+
+        // Act
+        Page<Nip05RecordEntity> found = recordRepository.findByDomainNameAndUsernameContaining(
+                "example.com", "ali", PageRequest.of(0, 20));
+
+        // Assert: only the one under the domain asked for, and the count agrees
+        assertThat(found.getContent()).hasSize(1);
+        assertThat(found.getContent().get(0).getDomain().getName()).isEqualTo("example.com");
+        assertThat(found.getTotalElements()).isEqualTo(1);
+    }
+
+    /**
+     * Tests that the search ignores case, as the un-scoped username search does.
+     */
+    @Test
+    void shouldSearchUsernamesIgnoringCase() {
+        // Arrange
+        recordRepository.save(record(testDomain, "Alice"));
+
+        // Act
+        Page<Nip05RecordEntity> found = recordRepository.findByDomainNameAndUsernameContaining(
+                "example.com", "ALI", PageRequest.of(0, 20));
+
+        // Assert
+        assertThat(found.getContent()).hasSize(1);
+    }
+
+    /**
+     * Tests that a username matching only under another domain is not returned,
+     * which is the failure the un-scoped search would have produced.
+     */
+    @Test
+    void shouldReturnNothingWhenTheUsernameLivesUnderAnotherDomain() {
+        // Arrange
+        DomainEntity otherDomain = domainRepository.save(
+                DomainEntity.builder().name("elsewhere.test").verified(true).build());
+        recordRepository.save(record(otherDomain, "bob"));
+
+        // Act
+        Page<Nip05RecordEntity> found = recordRepository.findByDomainNameAndUsernameContaining(
+                "example.com", "bob", PageRequest.of(0, 20));
+
+        // Assert
+        assertThat(found.getContent()).isEmpty();
+    }
+
+    private Nip05RecordEntity record(DomainEntity domain, String username) {
+        return Nip05RecordEntity.builder()
+                .domain(domain)
+                .username(username)
+                .pubkey("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
+                .relaysJson("[]")
+                .enabled(true)
+                .build();
+    }
+
+    /**
      * Tests that a NIP-05 record can be saved and retrieved.
      */
     @Test

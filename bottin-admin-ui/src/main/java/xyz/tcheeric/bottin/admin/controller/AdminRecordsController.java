@@ -16,14 +16,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriUtils;
 import xyz.tcheeric.bottin.admin.config.AdminPermissions;
 import xyz.tcheeric.nap.spring.annotation.RequiresPermission;
 import xyz.tcheeric.bottin.admin.dto.CreateRecordForm;
 import xyz.tcheeric.bottin.admin.dto.UpdateRecordForm;
 import xyz.tcheeric.bottin.core.model.Nip05RecordData;
+import xyz.tcheeric.bottin.service.DomainService;
 import xyz.tcheeric.bottin.service.Nip05RecordService;
 
 import jakarta.validation.Valid;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * Controller for NIP-05 records management.
@@ -37,21 +41,40 @@ public class AdminRecordsController {
 
     private final Nip05RecordService recordService;
 
+    /**
+     * Supplies the domain picker. Every domain, not only the verified ones: an
+     * unverified domain can already hold records, and leaving it out of the list
+     * would make them unreachable from this page.
+     */
+    private final DomainService domainService;
+
     @GetMapping
     public String listRecords(
+            @RequestParam(required = false) String domain,
             @RequestParam(required = false) String search,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Model model) {
 
+        boolean domainChosen = domain != null && !domain.isBlank();
+        boolean searching = search != null && !search.isBlank();
+
+        // No domain, no records. A deployment serving several domains has a
+        // record list too long to be read as one, and rendering the whole of it
+        // by default is what made the page unusable. An empty table would read
+        // as "this domain has no records", so the page says why instead.
         Page<Nip05RecordData> records;
-        if (search != null && !search.isBlank()) {
-            records = recordService.searchByUsername(search, pageable);
-            model.addAttribute("search", search);
+        if (!domainChosen) {
+            records = Page.empty(pageable);
+        } else if (searching) {
+            records = recordService.searchByUsernameInDomain(domain, search, pageable);
         } else {
-            records = recordService.findAll(pageable);
+            records = recordService.findByDomain(domain, pageable);
         }
 
         model.addAttribute("records", records);
+        model.addAttribute("domains", domainService.findAll());
+        model.addAttribute("selectedDomain", domainChosen ? domain : null);
+        model.addAttribute("search", searching ? search : null);
         model.addAttribute("createForm", new CreateRecordForm());
         return "admin/records";
     }
@@ -76,7 +99,7 @@ public class AdminRecordsController {
 
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("error", "Validation failed: " + bindingResult.getAllErrors());
-            return "redirect:/admin/records";
+            return redirectToRecordsFor(form.getDomain());
         }
 
         try {
@@ -94,7 +117,26 @@ public class AdminRecordsController {
             redirectAttributes.addFlashAttribute("error", "Failed to create record: " + e.getMessage());
         }
 
-        return "redirect:/admin/records";
+        return redirectToRecordsFor(form.getDomain());
+    }
+
+    /**
+     * Returns to the records list with a domain still chosen.
+     *
+     * <p>The list shows nothing until one is, so returning to the bare path after
+     * an edit would answer "record created" with an empty page and make the
+     * operator pick the domain again to see what they just did.
+     */
+    private String redirectToRecordsFor(String domain) {
+        if (domain == null || domain.isBlank()) {
+            return "redirect:/admin/records";
+        }
+        return "redirect:/admin/records?domain=" + UriUtils.encodeQueryParam(domain, StandardCharsets.UTF_8);
+    }
+
+    /** The domain a record belongs to, for returning to the list it was edited from. */
+    private String domainOf(Long recordId) {
+        return recordService.findById(recordId).map(Nip05RecordData::getDomain).orElse(null);
     }
 
     @RequiresPermission(AdminPermissions.WRITE)
@@ -125,6 +167,7 @@ public class AdminRecordsController {
     @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping("/{id}/toggle")
     public String toggleRecord(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        String domain = domainOf(id);
         try {
             recordService.toggleEnabled(id);
             log.info("admin_record_toggled id={}", id);
@@ -134,12 +177,14 @@ public class AdminRecordsController {
             redirectAttributes.addFlashAttribute("error", "Failed to toggle record: " + e.getMessage());
         }
 
-        return "redirect:/admin/records";
+        return redirectToRecordsFor(domain);
     }
 
     @RequiresPermission(AdminPermissions.WRITE)
     @PostMapping("/{id}/delete")
     public String deleteRecord(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        // Read before deleting: afterwards there is no record to ask.
+        String domain = domainOf(id);
         try {
             recordService.delete(id);
             log.info("admin_record_deleted id={}", id);
@@ -149,6 +194,6 @@ public class AdminRecordsController {
             redirectAttributes.addFlashAttribute("error", "Failed to delete record: " + e.getMessage());
         }
 
-        return "redirect:/admin/records";
+        return redirectToRecordsFor(domain);
     }
 }
