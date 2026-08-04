@@ -20,8 +20,24 @@ public final class AdminPermissions {
     /** View the dashboard, records, domains, and settings. */
     public static final String READ = "admin:read";
 
-    /** Create, change, and delete records and domains. */
+    /** Create, change, and delete records within the domains the deployment has. */
     public static final String WRITE = "admin:write";
+
+    /**
+     * Add, verify, and remove the domains the registry answers for.
+     *
+     * <p>Separate from {@link #WRITE} for the same reason as
+     * {@link #SETTINGS_WRITE}: a domain is what {@code .well-known/nostr.json} is
+     * served for, so adding one commits the deployment to answering for a name.
+     * That is closer in reach to repointing the relays than to editing a record
+     * under a domain the deployment already has.
+     *
+     * <p>Covers verification and deletion as well as creation, deliberately. An
+     * administrator who could delete a domain but not recreate it holds a
+     * capability that is destructive in one direction only, which is a worse
+     * boundary than either extreme.
+     */
+    public static final String MANAGE_DOMAINS = "admin:manage-domains";
 
     /**
      * Change the deployment settings — relay topology and media server.

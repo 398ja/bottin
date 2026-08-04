@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -31,6 +32,19 @@ import jakarta.validation.Valid;
 
 /**
  * Controller for domain management.
+ *
+ * <p>Reading the domain list is {@link AdminPermissions#READ}, so every
+ * administrator can see which domains the deployment answers for — a records
+ * page that lets you pick a domain is unusable to someone forbidden to know
+ * they exist.
+ *
+ * <p>Changing that list is {@link AdminPermissions#MANAGE_DOMAINS}, held by the
+ * super administrator alone. All four mutating routes moved together —
+ * creation, both verification steps, and deletion — rather than creation only.
+ * Splitting them would leave an administrator able to delete a domain they
+ * could not recreate, and able to drive verification of a name they could not
+ * have added; a capability that is destructive in one direction only is a worse
+ * boundary than either extreme.
  */
 @RequiresPermission(AdminPermissions.READ)
 @Controller
@@ -45,21 +59,44 @@ public class AdminDomainsController {
     @GetMapping
     public String listDomains(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication authentication,
             Model model) {
 
         Page<DomainData> domains = domainService.findAll(pageable);
         model.addAttribute("domains", domains);
         model.addAttribute("createForm", new CreateDomainForm());
         model.addAttribute("verificationMethods", VerificationMethod.values());
+        model.addAttribute("canManageDomains", holdsManageDomains(authentication));
         return "admin/domains";
     }
 
+    /**
+     * Whether to offer the controls that change the domain list.
+     *
+     * <p>The guard that matters is {@code @RequiresPermission} on each route;
+     * this only decides what the page shows. Offering an administrator a button
+     * that always answers 403 tells them the deployment is broken rather than
+     * that the capability is not theirs, so the page withholds the control and
+     * says why — as the settings page does for administrator management.
+     */
+    private boolean holdsManageDomains(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(granted -> AdminPermissions.MANAGE_DOMAINS.equals(granted.getAuthority()));
+    }
+
     @GetMapping("/{id}")
-    public String viewDomain(@PathVariable Long id, Model model) {
+    public String viewDomain(@PathVariable Long id, Authentication authentication, Model model) {
+        boolean canManageDomains = holdsManageDomains(authentication);
+
         return domainService.findById(id)
                 .map(domain -> {
-                    // Auto-initiate verification for unverified domains without a token
-                    if (!domain.isVerified() && domain.getVerificationToken() == null) {
+                    // Auto-initiate verification for unverified domains without a token,
+                    // but only for someone allowed to drive verification. This is a GET
+                    // with a side effect, so without the guard it would hand an
+                    // administrator holding READ alone the very action that
+                    // POST /verify refuses them — the boundary would exist only for
+                    // callers who used the button.
+                    if (canManageDomains && !domain.isVerified() && domain.getVerificationToken() == null) {
                         verificationService.initiateVerification(id);
                         // Reload domain to get the new token
                         domain = domainService.findById(id).orElse(domain);
@@ -69,12 +106,13 @@ public class AdminDomainsController {
                     model.addAttribute("domain", domain);
                     model.addAttribute("verificationStatus", status);
                     model.addAttribute("verificationMethods", VerificationMethod.values());
+                    model.addAttribute("canManageDomains", canManageDomains);
                     return "admin/domain-detail";
                 })
                 .orElse("redirect:/admin/domains?error=notfound");
     }
 
-    @RequiresPermission(AdminPermissions.WRITE)
+    @RequiresPermission(AdminPermissions.MANAGE_DOMAINS)
     @PostMapping
     public String createDomain(
             @Valid @ModelAttribute("createForm") CreateDomainForm form,
@@ -98,7 +136,7 @@ public class AdminDomainsController {
         return "redirect:/admin/domains";
     }
 
-    @RequiresPermission(AdminPermissions.WRITE)
+    @RequiresPermission(AdminPermissions.MANAGE_DOMAINS)
     @PostMapping("/{id}/verify")
     public String initiateVerification(
             @PathVariable Long id,
@@ -124,7 +162,7 @@ public class AdminDomainsController {
         return "redirect:/admin/domains/" + id;
     }
 
-    @RequiresPermission(AdminPermissions.WRITE)
+    @RequiresPermission(AdminPermissions.MANAGE_DOMAINS)
     @PostMapping("/{id}/verify/attempt")
     public String attemptVerification(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
@@ -145,7 +183,7 @@ public class AdminDomainsController {
         return "redirect:/admin/domains/" + id;
     }
 
-    @RequiresPermission(AdminPermissions.WRITE)
+    @RequiresPermission(AdminPermissions.MANAGE_DOMAINS)
     @PostMapping("/{id}/delete")
     public String deleteDomain(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {

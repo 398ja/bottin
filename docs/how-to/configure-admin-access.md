@@ -112,7 +112,8 @@ grant access to colleagues, each signing in with their own key.
 | Where it comes from | `BOTTIN_ADMIN_NPUB` | Added on the settings page | Set directly in the database |
 | How many | Exactly one | Any number | Any number |
 | View dashboard, records, domains, settings | Yes | Yes | Yes |
-| Create and change records and domains | Yes | Yes | **No** |
+| Create and change records | Yes | Yes | **No** |
+| Add, verify, and remove domains | Yes | **No** | **No** |
 | Change deployment settings | Yes | **No** | **No** |
 | Add and remove administrators | Yes | **No** | **No** |
 
@@ -120,6 +121,19 @@ Deployment settings — relay topology and the media server — are the super
 administrator's alone. They apply to every request the registry serves and take
 effect without a restart, which is a wider reach than editing a record, so
 adding a colleague to maintain records does not also hand them the deployment.
+
+Domains are the super administrator's for the same reason. A domain is what the
+registry answers `.well-known/nostr.json` for, so adding one commits the
+deployment to serving a name — closer in reach to repointing the relays than to
+editing a record under a domain that already exists. An administrator maintains
+records within the domains the deployment has; choosing which domains those are
+is a separate decision.
+
+Verification and deletion are reserved along with creation, not just creation.
+An administrator who could delete a domain but not recreate it would hold a
+capability destructive in one direction only. For the same reason, opening a
+domain's page no longer issues its verification token unless the viewer may act
+on it — otherwise the reservation would bind only those who used the button.
 
 The read-only role has no control on the settings page; it is set by writing
 `READONLY` to `admin_users.role`. Every other administrator added through the

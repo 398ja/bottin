@@ -83,6 +83,9 @@ class AdministratorRoleBoundaryTest {
     @Autowired
     private AdminUserRepository repository;
 
+    @Autowired
+    private xyz.tcheeric.bottin.service.DomainService domainService;
+
     @BeforeEach
     void addOneOrdinaryAdministrator() {
         repository.deleteAll();
@@ -336,6 +339,124 @@ class AdministratorRoleBoundaryTest {
                 .andExpect(result -> assertThat(result.getResponse().getStatus())
                         .as("the super administrator holds admin:settings-write")
                         .isNotEqualTo(403));
+    }
+
+    /**
+     * Tests that an added administrator cannot add a domain.
+     *
+     * <p>This is the assertion that gives {@code admin:manage-domains} a reason
+     * to exist. The administrator seeded by {@code @BeforeEach} holds
+     * {@code admin:write} and writes records freely; adding a domain is refused
+     * because it commits the deployment to answering for a name. Revert the
+     * annotation on {@code createDomain} to {@code admin:write} and this fails.
+     */
+    @Test
+    void shouldRefuseAnAddedAdministratorAddingADomain() throws Exception {
+        mockMvc.perform(post("/admin/domains").cookie(sessionFor(ADMIN_HEX)).with(csrf())
+                        .param("name", "smuggled.test"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Tests that an added administrator cannot delete a domain either.
+     *
+     * <p>Asserted separately from creation because the pair is the point: an
+     * administrator who could delete a domain but not recreate it would hold a
+     * capability destructive in one direction only.
+     */
+    @Test
+    void shouldRefuseAnAddedAdministratorDeletingADomain() throws Exception {
+        mockMvc.perform(post("/admin/domains/1/delete").cookie(sessionFor(ADMIN_HEX)).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Tests that both verification steps are refused an added administrator,
+     * since verifying a name is operating a domain they could not have added.
+     */
+    @Test
+    void shouldRefuseAnAddedAdministratorDrivingDomainVerification() throws Exception {
+        mockMvc.perform(post("/admin/domains/1/verify").cookie(sessionFor(ADMIN_HEX)).with(csrf()))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/admin/domains/1/verify/attempt").cookie(sessionFor(ADMIN_HEX)).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Tests that the super administrator reaches the same route the added
+     * administrator was refused, so the refusals above are about the role rather
+     * than about the request being malformed or the route being absent.
+     *
+     * <p>Asserting "not forbidden" rather than a status: the point is the
+     * permission boundary, and the form's own validation decides the rest.
+     */
+    @Test
+    void shouldAllowTheSuperAdministratorToAddADomain() throws Exception {
+        mockMvc.perform(post("/admin/domains").cookie(sessionFor(MASTER_HEX)).with(csrf())
+                        .param("name", "permitted.test"))
+                .andExpect(result -> assertThat(result.getResponse().getStatus())
+                        .as("the super administrator holds admin:manage-domains")
+                        .isNotEqualTo(403));
+    }
+
+    /**
+     * Tests that viewing a domain does not issue a verification token for an
+     * administrator who may not drive verification.
+     *
+     * <p>Asserted on the stored token rather than on the response, because the
+     * route answers 200 either way — the whole point is a side effect on a GET.
+     * {@code viewDomain} auto-initiates verification for an unverified domain,
+     * so before this guard an added administrator could obtain by loading a page
+     * exactly what {@code POST /verify} refuses them, and the new permission
+     * would bind only those who used the button.
+     */
+    @Test
+    void shouldNotIssueAVerificationTokenForAnAdministratorWhoMayNotVerify() throws Exception {
+        // Given: a domain nobody has verified yet
+        var domain = domainService.create("read-only-view.test", MASTER_HEX);
+        assertThat(domain.getVerificationToken()).isNull();
+
+        // When: an added administrator opens it
+        mockMvc.perform(get("/admin/domains/" + domain.getId()).cookie(sessionFor(ADMIN_HEX)))
+                .andExpect(status().isOk());
+
+        // Then: no token was minted on their behalf
+        assertThat(domainService.findById(domain.getId()).orElseThrow().getVerificationToken())
+                .as("viewing must not initiate verification for a read-only administrator")
+                .isNull();
+    }
+
+    /**
+     * Tests the same view as the super administrator, so the assertion above is
+     * about the role rather than about verification having quietly stopped
+     * working for everybody.
+     */
+    @Test
+    void shouldIssueAVerificationTokenForTheSuperAdministrator() throws Exception {
+        // Given: a domain nobody has verified yet
+        var domain = domainService.create("super-admin-view.test", MASTER_HEX);
+
+        // When: the super administrator opens it
+        mockMvc.perform(get("/admin/domains/" + domain.getId()).cookie(sessionFor(MASTER_HEX)))
+                .andExpect(status().isOk());
+
+        // Then: verification was initiated as before
+        assertThat(domainService.findById(domain.getId()).orElseThrow().getVerificationToken())
+                .as("the super administrator still gets the token the page instructs them to publish")
+                .isNotNull();
+    }
+
+    /**
+     * Tests that an added administrator can still see the domain list.
+     *
+     * <p>Withholding the change must not withhold the read: the records page
+     * asks them to pick a domain, which they cannot do if the list is refused.
+     */
+    @Test
+    void shouldStillAllowAnAddedAdministratorToViewDomains() throws Exception {
+        mockMvc.perform(get("/admin/domains").cookie(sessionFor(ADMIN_HEX)))
+                .andExpect(status().isOk());
     }
 
     /**

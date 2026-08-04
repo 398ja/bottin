@@ -10,10 +10,14 @@
             <div class="px-4 py-6 sm:px-0">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-2xl font-semibold text-gray-900">Domains</h1>
-                    <button type="button" onclick="document.getElementById('createModal').classList.remove('hidden')"
+                    <button type="button" th:if="${canManageDomains}"
+                            onclick="document.getElementById('createModal').classList.remove('hidden')"
                             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
                         Add Domain
                     </button>
+                    <p th:unless="${canManageDomains}" class="text-sm text-gray-500">
+                        Only the super administrator can add or remove domains.
+                    </p>
                 </div>
 
                 <div th:replace="~{fragments/layout :: alerts}"></div>
@@ -73,7 +77,8 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <a th:href="@{/admin/domains/{id}(id=${domain.id})}"
                                        class="text-indigo-600 hover:text-indigo-900 mr-3">View</a>
-                                    <form th:action="@{/admin/domains/{id}/delete(id=${domain.id})}" method="post" class="inline"
+                                    <form th:if="${canManageDomains}"
+                                          th:action="@{/admin/domains/{id}/delete(id=${domain.id})}" method="post" class="inline"
                                           onsubmit="return confirm('Are you sure you want to delete this domain? All associated records will also be deleted.');">
                                         <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
                                     </form>
@@ -129,7 +134,8 @@
     </main>
 
     <!-- Create Modal -->
-    <div id="createModal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+    <div id="createModal" th:if="${canManageDomains}"
+         class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Add New Domain</h3>

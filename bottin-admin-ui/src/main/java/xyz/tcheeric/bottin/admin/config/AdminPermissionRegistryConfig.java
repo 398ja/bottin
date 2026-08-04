@@ -55,7 +55,8 @@ public class AdminPermissionRegistryConfig {
     private static List<PermissionDefinition> permissions() {
         return List.of(
                 permission(AdminPermissions.READ, "View the dashboard, records, domains, and settings"),
-                permission(AdminPermissions.WRITE, "Create, change, and delete records and domains"),
+                permission(AdminPermissions.WRITE, "Create, change, and delete records"),
+                permission(AdminPermissions.MANAGE_DOMAINS, "Add, verify, and remove domains"),
                 permission(AdminPermissions.SETTINGS_WRITE, "Change relay topology and media server settings"),
                 permission(AdminPermissions.MANAGE_ADMINS, "Add and remove administrators"));
     }
@@ -74,10 +75,12 @@ public class AdminPermissionRegistryConfig {
                         "The configured master key. Everything, including managing administrators.",
                         Set.of(AdminPermissions.READ,
                                 AdminPermissions.WRITE,
+                                AdminPermissions.MANAGE_DOMAINS,
                                 AdminPermissions.SETTINGS_WRITE,
                                 AdminPermissions.MANAGE_ADMINS)),
                 new RoleDefinition(AdminPermissions.ADMIN,
-                        "An added administrator. Records and domains, but not the deployment itself.",
+                        "An added administrator. Records within the deployment's domains, "
+                                + "but neither which domains those are nor the deployment itself.",
                         Set.of(AdminPermissions.READ,
                                 AdminPermissions.WRITE)),
                 new RoleDefinition(AdminPermissions.READONLY,
