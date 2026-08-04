@@ -14,6 +14,7 @@ import xyz.tcheeric.bottin.admin.config.AdminPermissions;
 import xyz.tcheeric.bottin.core.model.AdminRole;
 import xyz.tcheeric.bottin.service.AdminUserService;
 import xyz.tcheeric.nap.core.AclDecision;
+import xyz.tcheeric.nap.server.acl.PermissionDefinition;
 import xyz.tcheeric.nap.server.acl.PermissionRegistry;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -208,8 +209,15 @@ class ConfiguredAdminAclResolverTest {
     }
 
     /**
-     * Tests that the super administrator holds every permission, including the
-     * one reserved for managing other administrators.
+     * Tests that the super administrator holds every permission the registry
+     * declares, including those reserved for managing administrators and domains.
+     *
+     * <p>Derived from the registry rather than from a list written here. The list
+     * this replaced named four permissions and had to be remembered whenever a
+     * fifth was declared — which is exactly what it failed at: adding
+     * {@code admin:manage-domains} broke it, and the breakage said nothing about
+     * the change being wrong. The claim worth making is "everything there is",
+     * and that claim can be stated without enumerating anything.
      */
     @Test
     void shouldGrantTheSuperAdminEveryPermission() {
@@ -220,9 +228,8 @@ class ConfiguredAdminAclResolverTest {
         AclDecision decision = resolver.resolve(ADMIN_NPUB, ADMIN_HEX);
 
         // Then: every declared permission is granted
-        assertThat(decision.permissions()).containsExactlyInAnyOrder(
-                AdminPermissions.READ, AdminPermissions.WRITE,
-                AdminPermissions.SETTINGS_WRITE, AdminPermissions.MANAGE_ADMINS);
+        assertThat(decision.permissions()).containsExactlyInAnyOrderElementsOf(
+                REGISTRY.permissions().stream().map(PermissionDefinition::key).toList());
     }
 
     /**
