@@ -5,17 +5,17 @@
 </head>
 <body>
     <div th:fragment="content" class="container">
-        <div th:replace="~{fragments/page-header :: header('Search Profiles', 'Find people on Nostr by name or NIP-05')}"></div>
+        <div th:replace="~{fragments/page-header :: header('Search Profiles', 'Find the handles registered in this directory')}"></div>
         <div class="card">
             <div class="form-group">
-                <input type="text" id="search-input" class="form-input" placeholder="Search by name or display name..."
+                <input type="text" id="search-input" class="form-input" placeholder="Search by handle..."
                        autofocus autocomplete="off">
             </div>
 
             <div id="search-results">
                 <div class="empty-state">
                     <div class="empty-state-icon">🔍</div>
-                    <p>Search for Nostr profiles</p>
+                    <p>Search for a registered handle</p>
                 </div>
             </div>
 
@@ -37,7 +37,7 @@
                     results.innerHTML = '';
                     var empty = document.createElement('div');
                     empty.className = 'empty-state';
-                    empty.innerHTML = '<div class="empty-state-icon">🔍</div><p>Search for Nostr profiles</p>';
+                    empty.innerHTML = '<div class="empty-state-icon">🔍</div><p>Search for a registered handle</p>';
                     results.appendChild(empty);
                     return;
                 }
@@ -45,59 +45,50 @@
                 loading.style.display = 'block';
 
                 fetch('/api/v1/search?q=' + encodeURIComponent(query.trim()) + '&limit=20')
-                    .then(function(r) { return r.json(); })
+                    .then(function(r) {
+                        // An unreachable directory answers 502. Parsing that body
+                        // would leave data.results undefined and render the empty
+                        // state, telling the searcher nobody matched when in fact
+                        // nothing was searched.
+                        if (!r.ok) throw new Error('search_failed');
+                        return r.json();
+                    })
                     .then(function(data) {
                         loading.style.display = 'none';
                         results.innerHTML = '';
                         if (data.results && data.results.length > 0) {
                             data.results.forEach(function(r) {
-                                var div = document.createElement('div');
-                                div.className = 'search-result';
+                                // The whole row opens the profile. The directory
+                                // knows the handle and the key, nothing else, so
+                                // the published profile is where the rest lives.
+                                var row = document.createElement('a');
+                                row.className = 'search-result';
+                                row.href = '/profile/' + encodeURIComponent(r.pubkey);
 
                                 var img = document.createElement('img');
-                                img.src = r.picture || '/img/default-avatar.svg';
+                                img.src = '/img/default-avatar.svg';
                                 img.alt = '';
                                 img.className = 'avatar-sm';
-                                img.onerror = function() { this.src = '/img/default-avatar.svg'; };
-                                div.appendChild(img);
+                                row.appendChild(img);
 
                                 var info = document.createElement('div');
                                 info.className = 'search-result-info';
 
                                 var name = document.createElement('div');
                                 name.className = 'search-result-name';
-                                name.textContent = r.displayName || r.name || 'Unknown';
+                                name.textContent = r.name;
                                 info.appendChild(name);
 
+                                // The full identifier, not just the local part: the
+                                // domain is what a reader has to look at to tell
+                                // alice@example.com from a lookalike.
                                 var detail = document.createElement('div');
                                 detail.className = 'search-result-detail';
-                                detail.textContent = '@' + (r.name || '') + ' \u00B7 ' + (r.nip05 || 'no NIP-05');
+                                detail.textContent = r.nip05;
                                 info.appendChild(detail);
 
-                                div.appendChild(info);
-
-                                if (r.blocked) {
-                                    var badge = document.createElement('span');
-                                    badge.className = 'badge badge-danger';
-                                    badge.textContent = 'Blocked';
-                                    div.appendChild(badge);
-                                } else if (r.followed) {
-                                    var btn = document.createElement('button');
-                                    btn.className = 'btn btn-sm btn-outline';
-                                    btn.textContent = 'Unfollow';
-                                    btn.dataset.pubkey = r.pubkey;
-                                    btn.addEventListener('click', function() { unfollow(this.dataset.pubkey); });
-                                    div.appendChild(btn);
-                                } else {
-                                    var btn = document.createElement('button');
-                                    btn.className = 'btn btn-sm btn-primary';
-                                    btn.textContent = 'Follow';
-                                    btn.dataset.pubkey = r.pubkey;
-                                    btn.addEventListener('click', function() { follow(this.dataset.pubkey); });
-                                    div.appendChild(btn);
-                                }
-
-                                results.appendChild(div);
+                                row.appendChild(info);
+                                results.appendChild(row);
                             });
                         } else {
                             var empty = document.createElement('div');
@@ -120,28 +111,6 @@
                 debouncedSearch(this.value);
             });
         })();
-
-        function follow(pubkey) {
-            fetch('/api/v1/follow', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pubkey: pubkey })
-            }).then(function(r) {
-                if (r.ok) APP.showToast('Followed', 'success');
-                else APP.showToast('Failed to follow', 'error');
-            });
-        }
-
-        function unfollow(pubkey) {
-            fetch('/api/v1/unfollow', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pubkey: pubkey })
-            }).then(function(r) {
-                if (r.ok) APP.showToast('Unfollowed', 'success');
-                else APP.showToast('Failed to unfollow', 'error');
-            });
-        }
     </script>
 </body>
 </html>
