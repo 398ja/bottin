@@ -93,7 +93,54 @@ class ProfileControllerTest {
                 .andExpect(content().string(containsString("id=\"profile-avatar\"")))
                 .andExpect(content().string(containsString("id=\"profile-nip05\"")))
                 .andExpect(content().string(containsString("href=\"/profile/edit\"")))
+                .andExpect(content().string(not(containsString("id=\"profile-pubkey\""))))
                 .andExpect(content().string(not(containsString("id=\"profile-save-btn\""))));
+    }
+
+    /**
+     * Another key's profile page carries that key for the view script to read, and
+     * drops the edit link: the page shows their published identity, and nobody but
+     * its owner can change it.
+     */
+    @Test
+    void shouldRenderAnotherKeysProfileWithoutTheEditLink() throws Exception {
+        String pubkey = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+
+        mockMvc.perform(get("/profile/" + pubkey))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"profile-pubkey\"")))
+                .andExpect(content().string(containsString(pubkey)))
+                .andExpect(content().string(not(containsString("href=\"/profile/edit\""))))
+                // The script only replaces this once it has read the relays, so
+                // markup saying "Your profile" is painted on a stranger's page.
+                .andExpect(content().string(not(containsString("Your profile"))));
+    }
+
+    /**
+     * An npub in the URL reaches the same profile as its hex, because an npub is
+     * the form people copy and paste. The page carries the canonical hex, which
+     * is what the relay query filters on.
+     */
+    @Test
+    void shouldAcceptAnNpubAndRenderItsCanonicalHex() throws Exception {
+        String npub = "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6";
+        String hex = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
+
+        mockMvc.perform(get("/profile/" + npub))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("profilePubkey", hex))
+                .andExpect(content().string(containsString(hex)));
+    }
+
+    /**
+     * A value that is not a public key is not found. It deliberately does not
+     * redirect to the reader's own profile, which answered a stranger's broken
+     * link with "here is you" and so read as though the link had worked.
+     */
+    @Test
+    void shouldNotFindAProfileForSomethingThatIsNotAPublicKey() throws Exception {
+        mockMvc.perform(get("/profile/not-a-key"))
+                .andExpect(status().isNotFound());
     }
 
     /**

@@ -5,12 +5,14 @@
 </head>
 <body>
     <div th:fragment="content" class="container-narrow">
-        <div th:replace="~{fragments/page-header :: header('Profile', 'Your public Nostr identity')}"></div>
+        <div th:replace="~{fragments/page-header :: header('Profile', ${profilePubkey} == null ? 'Your public Nostr identity' : 'A public Nostr identity, as its relays report it')}"></div>
+        <span id="profile-pubkey" th:if="${profilePubkey}" th:text="${profilePubkey}" hidden></span>
         <div class="card">
             <img src="" alt="" class="profile-banner hidden" id="profile-banner-image">
             <div class="text-center">
                 <img src="/img/default-avatar.svg" alt="" class="avatar-lg mb-2" id="profile-avatar">
-                <div style="font-size:1.25rem;font-weight:600;" id="profile-name">Your profile</div>
+                <div style="font-size:1.25rem;font-weight:600;" id="profile-name"
+                     th:text="${profilePubkey} == null ? 'Your profile' : 'Loading profile…'">Your profile</div>
                 <div class="text-xs text-secondary form-input-mono" id="profile-nip05"></div>
                 <p class="mt-2 text-pretty hidden" id="profile-about"></p>
             </div>
@@ -26,7 +28,7 @@
                 </div>
             </dl>
 
-            <a href="/profile/edit" class="btn btn-outline btn-full mt-3">Edit profile</a>
+            <a th:if="${profilePubkey} == null" href="/profile/edit" class="btn btn-outline btn-full mt-3">Edit profile</a>
         </div>
     </div>
 

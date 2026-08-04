@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var userId = APP.getIdentityUserId();
     var identity = userId ? APP.loadIdentity(userId) : null;
-    if (!identity) return;
 
     function el(id) { return document.getElementById(id); }
 
@@ -16,30 +15,65 @@ document.addEventListener('DOMContentLoaded', function () {
         show(el(rowElementId));
     }
 
-    nameEl.textContent = identity.displayName || identity.nip05 || 'Your profile';
-    el('profile-nip05').textContent = identity.nip05 || '';
-    fill('profile-about', 'profile-about', identity.about);
-    fill('profile-lud16', 'profile-lud16-row', identity.lud16);
+    function render(profile, fallbackName) {
+        nameEl.textContent = profile.displayName || profile.nip05 || fallbackName;
+        el('profile-nip05').textContent = profile.nip05 || '';
+        fill('profile-about', 'profile-about', profile.about);
+        fill('profile-lud16', 'profile-lud16-row', profile.lud16);
 
-    // safeImageUrl is a generic http(s) guard; the website link needs the same one.
-    var website = APP.safeImageUrl(identity.website);
-    if (website) {
-        var link = el('profile-website');
-        link.textContent = website;
-        link.href = website;
-        show(el('profile-website-row'));
+        // safeImageUrl is a generic http(s) guard; the website link needs the same one.
+        var website = APP.safeImageUrl(profile.website);
+        if (website) {
+            var link = el('profile-website');
+            link.textContent = website;
+            link.href = website;
+            show(el('profile-website-row'));
+        }
+
+        var avatar = el('profile-avatar');
+        avatar.onerror = function () { this.src = '/img/default-avatar.svg'; };
+        var pictureUrl = APP.safeImageUrl(profile.picture);
+        if (pictureUrl) avatar.src = pictureUrl;
+
+        var bannerUrl = APP.safeImageUrl(profile.banner);
+        if (bannerUrl) {
+            var banner = el('profile-banner-image');
+            banner.onerror = function () { this.classList.add('hidden'); };
+            banner.src = bannerUrl;
+            show(banner);
+        }
     }
 
-    var avatar = el('profile-avatar');
-    avatar.onerror = function () { this.src = '/img/default-avatar.svg'; };
-    var pictureUrl = APP.safeImageUrl(identity.picture);
-    if (pictureUrl) avatar.src = pictureUrl;
-
-    var bannerUrl = APP.safeImageUrl(identity.banner);
-    if (bannerUrl) {
-        var banner = el('profile-banner-image');
-        banner.onerror = function () { this.classList.add('hidden'); };
-        banner.src = bannerUrl;
-        show(banner);
+    function abbreviate(pubkeyHex) {
+        return pubkeyHex.slice(0, 8) + '…' + pubkeyHex.slice(-8);
     }
+
+    var viewedEl = el('profile-pubkey');
+    var viewedPubkey = viewedEl ? viewedEl.textContent.trim() : '';
+
+    if (!viewedPubkey || (identity && viewedPubkey === identity.pubkeyHex)) {
+        // Own profile, and only the signed-in user has one to show.
+        if (identity) render(identity, 'Your profile');
+        return;
+    }
+
+    // This browser holds nothing about anyone but its own user, so another key's
+    // profile is read from relays and is never saved: the stored identity belongs
+    // to the signed-in user alone. An unreachable relay or an unpublished profile
+    // leaves the key itself on show, which is still the truthful answer to "who
+    // is this".
+    //
+    // A reader who is not signed in has no relays of their own, and resolves to the
+    // deployment's — which is why the endpoint serving those carries no session
+    // guard while the rest of the relay API does.
+    APP.effectiveReadRelays(userId)
+        .then(function (readRelays) {
+            var pool = new NostrTools.SimplePool();
+            return ProfileFetch.fetch(pool, readRelays, viewedPubkey).then(function (profile) {
+                try { pool.close(readRelays); } catch (ignored) { /* pool already closed */ }
+                return profile;
+            });
+        })
+        .catch(function () { return null; })
+        .then(function (profile) { render(profile || {}, abbreviate(viewedPubkey)); });
 });
