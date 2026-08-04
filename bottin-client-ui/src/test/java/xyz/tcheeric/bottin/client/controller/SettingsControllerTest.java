@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -28,6 +29,16 @@ class SettingsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("layout"))
                 .andExpect(model().attribute("content", "settings/security"));
+    }
+
+    /**
+     * The profile card on the settings page opens the editable form directly, rather
+     * than the read-only view that would make the user click through a second time.
+     */
+    @Test
+    void shouldLinkTheProfileCardToTheEditForm() throws Exception {
+        mockMvc.perform(get("/settings"))
+                .andExpect(content().string(containsString("href=\"/profile/edit\"")));
     }
 
     /**
