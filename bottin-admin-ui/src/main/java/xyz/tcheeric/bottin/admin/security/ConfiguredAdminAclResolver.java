@@ -50,6 +50,12 @@ import java.util.Optional;
  * two are reported only after the stored list has been consulted: a deployment
  * whose master key is missing or unreadable still admits added administrators,
  * so a misconfiguration does not also revoke everybody else.
+ *
+ * <p>That distinction decides more than the log line. Only "this key is not an
+ * administrator" ends the sessions the key already holds; the configuration
+ * faults refuse the request and leave them alone. A denial that could not read
+ * what it needed is not evidence against the holder, and revoking on it would
+ * turn an operator's typo into a forced re-signature for everyone at once.
  */
 @Component
 @Slf4j
@@ -144,8 +150,14 @@ public class ConfiguredAdminAclResolver implements AclResolver {
             return AclDecision.denied(reason);
         }
 
-        log.warn("admin_signin_rejected reason=not_authorised pubkey={}", provenHex);
-        return AclDecision.denied("not_authorised");
+        // Ends every session this key holds, not merely this request. Both
+        // sources were read and neither names the key, so the answer is a
+        // decision rather than a gap in what could be read — which is what
+        // separates this from the two refusals above. Removal already revokes
+        // explicitly; this is what covers the case nothing else does, a rotated
+        // master key whose former holder still has a live session.
+        log.warn("admin_signin_rejected reason=not_authorised pubkey={} sessions=revoked", provenHex);
+        return AclDecision.denied("not_authorised", true);
     }
 
     /**

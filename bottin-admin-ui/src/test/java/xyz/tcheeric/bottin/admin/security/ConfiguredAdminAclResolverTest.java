@@ -112,6 +112,54 @@ class ConfiguredAdminAclResolverTest {
     }
 
     /**
+     * Tests that refusing a key which is not an administrator also ends every
+     * session it holds.
+     *
+     * <p>Asserted on the flag rather than on a revocation, because the flag is
+     * what this class controls: nap's session filter reads it and calls
+     * {@code revokeByPrincipal}, and without it the refusal blocks the one
+     * request while leaving the other sessions alive until they expire. That is
+     * the case where the master key has been rotated — the former holder is no
+     * longer an administrator, and nothing else revokes them.
+     */
+    @Test
+    void shouldEndEverySessionOfAKeyThatIsNoLongerAnAdministrator() {
+        AclDecision decision = resolverFor(ADMIN_NPUB).resolve(OTHER_NPUB, OTHER_HEX);
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.revokeSessions()).isTrue();
+    }
+
+    /**
+     * Tests that an unreadable master key refuses the request without ending
+     * anybody's sessions.
+     *
+     * <p>The distinction is the point. "This key is not an administrator" is a
+     * decision; "the configuration cannot be read" is an operator mistake, and
+     * revoking on it would turn a typo into a forced re-signature for every
+     * administrator at once — exactly when the deployment can least afford it.
+     */
+    @Test
+    void shouldNotEndSessionsWhenTheMasterKeyIsUnreadable() {
+        AclDecision decision = resolverFor("not-a-key").resolve(OTHER_NPUB, OTHER_HEX);
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.revokeSessions()).isFalse();
+    }
+
+    /**
+     * Tests that a deployment with no configured key refuses without revoking,
+     * for the same reason as the unreadable case.
+     */
+    @Test
+    void shouldNotEndSessionsWhenNoKeyIsConfigured() {
+        AclDecision decision = resolverFor("").resolve(OTHER_NPUB, OTHER_HEX);
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.revokeSessions()).isFalse();
+    }
+
+    /**
      * Tests that the configured key wins over a stored entry for the same key.
      *
      * <p>The interface cannot produce that state, but changing the configured
