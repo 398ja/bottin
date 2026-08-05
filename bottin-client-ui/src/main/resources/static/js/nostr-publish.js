@@ -38,6 +38,14 @@
         return { kind: 10002, created_at: nowSeconds(), tags: relaysToTags(relays), content: '' };
     }
 
+    // Builds any replaceable list event: kind 3 for follows, kind 10000 for blocks.
+    // Takes tags and content already assembled by the caller rather than assembling
+    // them, because both carry entries this application did not author and must not
+    // rebuild - see ReplaceableList and its codecs.
+    function buildReplaceableListEvent(kind, tags, content) {
+        return { kind: kind, created_at: nowSeconds(), tags: tags || [], content: content || '' };
+    }
+
     // Broadcasts a signed event to the given relays via a SimplePool-shaped pool and
     // resolves per-relay accepted/reason results, never rejecting.
     function publish(pool, relayUrls, signedEvent) {
@@ -56,6 +64,7 @@
     var api = {
         buildProfileEvent: buildProfileEvent,
         buildRelayListEvent: buildRelayListEvent,
+        buildReplaceableListEvent: buildReplaceableListEvent,
         relaysToTags: relaysToTags,
         publish: publish
     };
