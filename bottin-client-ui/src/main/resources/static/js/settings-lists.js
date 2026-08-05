@@ -5,12 +5,13 @@
 // that also makes an otherwise write-only list recoverable: entries are encrypted,
 // so this page is the only way to read back what was blocked.
 //
-// Names are resolved in one batched kind-0 query for every key on the list rather
+// Profiles are resolved in one batched kind-0 query for every key on the list rather
 // than one query per row. A key whose owner has published nothing renders as an
 // abbreviated key, which is a limitation of their data rather than a failure here.
 var SettingsLists = (function () {
     var METADATA_KIND = 0;
     var QUERY_MAX_WAIT_MS = 4000;
+    var DEFAULT_AVATAR = '/img/default-avatar.svg';
 
     function abbreviate(pubkeyHex) {
         return pubkeyHex.slice(0, 8) + '…' + pubkeyHex.slice(-8);
@@ -18,9 +19,9 @@ var SettingsLists = (function () {
 
     function el(id) { return document.getElementById(id); }
 
-    // Resolves display names for many keys at once. Never rejects: a name is a nicety
+    // Resolves profiles for many keys at once. Never rejects: a profile is a nicety
     // and an unreachable relay must not stop the list itself from rendering.
-    function resolveNames(userId, pubkeys) {
+    function resolveProfiles(userId, pubkeys) {
         if (!pubkeys.length) return Promise.resolve({});
 
         return window.APP.effectiveReadRelays(userId).then(function (readRelays) {
@@ -43,16 +44,19 @@ var SettingsLists = (function () {
                     var held = newest[event.pubkey];
                     if (!held || event.created_at > held.created_at) newest[event.pubkey] = event;
                 });
-                var names = {};
+                var profiles = {};
                 Object.keys(newest).forEach(function (pubkey) {
                     try {
                         var metadata = JSON.parse(newest[pubkey].content || '{}');
-                        var name = metadata.display_name || metadata.name;
-                        if (name) names[pubkey] = name;
-                    } catch (ignored) { /* a profile we cannot parse has no name to show */ }
+                        profiles[pubkey] = {
+                            name: metadata.display_name || metadata.name,
+                            picture: metadata.picture,
+                            nip05: metadata.nip05
+                        };
+                    } catch (ignored) { /* a profile we cannot parse has nothing to show */ }
                 });
                 release();
-                return names;
+                return profiles;
             }, function (err) {
                 release();
                 throw err;
@@ -60,7 +64,8 @@ var SettingsLists = (function () {
         }).catch(function () { return {}; });
     }
 
-    function row(pubkey, name, options, undo) {
+    function row(pubkey, profile, options, undo) {
+        var found = profile || {};
         var undoLabel = options.undoLabel;
         var element = document.createElement('div');
         element.className = 'search-result';
@@ -69,19 +74,34 @@ var SettingsLists = (function () {
         link.className = 'search-result-link';
         link.href = '/profile/' + encodeURIComponent(pubkey);
 
+        var avatar = document.createElement('img');
+        avatar.alt = '';
+        avatar.className = 'avatar-sm';
+        // A picture URL that will not load is as good as none: the placeholder keeps
+        // the row's shape rather than leaving a broken image beside the name.
+        avatar.onerror = function () { this.src = DEFAULT_AVATAR; };
+        avatar.src = found.picture || DEFAULT_AVATAR;
+        link.appendChild(avatar);
+
         var info = document.createElement('div');
         info.className = 'search-result-info';
 
         var title = document.createElement('div');
         title.className = 'search-result-name';
-        title.textContent = name || abbreviate(pubkey);
+        title.textContent = found.name || abbreviate(pubkey);
         info.appendChild(title);
 
-        // The key is always on show, even when a name is: a name is self-asserted
-        // and two people may publish the same one.
+        // The NIP-05 identifier is what distinguishes two people publishing the same
+        // display name. Whoever has published none falls back to their key, which is
+        // the only identifier they have given us.
         var detail = document.createElement('div');
-        detail.className = 'search-result-detail form-input-mono';
-        detail.textContent = abbreviate(pubkey);
+        detail.className = 'search-result-detail';
+        if (found.nip05) {
+            detail.textContent = found.nip05;
+        } else {
+            detail.className += ' form-input-mono';
+            detail.textContent = abbreviate(pubkey);
+        }
         info.appendChild(detail);
 
         link.appendChild(info);
@@ -140,10 +160,10 @@ var SettingsLists = (function () {
                 message(container, options.emptyIcon, options.emptyText);
                 return;
             }
-            return resolveNames(userId, found.pubkeys).then(function (names) {
+            return resolveProfiles(userId, found.pubkeys).then(function (profiles) {
                 container.innerHTML = '';
                 found.pubkeys.forEach(function (pubkey) {
-                    container.appendChild(row(pubkey, names[pubkey], options, function (key) {
+                    container.appendChild(row(pubkey, profiles[pubkey], options, function (key) {
                         return options.undo(userId, key);
                     }));
                 });

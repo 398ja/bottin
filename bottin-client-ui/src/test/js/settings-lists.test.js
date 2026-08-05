@@ -54,8 +54,9 @@ function installApp(options) {
   };
 }
 
-function metadataEvent(pubkey, name, created_at) {
-  return { kind: 0, pubkey, created_at: created_at || 1, content: JSON.stringify({ display_name: name }) };
+function metadataEvent(pubkey, name, created_at, extra) {
+  const content = Object.assign({ display_name: name }, extra || {});
+  return { kind: 0, pubkey, created_at: created_at || 1, content: JSON.stringify(content) };
 }
 
 describe('followed users page', () => {
@@ -85,6 +86,40 @@ describe('followed users page', () => {
     await SettingsLists.initFollows();
 
     expect(list('follows-list').textContent).toContain('bbbbbbbb…bbbbbbbb');
+  });
+
+  // The identifier a reader recognises is the NIP-05 address, not the key behind it.
+  it('shows the NIP-05 identifier rather than the key', async () => {
+    installApp({
+      follows: { pubkeys: [ALICE], readable: true },
+      metadata: [metadataEvent(ALICE, 'Alice', 1, { nip05: 'alice@example.com' })]
+    });
+
+    await SettingsLists.initFollows();
+
+    expect(list('follows-list').textContent).toContain('alice@example.com');
+    expect(list('follows-list').textContent).not.toContain('bbbbbbbb…bbbbbbbb');
+  });
+
+  it('shows the published picture as the avatar', async () => {
+    installApp({
+      follows: { pubkeys: [ALICE], readable: true },
+      metadata: [metadataEvent(ALICE, 'Alice', 1, { picture: 'https://example.com/alice.png' })]
+    });
+
+    await SettingsLists.initFollows();
+
+    expect(rows('follows-list')[0].querySelector('img').src).toBe('https://example.com/alice.png');
+  });
+
+  // A row with no image at all would collapse out of line with its neighbours.
+  it('falls back to the placeholder avatar when no picture is published', async () => {
+    installApp({ follows: { pubkeys: [ALICE], readable: true }, metadata: [] });
+
+    await SettingsLists.initFollows();
+
+    expect(rows('follows-list')[0].querySelector('img').getAttribute('src'))
+      .toBe('/img/default-avatar.svg');
   });
 
   it('takes the newest profile when relays disagree', async () => {
