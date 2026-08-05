@@ -84,6 +84,7 @@
         <mockito.version>5.11.0</mockito.version>
         <assertj.version>3.25.3</assertj.version>
         <testcontainers.version>1.19.7</testcontainers.version>
+        <selenium.version>4.19.1</selenium.version>
         <wiremock.version>3.4.2</wiremock.version>
 
         <!-- API Documentation -->

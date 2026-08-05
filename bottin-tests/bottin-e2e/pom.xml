@@ -55,6 +55,30 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- The client UI, booted so its real templates and static assets are served.
+             TestApplication scans an explicit package whitelist that excludes
+             xyz.tcheeric.bottin.client, so this cannot disturb the API e2e tests. -->
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>bottin-client-ui</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- A browser in a container: the relay-dependent code is browser JavaScript,
+             and nothing else in this repository can execute it. -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>selenium</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>${selenium.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Testcontainers -->
         <dependency>
             <groupId>org.testcontainers</groupId>
