@@ -21,8 +21,14 @@ function renderPage(viewedPubkey) {
     '<p id="profile-about" class="hidden"></p>' +
     '<div class="profile-detail hidden" id="profile-website-row"><a id="profile-website"></a></div>' +
     '<div class="profile-detail hidden" id="profile-lud16-row"><span id="profile-lud16"></span></div>' +
+    '<div id="profile-actions" class="hidden"></div>' +
     (viewedPubkey ? '<span id="profile-pubkey" hidden>' + viewedPubkey + '</span>' : '');
   document.dispatchEvent(new Event('DOMContentLoaded'));
+}
+
+function actionButton(label) {
+  const buttons = Array.from(document.querySelectorAll('#profile-actions button'));
+  return buttons.find((b) => b.textContent === label) || null;
 }
 
 // A browser with no identity of its own: nobody signed in here.
@@ -53,6 +59,11 @@ describe('profile-view.js', () => {
         fetched = { relays: relays, pubkeyHex: pubkeyHex };
         return Promise.resolve({ displayName: 'Alice', nip05: 'alice@imani.test', about: 'her bio' });
       })
+    };
+    window.FollowList = {
+      cached: () => [],
+      follow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unfollow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
     };
   });
 
@@ -123,5 +134,80 @@ describe('profile-view.js', () => {
 
     expect(name()).toBe('');
     expect(window.ProfileFetch.fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('profile-view.js follow control', () => {
+  beforeEach(() => {
+    window.APP = {
+      getIdentityUserId: () => STORED_IDENTITY.userId,
+      loadIdentity: () => STORED_IDENTITY,
+      saveIdentity: vi.fn(),
+      safeImageUrl: () => null,
+      effectiveReadRelays: vi.fn(() => Promise.resolve(['wss://read'])),
+      showToast: vi.fn()
+    };
+    window.NostrTools = { SimplePool: function () { return { close: vi.fn() }; } };
+    window.ProfileFetch = { fetch: vi.fn(() => Promise.resolve({ displayName: 'Alice' })) };
+    window.FollowList = {
+      cached: () => [],
+      follow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unfollow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
+  });
+
+  // Nobody is signed in, so there is no key to follow with. A control that fails
+  // when pressed is worse than none at all.
+  it('offers no control to a signed-out reader', () => {
+    signOut();
+
+    renderPage(OTHER_PUBKEY);
+
+    expect(document.querySelectorAll('#profile-actions button')).toHaveLength(0);
+  });
+
+  // Following yourself is not a thing, and the own-profile page returns before the
+  // controls are ever considered.
+  it('offers no control on one\'s own profile', () => {
+    renderPage(null);
+
+    expect(document.querySelectorAll('#profile-actions button')).toHaveLength(0);
+  });
+
+  it('offers Follow for a key the cache does not hold', () => {
+    renderPage(OTHER_PUBKEY);
+
+    expect(actionButton('Follow')).not.toBeNull();
+  });
+
+  it('offers Following for a key the cache holds', () => {
+    window.FollowList.cached = () => [OTHER_PUBKEY];
+
+    renderPage(OTHER_PUBKEY);
+
+    expect(actionButton('Following')).not.toBeNull();
+  });
+
+  it('follows the viewed key and relabels', async () => {
+    renderPage(OTHER_PUBKEY);
+
+    actionButton('Follow').click();
+
+    await vi.waitFor(() => expect(actionButton('Following')).not.toBeNull());
+    expect(window.FollowList.follow).toHaveBeenCalledWith(STORED_IDENTITY.userId, OTHER_PUBKEY);
+  });
+
+  // An unreadable list must not leave the page claiming a follow that never
+  // reached a relay.
+  it('reports an unreadable list and leaves the label alone', async () => {
+    window.FollowList.follow = vi.fn(() =>
+      Promise.reject(Object.assign(new Error('x'), { code: 'unreadable' })));
+
+    renderPage(OTHER_PUBKEY);
+    actionButton('Follow').click();
+
+    await vi.waitFor(() => expect(window.APP.showToast).toHaveBeenCalled());
+    expect(window.APP.showToast.mock.calls[0][0]).toContain('Could not read your follow list');
+    expect(actionButton('Follow')).not.toBeNull();
   });
 });

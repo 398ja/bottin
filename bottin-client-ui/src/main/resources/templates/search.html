@@ -32,6 +32,100 @@
             var results = document.getElementById('search-results');
             var loading = document.getElementById('search-loading');
 
+            // Reports what actually happened rather than a flat success. A publish
+            // some relays refused is neither a success nor a failure, and saying so
+            // is the difference between a user who knows where they stand and one
+            // who finds out later.
+            function reportOutcome(result, doneLabel) {
+                if (result.unchanged) return;
+                if (result.published === 0) {
+                    APP.showToast('Publish failed on all relays', 'error');
+                } else if (result.published < result.of) {
+                    APP.showToast(doneLabel + ' · published to ' + result.published
+                            + ' of ' + result.of + ' relays', 'success');
+                } else {
+                    APP.showToast(doneLabel, 'success');
+                }
+            }
+
+            // A refusal names what could not be done. A cancelled unlock is a
+            // decision, not a failure, and says nothing at all.
+            function reportRefusal(err, listName, verb) {
+                if (err && err.code === 'unreadable') {
+                    APP.showToast('Could not read your ' + listName + ' list. Not publishing.', 'error');
+                } else if (err && err.code === 'no_write_relays') {
+                    APP.showToast('Add at least one write relay before ' + verb + '.', 'error');
+                }
+            }
+
+            function buildRow(r) {
+                var row = document.createElement('div');
+                row.className = 'search-result';
+
+                // Only the navigating part is a link; the controls sit beside it.
+                var link = document.createElement('a');
+                link.className = 'search-result-link';
+                link.href = '/profile/' + encodeURIComponent(r.pubkey);
+
+                var img = document.createElement('img');
+                img.src = '/img/default-avatar.svg';
+                img.alt = '';
+                img.className = 'avatar-sm';
+                link.appendChild(img);
+
+                var info = document.createElement('div');
+                info.className = 'search-result-info';
+
+                var name = document.createElement('div');
+                name.className = 'search-result-name';
+                name.textContent = r.name;
+                info.appendChild(name);
+
+                // The full identifier, not just the local part: the domain is what a
+                // reader has to look at to tell alice@example.com from a lookalike.
+                var detail = document.createElement('div');
+                detail.className = 'search-result-detail';
+                detail.textContent = r.nip05;
+                info.appendChild(detail);
+
+                link.appendChild(info);
+                row.appendChild(link);
+
+                var userId = APP.getIdentityUserId();
+                if (userId) row.appendChild(buildFollowButton(userId, r.pubkey));
+
+                return row;
+            }
+
+            // Labelled from the cache so a keystroke costs no relay round-trip. The
+            // cache may be stale, which can mislabel this button but can never
+            // influence what gets published - every mutation re-reads first.
+            function buildFollowButton(userId, pubkey) {
+                var button = document.createElement('button');
+                var following = FollowList.cached(userId).indexOf(pubkey) !== -1;
+
+                function paint() {
+                    button.textContent = following ? 'Following' : 'Follow';
+                    button.className = 'btn btn-sm ' + (following ? 'btn-outline' : 'btn-primary');
+                }
+                paint();
+
+                button.addEventListener('click', function() {
+                    button.disabled = true;
+                    var action = following ? FollowList.unfollow : FollowList.follow;
+                    var doneLabel = following ? 'Unfollowed' : 'Following';
+                    action(userId, pubkey)
+                        .then(function(result) {
+                            if (result.published > 0 || result.unchanged) following = !following;
+                            reportOutcome(result, doneLabel);
+                        })
+                        .catch(function(err) { reportRefusal(err, 'follow', 'following'); })
+                        .then(function() { button.disabled = false; paint(); });
+                });
+
+                return button;
+            }
+
             var debouncedSearch = APP.debounce(function(query) {
                 if (!query || !query.trim()) {
                     results.innerHTML = '';
@@ -58,37 +152,7 @@
                         results.innerHTML = '';
                         if (data.results && data.results.length > 0) {
                             data.results.forEach(function(r) {
-                                // The whole row opens the profile. The directory
-                                // knows the handle and the key, nothing else, so
-                                // the published profile is where the rest lives.
-                                var row = document.createElement('a');
-                                row.className = 'search-result';
-                                row.href = '/profile/' + encodeURIComponent(r.pubkey);
-
-                                var img = document.createElement('img');
-                                img.src = '/img/default-avatar.svg';
-                                img.alt = '';
-                                img.className = 'avatar-sm';
-                                row.appendChild(img);
-
-                                var info = document.createElement('div');
-                                info.className = 'search-result-info';
-
-                                var name = document.createElement('div');
-                                name.className = 'search-result-name';
-                                name.textContent = r.name;
-                                info.appendChild(name);
-
-                                // The full identifier, not just the local part: the
-                                // domain is what a reader has to look at to tell
-                                // alice@example.com from a lookalike.
-                                var detail = document.createElement('div');
-                                detail.className = 'search-result-detail';
-                                detail.textContent = r.nip05;
-                                info.appendChild(detail);
-
-                                row.appendChild(info);
-                                results.appendChild(row);
+                                results.appendChild(buildRow(r));
                             });
                         } else {
                             var empty = document.createElement('div');

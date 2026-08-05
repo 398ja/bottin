@@ -48,6 +48,57 @@ document.addEventListener('DOMContentLoaded', function () {
         return pubkeyHex.slice(0, 8) + '…' + pubkeyHex.slice(-8);
     }
 
+    // Offers the follow control for another key's profile. Nothing is rendered for a
+    // reader who is not signed in: they hold no key, so there is nothing to follow
+    // with, and a control that fails when pressed is worse than none.
+    function renderActions(pubkey) {
+        var actions = el('profile-actions');
+        if (!actions || !userId) return;
+
+        actions.classList.remove('hidden');
+        actions.appendChild(followControl(userId, pubkey));
+    }
+
+    function followControl(user, pubkey) {
+        var button = document.createElement('button');
+        var following = FollowList.cached(user).indexOf(pubkey) !== -1;
+
+        function paint() {
+            button.textContent = following ? 'Following' : 'Follow';
+            button.className = 'btn ' + (following ? 'btn-outline' : 'btn-primary');
+        }
+        paint();
+
+        button.addEventListener('click', function () {
+            button.disabled = true;
+            var action = following ? FollowList.unfollow : FollowList.follow;
+            var doneLabel = following ? 'Unfollowed' : 'Following';
+            action(user, pubkey)
+                .then(function (result) {
+                    if (result.published > 0 || result.unchanged) following = !following;
+                    if (result.unchanged) return;
+                    if (result.published === 0) {
+                        APP.showToast('Publish failed on all relays', 'error');
+                    } else if (result.published < result.of) {
+                        APP.showToast(doneLabel + ' · published to ' + result.published
+                                + ' of ' + result.of + ' relays', 'success');
+                    } else {
+                        APP.showToast(doneLabel, 'success');
+                    }
+                })
+                .catch(function (err) {
+                    if (err && err.code === 'unreadable') {
+                        APP.showToast('Could not read your follow list. Not publishing.', 'error');
+                    } else if (err && err.code === 'no_write_relays') {
+                        APP.showToast('Add at least one write relay before following.', 'error');
+                    }
+                })
+                .then(function () { button.disabled = false; paint(); });
+        });
+
+        return button;
+    }
+
     var viewedEl = el('profile-pubkey');
     var viewedPubkey = viewedEl ? viewedEl.textContent.trim() : '';
 
@@ -56,6 +107,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (identity) render(identity, 'Your profile');
         return;
     }
+
+    renderActions(viewedPubkey);
 
     // This browser holds nothing about anyone but its own user, so another key's
     // profile is read from relays and is never saved: the stored identity belongs
