@@ -32,6 +32,8 @@ function installApp(options) {
   window.APP = {
     getIdentityUserId: () => ('identity' in opts ? opts.identity : USER),
     effectiveReadRelays: () => Promise.resolve(opts.readRelays || ['wss://relay']),
+    // The real app.js guard, restated: only http(s) URLs survive it.
+    safeImageUrl: (value) => (/^https?:\/\//.test(value || '') ? value : null),
     showToast: (message, level) => toasts.push({ message, level })
   };
   window.NostrTools = {
@@ -116,6 +118,20 @@ describe('followed users page', () => {
   // A row with no image at all would collapse out of line with its neighbours.
   it('falls back to the placeholder avatar when no picture is published', async () => {
     installApp({ follows: { pubkeys: [ALICE], readable: true }, metadata: [] });
+
+    await SettingsLists.initFollows();
+
+    expect(rows('follows-list')[0].querySelector('img').getAttribute('src'))
+      .toBe('/img/default-avatar.svg');
+  });
+
+  // The picture URL arrives from a relay, so it is whatever its author chose to
+  // publish. Anything that is not http(s) is refused the same as none at all.
+  it('refuses a picture URL that is not http(s)', async () => {
+    installApp({
+      follows: { pubkeys: [ALICE], readable: true },
+      metadata: [metadataEvent(ALICE, 'Alice', 1, { picture: 'javascript:alert(1)' })]
+    });
 
     await SettingsLists.initFollows();
 

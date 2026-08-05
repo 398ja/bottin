@@ -28,7 +28,11 @@ var ProfileLookup = (function () {
                 var metadata = JSON.parse(newest[pubkey].content || '{}');
                 profiles[pubkey] = {
                     name: metadata.display_name || metadata.name,
-                    picture: metadata.picture,
+                    // Sanitised here rather than at each caller: this is where relay
+                    // data enters, and every page that shows a face reads it from
+                    // here. A URL that is not http(s) resolves null, and the caller's
+                    // existing placeholder fallback covers it.
+                    picture: window.APP.safeImageUrl(metadata.picture),
                     nip05: metadata.nip05
                 };
             } catch (ignored) { /* a profile we cannot parse has nothing to show */ }
