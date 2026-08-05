@@ -85,8 +85,11 @@
                         </div>
                     </div>
 
-                    <!-- Verification Card -->
-                    <div class="bg-white shadow rounded-lg" th:unless="${domain.verified}">
+                    <!-- Verification Card. Shown only to whoever may act on it: the
+                         instructions carry a token that is issued on first view, and
+                         that issuing is now reserved along with the verify route. -->
+                    <div class="bg-white shadow rounded-lg"
+                         th:if="${canManageDomains and !domain.verified}">
                         <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
                             <h3 class="text-lg font-medium leading-6 text-gray-900">Domain Verification</h3>
                         </div>
@@ -162,7 +165,7 @@
                             <p class="text-sm text-gray-600">
                                 This domain has <span class="font-medium" th:text="${domain.recordCount}">0</span> NIP-05 records.
                             </p>
-                            <a th:href="@{/admin/records(search=${domain.name})}"
+                            <a th:href="@{/admin/records(domain=${domain.name})}"
                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200">
                                 View Records
                             </a>
@@ -174,7 +177,7 @@
                             <h3 class="mt-2 text-sm font-medium text-gray-900">No records</h3>
                             <p class="mt-1 text-sm text-gray-500">This domain has no NIP-05 records yet.</p>
                             <div class="mt-4">
-                                <a href="/admin/records"
+                                <a th:href="@{/admin/records(domain=${domain.name})}"
                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200">
                                     Add Record
                                 </a>
@@ -189,7 +192,8 @@
                        class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                         Back to Domains
                     </a>
-                    <form th:action="@{/admin/domains/{id}/delete(id=${domain.id})}" method="post" class="inline"
+                    <form th:if="${canManageDomains}"
+                          th:action="@{/admin/domains/{id}/delete(id=${domain.id})}" method="post" class="inline"
                           onsubmit="return confirm('Are you sure you want to delete this domain? All associated records will also be deleted.');">
                         <button type="submit"
                                 class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700">

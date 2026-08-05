@@ -1,0 +1,42 @@
+# Git
+.git/
+.gitignore
+
+# Maven
+target/
+*.class
+*.jar
+*.war
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.flattened-pom.xml
+
+# Environment
+.env
+.env.*
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Project planning
+/project/
+/AGENTS.md
+/CLAUDE.md
+/.claude/

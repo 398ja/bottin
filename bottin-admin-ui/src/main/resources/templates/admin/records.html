@@ -18,27 +18,45 @@
 
                 <div th:replace="~{fragments/layout :: alerts}"></div>
 
-                <!-- Search -->
+                <!-- Domain picker and search. The domain submits on change, because
+                     it is what decides whether there is anything to show at all. -->
                 <div class="mb-6">
                     <form method="get" class="flex gap-4">
+                        <div class="w-64">
+                            <select name="domain" onchange="this.form.submit()"
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                <option value="">Choose a domain…</option>
+                                <option th:each="d : ${domains}" th:value="${d.name}" th:text="${d.name}"
+                                        th:selected="${d.name == selectedDomain}">example.com</option>
+                            </select>
+                        </div>
                         <div class="flex-1">
                             <input type="text" name="search" th:value="${search}"
+                                   th:disabled="${selectedDomain == null}"
                                    placeholder="Search by username..."
-                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-gray-50">
                         </div>
-                        <button type="submit"
-                                class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <button type="submit" th:disabled="${selectedDomain == null}"
+                                class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50">
                             Search
                         </button>
-                        <a th:if="${search}" href="/admin/records"
+                        <a th:if="${search}" th:href="@{/admin/records(domain=${selectedDomain})}"
                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                             Clear
                         </a>
                     </form>
                 </div>
 
-                <!-- Records Table -->
-                <div class="bg-white shadow rounded-lg overflow-hidden">
+                <!-- Said rather than shown: an empty table here would read as
+                     "this domain has no records" when no domain has been picked. -->
+                <div th:if="${selectedDomain == null}"
+                     class="mb-6 rounded-md bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
+                    Choose a domain to see its records. Records are listed one domain at a time.
+                </div>
+
+                <!-- Records Table. Absent entirely until a domain is chosen, rather
+                     than shown empty, which would state something untrue about it. -->
+                <div th:if="${selectedDomain != null}" class="bg-white shadow rounded-lg overflow-hidden">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -92,12 +110,12 @@
                     <!-- Pagination -->
                     <div th:if="${records.totalPages > 1}" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                         <div class="flex-1 flex justify-between sm:hidden">
-                            <a th:href="@{/admin/records(page=${records.number - 1}, search=${search})}"
+                            <a th:href="@{/admin/records(page=${records.number - 1}, domain=${selectedDomain}, search=${search})}"
                                th:classappend="${records.first} ? 'pointer-events-none opacity-50' : ''"
                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Previous
                             </a>
-                            <a th:href="@{/admin/records(page=${records.number + 1}, search=${search})}"
+                            <a th:href="@{/admin/records(page=${records.number + 1}, domain=${selectedDomain}, search=${search})}"
                                th:classappend="${records.last} ? 'pointer-events-none opacity-50' : ''"
                                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Next
@@ -113,12 +131,12 @@
                             </div>
                             <div>
                                 <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                                    <a th:href="@{/admin/records(page=${records.number - 1}, search=${search})}"
+                                    <a th:href="@{/admin/records(page=${records.number - 1}, domain=${selectedDomain}, search=${search})}"
                                        th:classappend="${records.first} ? 'pointer-events-none opacity-50' : ''"
                                        class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                         Previous
                                     </a>
-                                    <a th:href="@{/admin/records(page=${records.number + 1}, search=${search})}"
+                                    <a th:href="@{/admin/records(page=${records.number + 1}, domain=${selectedDomain}, search=${search})}"
                                        th:classappend="${records.last} ? 'pointer-events-none opacity-50' : ''"
                                        class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                         Next
@@ -147,7 +165,13 @@
                         </div>
                         <div>
                             <label for="domain" class="block text-sm font-medium text-gray-700">Domain</label>
+                            <!-- Defaults to the domain being viewed. The page is scoped to
+                                 one domain now, so making the operator retype it invites a
+                                 record created under a different domain than the list they
+                                 are looking at — and the redirect would then take them
+                                 somewhere they did not expect. -->
                             <input type="text" name="domain" id="domain" required
+                                   th:value="${selectedDomain}"
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                    placeholder="example.com">
                         </div>

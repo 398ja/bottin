@@ -16,7 +16,7 @@ docker-compose up -d
 ```
 
 This starts:
-- **bottin-web** on port 8080 - REST API for NIP-05 resolution
+- **bottin-api** on port 8080 - REST API for NIP-05 resolution
 - **bottin-admin** on port 8081 - Admin Dashboard
 - **postgres** - PostgreSQL database (internal)
 
@@ -27,7 +27,7 @@ This starts:
 Deploy just the REST API for NIP-05 resolution:
 
 ```bash
-docker-compose up -d bottin-web postgres
+docker-compose up -d bottin-api postgres
 ```
 
 ### Admin Dashboard Only
@@ -50,6 +50,10 @@ BOTTIN_DATABASE_PASSWORD=your-secure-password
 BOTTIN_ADMIN_USER=admin
 BOTTIN_ADMIN_PASSWORD=your-admin-password
 
+# Credential for machine callers (bottin-client registering handles). Separate
+# from the admin one, and required in production.
+BOTTIN_API_PASSWORD=your-api-password
+
 # Ports (optional)
 BOTTIN_PORT=8080
 BOTTIN_ADMIN_PORT=8081
@@ -61,6 +65,36 @@ BOTTIN_DEFAULT_DOMAIN=example.com
 BOTTIN_API_DOCS_ENABLED=false
 BOTTIN_SWAGGER_ENABLED=false
 ```
+
+The media server, the relay sets, and the API rate limit are **not** set here.
+They are edited in the admin UI after the stack is up; see the next section.
+
+## Configure Admin Access
+
+**Before deploying**, set the public key of whoever administers the deployment:
+
+```bash
+BOTTIN_ADMIN_NPUB=npub1...
+BOTTIN_ADMIN_EXTERNAL_URL=https://admin.example.com
+```
+
+There is no username or password for the dashboard any more, and no default
+administrator — an unconfigured deployment admits nobody. Set this before
+upgrading or you will be locked out. Full guidance, including why
+`BOTTIN_ADMIN_PASSWORD` must stay for `bottin-api`, is in
+[Configure Admin Access](configure-admin-access.md).
+
+## Configure Deployment Settings
+
+A fresh deployment comes up unconfigured by design: until you set them, image
+uploads are disabled and user events publish only to relays each user adds
+themselves. There is no environment fallback, so this is a required post-deploy
+step rather than an optional one.
+
+Open `/admin/settings` and set the media server, the system relays, the profile
+discovery relays, and the rate limit. Full guidance, including the
+browser-reachability requirement for the media server URL, is in
+[Configure Deployment Settings](configure-deployment-settings.md).
 
 ## Verify Deployment
 
@@ -106,7 +140,7 @@ The `mvn deploy` goal automatically pushes Docker images to the registry along w
 mvn deploy
 
 # Deploy specific modules only
-mvn deploy -pl bottin-web,bottin-admin-ui -am
+mvn deploy -pl bottin-api,bottin-admin-ui -am
 ```
 
 This requires registry credentials in `~/.m2/settings.xml`:
@@ -125,10 +159,10 @@ For local development, build images to your local Docker daemon:
 
 ```bash
 # Build both services to local Docker
-mvn jib:dockerBuild -pl bottin-web,bottin-admin-ui
+mvn jib:dockerBuild -pl bottin-api,bottin-admin-ui
 
 # Build a single service
-mvn jib:dockerBuild -pl bottin-web
+mvn jib:dockerBuild -pl bottin-api
 ```
 
 ### Push to Private Registry (Manual)
@@ -137,17 +171,17 @@ Push images manually without deploying Maven artifacts:
 
 ```bash
 # Build and push both services
-mvn jib:build -pl bottin-web,bottin-admin-ui
+mvn jib:build -pl bottin-api,bottin-admin-ui
 
 # Build and push a single service
-mvn jib:build -pl bottin-web
+mvn jib:build -pl bottin-api
 ```
 
 ### Image Tags
 
 Images are tagged with both the version and `latest`:
-- `docker.398ja.xyz/bottin-web:0.1.0`
-- `docker.398ja.xyz/bottin-web:latest`
+- `docker.398ja.xyz/bottin-api:0.1.0`
+- `docker.398ja.xyz/bottin-api:latest`
 - `docker.398ja.xyz/bottin-admin-ui:0.1.0`
 - `docker.398ja.xyz/bottin-admin-ui:latest`
 
@@ -168,7 +202,7 @@ Alternatively, rebuild images using Docker Compose:
 docker-compose build
 
 # Rebuild specific service
-docker-compose build bottin-web
+docker-compose build bottin-api
 docker-compose build bottin-admin
 ```
 
@@ -179,7 +213,7 @@ docker-compose build bottin-admin
 docker-compose logs -f
 
 # Specific service
-docker-compose logs -f bottin-web
+docker-compose logs -f bottin-api
 docker-compose logs -f bottin-admin
 ```
 

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Security</title>
+</head>
+<body>
+    <div th:fragment="content" class="container-narrow">
+        <div th:replace="~{fragments/page-header :: headerUnder('Settings', '/settings', 'Security', 'Manage your passphrase and identity export')}"></div>
+
+        <div class="card">
+            <h2 class="card-title">Change Passphrase</h2>
+
+            <div class="form-group">
+                <label class="form-label">Current Passphrase</label>
+                <input type="password" id="current-password" class="form-input" autocomplete="current-password">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">New Passphrase</label>
+                <input type="password" id="new-password" class="form-input" minlength="8" autocomplete="new-password">
+                <div class="password-strength">
+                    <div class="password-strength-bar" id="strength-bar"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Confirm New Passphrase</label>
+                <input type="password" id="confirm-password" class="form-input" minlength="8" autocomplete="new-password">
+            </div>
+
+            <div id="passphrase-error" class="form-error hidden mb-2"></div>
+
+            <button class="btn btn-primary btn-full" onclick="handlePassphraseChange()">
+                Update Passphrase
+            </button>
+        </div>
+
+        <div class="card mt-2">
+            <h2 class="card-title">Export Identity</h2>
+            <div class="callout callout-warning mb-2">
+                <p>Reveal your nsec private key. Anyone with your nsec has full control of your identity — never share it. You will need to enter your passphrase to confirm.</p>
+            </div>
+            <button class="btn btn-outline btn-full" onclick="showNsecModal()">
+                Reveal nsec
+            </button>
+        </div>
+
+        <div class="card card-danger mt-2">
+            <h2 class="text-sm mb-1" style="color: var(--color-danger);">Danger Zone</h2>
+            <button class="btn btn-danger btn-full" onclick="APP.logout()">
+                Logout
+            </button>
+        </div>
+    </div>
+
+    <div id="nsec-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-title">Enter Your Passphrase</div>
+            <p class="text-secondary text-sm mb-2">
+                Enter your encryption passphrase to reveal your nsec.
+            </p>
+            <input type="password" id="modal-password" class="form-input" placeholder="Passphrase" autocomplete="off">
+            <div id="modal-error" class="form-error hidden mt-1"></div>
+            <div class="flex-row-gap-sm mt-2">
+                <button class="btn btn-outline" style="flex: 1;" onclick="closeNsecModal()">Cancel</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="confirmNsecModal()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="nsec-display-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-title">Your nsec Private Key</div>
+            <div class="card card-warning form-input-mono text-xs" style="word-break: break-all;" id="nsec-value"></div>
+            <div class="flex-row-gap-sm mt-2">
+                <button class="btn btn-sm btn-outline" style="flex: 1;" onclick="copyNsec()">Copy</button>
+                <button class="btn btn-sm btn-outline" style="flex: 1;" onclick="downloadNsec()">Download</button>
+                <button class="btn btn-sm btn-primary" style="flex: 1;" onclick="closeNsecDisplay()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var revealedNsec = null;
+
+        document.getElementById('new-password').addEventListener('input', function() {
+            var score = 0;
+            if (this.value.length >= 8) score++;
+            if (this.value.length >= 12) score++;
+            if (/[a-z]/.test(this.value) && /[A-Z]/.test(this.value)) score++;
+            if (/\d/.test(this.value)) score++;
+            if (/[^a-zA-Z0-9]/.test(this.value)) score++;
+            var labels = ['', 'weak', 'fair', 'good', 'strong', 'strong'];
+            document.getElementById('strength-bar').className = 'password-strength-bar ' + labels[score];
+        });
+
+        async function handlePassphraseChange() {
+            var current = document.getElementById('current-password').value;
+            var newPw = document.getElementById('new-password').value;
+            var confirm = document.getElementById('confirm-password').value;
+            var error = document.getElementById('passphrase-error');
+
+            if (newPw !== confirm) {
+                error.textContent = 'Passwords do not match';
+                error.style.display = 'block';
+                return;
+            }
+
+            if (newPw.length < 8) {
+                error.textContent = 'Password must be at least 8 characters';
+                error.style.display = 'block';
+                return;
+            }
+
+            try {
+                var userId = window.APP.getIdentityUserId();
+                if (!userId) throw new Error('No identity found');
+
+                var identity = window.APP.loadIdentity(userId);
+                if (!identity) throw new Error('No identity found');
+
+                var result = await NostrCrypto.reEncryptPrivateKey(current, newPw, identity);
+                identity.privateKeyEncrypted = result.encrypted;
+                identity.privateKeyIv = result.iv;
+                identity.privateKeySalt = result.salt;
+                identity.passwordHash = result.passwordHash;
+                identity.passwordSalt = result.passwordSalt;
+                window.APP.saveIdentity(identity);
+
+                error.style.display = 'none';
+                window.APP.showToast('Passphrase updated', 'success');
+                document.getElementById('current-password').value = '';
+                document.getElementById('new-password').value = '';
+                document.getElementById('confirm-password').value = '';
+            } catch (err) {
+                error.textContent = 'Current passphrase is incorrect';
+                error.style.display = 'block';
+            }
+        }
+
+        function showNsecModal() {
+            document.getElementById('nsec-modal').className = 'modal-overlay';
+            document.getElementById('modal-password').value = '';
+            document.getElementById('modal-error').style.display = 'none';
+        }
+
+        function closeNsecModal() {
+            document.getElementById('nsec-modal').className = 'modal-overlay hidden';
+        }
+
+        async function confirmNsecModal() {
+            var password = document.getElementById('modal-password').value;
+            var error = document.getElementById('modal-error');
+
+            try {
+                var userId = window.APP.getIdentityUserId();
+                var identity = window.APP.loadIdentity(userId);
+                if (!identity) throw new Error('No identity');
+
+                var valid = await NostrCrypto.verifyPassword(identity.passwordHash, identity.passwordSalt, password);
+                if (!valid) throw new Error('Wrong passphrase');
+
+                var hexKey = await NostrCrypto.decryptPrivateKey(
+                    identity.privateKeyEncrypted, identity.privateKeyIv, identity.privateKeySalt, password
+                );
+                revealedNsec = NostrCrypto.hexToNsec(hexKey);
+                closeNsecModal();
+                document.getElementById('nsec-value').textContent = revealedNsec;
+                document.getElementById('nsec-display-modal').className = 'modal-overlay';
+            } catch (err) {
+                error.textContent = err.message;
+                error.style.display = 'block';
+            }
+        }
+
+        function closeNsecDisplay() {
+            document.getElementById('nsec-display-modal').className = 'modal-overlay hidden';
+            revealedNsec = null;
+        }
+
+        function copyNsec() {
+            if (revealedNsec) {
+                navigator.clipboard.writeText(revealedNsec);
+                window.APP.showToast('Copied to clipboard', 'success');
+            }
+        }
+
+        function downloadNsec() {
+            if (revealedNsec) {
+                var blob = new Blob(['Nostr private key (nsec): ' + revealedNsec], { type: 'text/plain' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'bottin-nsec.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+    </script>
+</body>
+</html>

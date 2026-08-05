@@ -4,7 +4,7 @@ import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * E2E-06: Security and Authentication Tests.
@@ -95,10 +95,11 @@ class SecurityE2ETest extends BasicE2ETest {
     }
 
     /**
-     * Tests CORS headers on well-known endpoint.
+     * Tests that the application does NOT emit CORS headers on the well-known endpoint.
+     * CORS is owned by the edge proxy, not the application (see WellKnownController).
      */
     @Test
-    void shouldIncludeCorsHeadersOnWellKnownEndpoint() {
+    void shouldNotEmitCorsHeadersOnWellKnownEndpoint() {
         given()
                 .header("Origin", "https://example.com")
                 .header("Host", "e2e.example.com")
@@ -106,7 +107,7 @@ class SecurityE2ETest extends BasicE2ETest {
                 .get("/.well-known/nostr.json")
                 .then()
                 .statusCode(200)
-                .header("Access-Control-Allow-Origin", containsString("*"));
+                .header("Access-Control-Allow-Origin", nullValue());
     }
 
     /**

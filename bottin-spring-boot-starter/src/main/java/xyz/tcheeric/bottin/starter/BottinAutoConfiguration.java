@@ -1,7 +1,6 @@
 package xyz.tcheeric.bottin.starter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -9,10 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import xyz.tcheeric.bottin.persistence.repository.DomainRepository;
 import xyz.tcheeric.bottin.persistence.repository.Nip05RecordRepository;
-import xyz.tcheeric.nsecbunker.account.nip05.Nip05Manager;
-import xyz.tcheeric.nsecbunker.account.registration.AccountManager;
 
 /**
  * Spring Boot auto-configuration for bottin NIP-05 registry.
@@ -23,15 +19,27 @@ import xyz.tcheeric.nsecbunker.account.registration.AccountManager;
  * <p>Features enabled by this auto-configuration:</p>
  * <ul>
  *   <li>Database-backed NIP-05 record management</li>
- *   <li>Integration with nsecbunker-java via SPI providers</li>
  *   <li>Domain verification services</li>
  *   <li>External NIP-05 verification with caching</li>
- *   <li>REST API endpoints</li>
- *   <li>Admin dashboard (if enabled)</li>
+ *   <li>Profile reach calculation</li>
  * </ul>
+ *
+ * <p>The delivery layer ({@code xyz.tcheeric.bottin.api}) is deliberately
+ * <em>not</em> scanned. Scanning it from an auto-configuration grafted bottin's
+ * REST controllers and, worse, its "any request" security filter chain into
+ * every application that merely put this starter on the classpath. Because
+ * auto-configuration runs after user configuration, that chain arrived too late
+ * for {@code @ConditionalOnDefaultWebSecurity} to stand down, and the context
+ * failed to start with two chains matching every request. The same scan pulled
+ * in {@code BottinApiApplication} — itself a {@code @SpringBootApplication} with
+ * its own {@code @EnableJpaRepositories} — registering every repository twice.
+ *
+ * <p>An application that wants the REST layer declares it explicitly, as
+ * {@code BottinApiApplication} does. A starter should offer services, not decide
+ * how its consumer is secured.
  */
 @AutoConfiguration
-@ConditionalOnClass(Nip05Manager.class)
+@ConditionalOnClass(Nip05RecordRepository.class)
 @ConditionalOnProperty(prefix = "bottin", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(BottinProperties.class)
 @ComponentScan(basePackages = {
@@ -39,55 +47,9 @@ import xyz.tcheeric.nsecbunker.account.registration.AccountManager;
         "xyz.tcheeric.bottin.persistence",
         "xyz.tcheeric.bottin.service",
         "xyz.tcheeric.bottin.verification",
-        "xyz.tcheeric.bottin.web"
+        "xyz.tcheeric.bottin.reach"
 })
-@Slf4j
 public class BottinAutoConfiguration {
-
-    /**
-     * Creates the persistent NIP-05 manager if not already defined.
-     */
-    @Bean
-    @ConditionalOnMissingBean(Nip05Manager.class)
-    public PersistentNip05Manager persistentNip05Manager(
-            Nip05RecordRepository nip05RecordRepository,
-            DomainRepository domainRepository,
-            ObjectMapper objectMapper) {
-        log.info("bottin_autoconfiguration_nip05_manager_created");
-        return new PersistentNip05Manager(nip05RecordRepository, domainRepository, objectMapper);
-    }
-
-    /**
-     * Creates the persistent account manager if not already defined.
-     */
-    @Bean
-    @ConditionalOnMissingBean(AccountManager.class)
-    public PersistentAccountManager persistentAccountManager(
-            PersistentNip05Manager nip05Manager,
-            Nip05RecordRepository nip05RecordRepository) {
-        log.info("bottin_autoconfiguration_account_manager_created");
-        return new PersistentAccountManager(nip05Manager, nip05RecordRepository);
-    }
-
-    /**
-     * Creates the Nip05Manager provider for nsecbunker-java SPI.
-     */
-    @Bean
-    @ConditionalOnMissingBean(BottinNip05ManagerProvider.class)
-    public BottinNip05ManagerProvider bottinNip05ManagerProvider(PersistentNip05Manager persistentNip05Manager) {
-        log.info("bottin_autoconfiguration_nip05_provider_created");
-        return new BottinNip05ManagerProvider(persistentNip05Manager);
-    }
-
-    /**
-     * Creates the AccountManager provider for nsecbunker-java SPI.
-     */
-    @Bean
-    @ConditionalOnMissingBean(BottinAccountManagerProvider.class)
-    public BottinAccountManagerProvider bottinAccountManagerProvider(PersistentAccountManager persistentAccountManager) {
-        log.info("bottin_autoconfiguration_account_provider_created");
-        return new BottinAccountManagerProvider(persistentAccountManager);
-    }
 
     /**
      * Creates the ObjectMapper if not already defined.

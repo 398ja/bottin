@@ -18,7 +18,6 @@ mvn -Pe2e -pl bottin-tests/bottin-e2e test
 
 This starts:
 - PostgreSQL container for database
-- nsecbunkerd container for key management integration
 - The Spring Boot test application
 
 ## Run Specific Test Classes
@@ -37,9 +36,6 @@ mvn -Pe2e -pl bottin-tests/bottin-e2e test -Dtest=Nip05RegistrationFlowE2ETest
 
 # Error handling tests
 mvn -Pe2e -pl bottin-tests/bottin-e2e test -Dtest=ErrorHandlingE2ETest
-
-# nsecbunker-java integration
-mvn -Pe2e -pl bottin-tests/bottin-e2e test -Dtest=NsecbunkerIntegrationE2ETest
 ```
 
 ## Run a Single Test Method
@@ -62,14 +58,6 @@ Tests that only require PostgreSQL:
 | `Nip05RegistrationFlowE2ETest` | NIP-05 registration workflow |
 | `ErrorHandlingE2ETest` | Error responses and validation |
 
-### Integration E2E Tests
-
-Tests that require additional containers:
-
-| Test Class | Containers | Description |
-|------------|------------|-------------|
-| `NsecbunkerIntegrationE2ETest` | PostgreSQL, nsecbunkerd | PersistentNip05Manager integration |
-
 ## Container Images
 
 The tests use these container images:
@@ -77,14 +65,12 @@ The tests use these container images:
 | Container | Image | Purpose |
 |-----------|-------|---------|
 | PostgreSQL | `postgres:16-alpine` | Database |
-| nsecbunkerd | `docker.398ja.xyz/nsecbunkerd:latest` | Key management |
 | strfry | `dockurr/strfry:latest` | Nostr relay (optional) |
 
 Pull images in advance to speed up test execution:
 
 ```bash
 docker pull postgres:16-alpine
-docker pull docker.398ja.xyz/nsecbunkerd:latest
 docker pull dockurr/strfry:latest
 ```
 

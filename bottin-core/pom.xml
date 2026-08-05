@@ -8,7 +8,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>bottin</artifactId>
-        <version>0.2.1</version>
+        <version>0.8.0</version>
     </parent>
 
     <artifactId>bottin-core</artifactId>
@@ -39,6 +39,15 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <!-- nostr-java: NIP-19 bech32 decoding for public keys. Principle VI
+             forbids hand-rolling bech32, and every module that reads a key
+             written as an npub - the directory, the admin dashboard, the client
+             - needs the same canonical form, so it is decoded once here. -->
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>nostr-java-core</artifactId>
         </dependency>
 
         <!-- Testing -->

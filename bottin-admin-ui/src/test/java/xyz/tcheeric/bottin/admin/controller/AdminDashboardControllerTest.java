@@ -81,14 +81,21 @@ class AdminDashboardControllerTest {
     }
 
     /**
-     * Tests that users without ADMIN role cannot access dashboard.
+     * Tests that a caller with no session cannot reach the dashboard.
+     *
+     * <p>Replaces an earlier test asserting that a principal holding a non-admin
+     * role got 403. That scenario is no longer representable: there is no user
+     * store to authenticate as somebody else, and the only way to hold a
+     * principal is to prove control of the administrator's key. What a role
+     * permits is now decided by the permission annotations on each handler,
+     * covered by AdminAccessControlTest; what this asserts is the invariant that
+     * survives the change — no session, no dashboard.
      */
     @Test
-    @WithMockUser(roles = "USER")
-    void shouldDenyAccessForNonAdminUsers() throws Exception {
+    void shouldDenyAccessWithoutASession() throws Exception {
         // Act & Assert
-        mockMvc.perform(get("/admin/dashboard"))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/dashboard").header("Accept", "text/html"))
+                .andExpect(status().is3xxRedirection());
     }
 
     /**

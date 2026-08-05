@@ -12,6 +12,13 @@
     <style>
         [x-cloak] { display: none !important; }
     </style>
+    <!-- Key handling and the NAP handshake, shared with the client. Loaded on
+         every admin page because signing out needs them wherever the
+         administrator happens to be. -->
+    <script src="/js/nostr-tools.js"></script>
+    <script src="/js/nostr-crypto.js"></script>
+    <script src="/js/nap-client.js"></script>
+    <script src="/js/admin-signin.js"></script>
 </head>
 
 <nav th:fragment="navigation" class="bg-gray-800">
@@ -29,18 +36,22 @@
                            class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Records</a>
                         <a href="/admin/domains"
                            class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Domains</a>
+                        <a href="/admin/settings"
+                           class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Settings</a>
                     </div>
                 </div>
             </div>
             <div class="hidden md:block">
                 <div class="ml-4 flex items-center md:ml-6">
                     <span class="text-gray-300 text-sm mr-4" sec:authentication="name">User</span>
-                    <form th:action="@{/admin/logout}" method="post" class="inline">
-                        <button type="submit"
-                                class="rounded-md bg-gray-700 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-600 hover:text-white">
-                            Logout
-                        </button>
-                    </form>
+                    <!-- Signing out ends the session and erases the key stored in
+                         this browser. Prominent rather than tucked away: because
+                         the key rests here until sign-out, an administrator who
+                         walks away without using this leaves it behind. -->
+                    <button type="button" id="admin-signout-btn"
+                            class="rounded-md bg-gray-700 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-600 hover:text-white">
+                        Sign out
+                    </button>
                 </div>
             </div>
         </div>
@@ -92,5 +103,21 @@
     <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <p class="text-center text-sm text-gray-500">Bottin NIP-05 Registry</p>
     </div>
+    <script>
+        (function () {
+            var button = document.getElementById('admin-signout-btn');
+            if (!button) return;
+
+            button.addEventListener('click', function () {
+                button.disabled = true;
+                // The sign-in page is reached either way: the key is erased
+                // whether or not the server acknowledged, so staying on an admin
+                // page would only show one that no longer works.
+                AdminSignIn.signOut()
+                    .catch(function () { /* erased locally regardless */ })
+                    .then(function () { window.location.href = '/admin/login'; });
+            });
+        })();
+    </script>
 </footer>
 </html>

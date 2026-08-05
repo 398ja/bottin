@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Edit Profile</title>
+</head>
+<body>
+    <div th:fragment="content" class="container-narrow">
+        <div th:replace="~{fragments/page-header :: headerUnder('Profile', '/profile', 'Edit', 'Update and publish your public profile')}"></div>
+
+        <div class="card">
+            <div class="form-group">
+                <label class="form-label">Display name</label>
+                <input type="text" id="profile-display-name" class="form-input">
+                <div class="form-error hidden" id="profile-error-display-name"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">About</label>
+                <textarea id="profile-about" class="form-input" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Avatar</label>
+                <img id="profile-preview-avatar" src="/img/default-avatar.svg" alt=""
+                     style="width:72px;height:72px;object-fit:cover;border-radius:50%;display:block;margin-bottom:0.5rem;">
+                <input id="profile-picture" type="file" accept="image/*" class="form-input">
+                <div class="flex-row-gap-sm mt-1">
+                    <button type="button" class="btn btn-sm btn-outline" id="profile-picture-remove">Remove</button>
+                </div>
+                <div class="form-hint">Uploaded to your media server. JPEG, PNG, GIF or WebP, up to 5 MB.</div>
+                <div class="form-error hidden" id="profile-error-picture"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Banner</label>
+                <img id="profile-preview-banner" class="hidden" alt=""
+                     style="width:100%;max-height:120px;object-fit:cover;border-radius:var(--radius);margin-bottom:0.5rem;">
+                <input id="profile-banner" type="file" accept="image/*" class="form-input">
+                <div class="flex-row-gap-sm mt-1">
+                    <button type="button" class="btn btn-sm btn-outline" id="profile-banner-remove">Remove</button>
+                </div>
+                <div class="form-hint">Shown across the top of your profile. Up to 5 MB.</div>
+                <div class="form-error hidden" id="profile-error-banner"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Lightning (lud16)</label>
+                <input type="text" id="profile-lud16" class="form-input" placeholder="name@domain">
+                <div class="form-error hidden" id="profile-error-lud16"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Website</label>
+                <input type="text" id="profile-website" class="form-input" placeholder="https://...">
+                <div class="form-error hidden" id="profile-error-website"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">NIP-05 (read-only)</label>
+                <input type="text" id="profile-nip05" class="form-input form-input-mono" readonly>
+            </div>
+
+            <button class="btn btn-primary btn-full" id="profile-save-btn">Save &amp; Publish</button>
+            <a href="/profile" class="btn btn-outline btn-full mt-2">&lsaquo; Back to profile</a>
+        </div>
+
+        <span id="blossom-url" th:text="${blossomUrl}" hidden></span>
+    </div>
+
+    <script src="/js/nostr-publish.js" defer></script>
+    <script src="/js/nostr-validate.js" defer></script>
+    <script src="/js/profile.js" defer></script>
+</body>
+</html>

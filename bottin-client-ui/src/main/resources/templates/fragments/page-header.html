@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Page header: a bold title (and optional subtitle) above the content card.
+  Breadcrumbs render when the controller supplies a `breadcrumbs` model
+  attribute — a list of objects each exposing `label` and, for non-terminal
+  crumbs, a `url`. Terminal crumb (no url) renders as the current page.
+-->
+<div th:fragment="header(title, subtitle)" class="page-header">
+    <nav class="breadcrumbs" th:if="${breadcrumbs}" aria-label="Breadcrumb">
+        <th:block th:each="crumb, iter : ${breadcrumbs}">
+            <a th:if="${crumb.url}" th:href="${crumb.url}" th:text="${crumb.label}">Crumb</a>
+            <span th:unless="${crumb.url}" class="breadcrumb-current" th:text="${crumb.label}">Current</span>
+            <span th:unless="${iter.last}" class="breadcrumb-sep" aria-hidden="true">&rsaquo;</span>
+        </th:block>
+    </nav>
+    <h1 class="page-title" th:text="${title}">Page title</h1>
+    <p class="page-subtitle" th:if="${subtitle != null and !subtitle.isEmpty()}" th:text="${subtitle}">Subtitle</p>
+</div>
+
+<!--
+  Single-parent variant: renders a "Parent > Title" breadcrumb inline, for
+  pages one level below a section (e.g. Settings > Relays). Avoids threading a
+  breadcrumbs model attribute through the controller for simple hierarchies.
+-->
+<div th:fragment="headerUnder(parentLabel, parentUrl, title, subtitle)" class="page-header">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="${parentUrl}" th:text="${parentLabel}">Parent</a>
+        <span class="breadcrumb-sep" aria-hidden="true">&rsaquo;</span>
+        <span class="breadcrumb-current" th:text="${title}">Current</span>
+    </nav>
+    <h1 class="page-title" th:text="${title}">Page title</h1>
+    <p class="page-subtitle" th:if="${subtitle != null and !subtitle.isEmpty()}" th:text="${subtitle}">Subtitle</p>
+</div>
+</body>
+</html>

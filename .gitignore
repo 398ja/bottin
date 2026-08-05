@@ -27,6 +27,11 @@ buildNumber.properties
 .DS_Store
 Thumbs.db
 
+# Environment
+.env
+.env.*
+*.env
+
 # Logs
 *.log
 logs/
@@ -45,3 +50,20 @@ logs/
 /AGENTS.md
 /CLAUDE.md
 /.claude/
+
+# Local tooling / test artifacts
+/.playwright-mcp/
+/.opencode/
+/.specify/
+
+# graphify knowledge graph (regenerated locally)
+graphify-out/
+graph.json
+
+# Node dependencies for the Vitest suites (bottin-client-ui, bottin-admin-ui)
+node_modules/
+
+# Spec-driven development working files: kept on disk, not versioned
+docs/superpowers/
+.superpowers/
+specs/

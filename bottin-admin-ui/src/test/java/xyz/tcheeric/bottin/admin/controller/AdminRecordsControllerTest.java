@@ -24,6 +24,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -49,6 +52,10 @@ class AdminRecordsControllerTest {
 
     @MockBean
     private Nip05RecordService recordService;
+
+    /** Supplies the domain picker; empty unless a test says otherwise. */
+    @MockBean
+    private xyz.tcheeric.bottin.service.DomainService domainService;
 
     /**
      * Tests that unauthenticated users are redirected to login.
@@ -80,20 +87,87 @@ class AdminRecordsControllerTest {
     }
 
     /**
-     * Tests that search parameter filters records.
+     * Tests that no domain means no records, and specifically that the whole
+     * table is not fetched.
+     *
+     * <p>Asserted on {@code findAll} never being called, not merely on an empty
+     * model: the page was unusable precisely because it listed every record
+     * across every domain, so "returns nothing" and "asks for nothing" are
+     * different claims and it is the second one that matters.
      */
     @Test
     @WithMockUser(roles = "ADMIN")
-    void shouldFilterRecordsBySearchParameter() throws Exception {
+    void shouldShowNoRecordsUntilADomainIsChosen() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get("/admin/records"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin/records"))
+                .andExpect(model().attribute("selectedDomain", (Object) null))
+                .andExpect(model().attribute("records",
+                        org.hamcrest.Matchers.hasProperty("empty", org.hamcrest.Matchers.is(true))));
+
+        verify(recordService, never()).findAll(any(Pageable.class));
+    }
+
+    /**
+     * Tests that a search with no domain chosen still lists nothing, rather than
+     * falling back to searching every domain at once.
+     */
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldNotSearchAcrossEveryDomainWhenNoneIsChosen() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get("/admin/records").param("search", "alice"))
+                .andExpect(status().isOk());
+
+        verify(recordService, never()).searchByUsername(anyString(), any(Pageable.class));
+        verify(recordService, never()).findAll(any(Pageable.class));
+    }
+
+    /**
+     * Tests that choosing a domain lists that domain's records.
+     *
+     * <p>This is also what the <em>View Records</em> link on a domain now sends:
+     * {@code ?domain=}, where it previously sent {@code ?search=} and so matched
+     * the domain name against usernames and returned nothing.
+     */
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldListOnlyTheChosenDomainsRecords() throws Exception {
         // Arrange
-        when(recordService.searchByUsername(anyString(), any(Pageable.class)))
+        when(recordService.findByDomain(eq("example.com"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(createTestRecord(1L, "alice", "example.com"))));
+
+        // Act & Assert
+        mockMvc.perform(get("/admin/records").param("domain", "example.com"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("selectedDomain", "example.com"));
+
+        verify(recordService).findByDomain(eq("example.com"), any(Pageable.class));
+        verify(recordService, never()).findAll(any(Pageable.class));
+    }
+
+    /**
+     * Tests that the username search is scoped to the chosen domain rather than
+     * run across all of them.
+     */
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldScopeTheUsernameSearchToTheChosenDomain() throws Exception {
+        // Arrange
+        when(recordService.searchByUsernameInDomain(eq("example.com"), eq("ali"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(Collections.emptyList()));
 
         // Act & Assert
-        mockMvc.perform(get("/admin/records").param("search", "alice"))
+        mockMvc.perform(get("/admin/records")
+                        .param("domain", "example.com")
+                        .param("search", "ali"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("admin/records"))
-                .andExpect(model().attribute("search", "alice"));
+                .andExpect(model().attribute("selectedDomain", "example.com"))
+                .andExpect(model().attribute("search", "ali"));
+
+        verify(recordService).searchByUsernameInDomain(eq("example.com"), eq("ali"), any(Pageable.class));
+        verify(recordService, never()).searchByUsername(anyString(), any(Pageable.class));
     }
 
     /**
@@ -131,6 +205,10 @@ class AdminRecordsControllerTest {
 
     /**
      * Tests creating a new record successfully.
+     *
+     * <p>The redirect keeps the domain. The list shows nothing until one is
+     * chosen, so returning to the bare path would answer "record created" with an
+     * empty page and make the operator pick the domain again to see it.
      */
     @Test
     @WithMockUser(roles = "ADMIN")
@@ -147,8 +225,28 @@ class AdminRecordsControllerTest {
                         .param("domain", "example.com")
                         .param("pubkey", VALID_PUBKEY))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/records"))
+                .andExpect(redirectedUrl("/admin/records?domain=example.com"))
                 .andExpect(flash().attributeExists("success"));
+    }
+
+    /**
+     * Tests that deleting a record returns to the list of the domain it was in.
+     *
+     * <p>The domain is read before the delete, since afterwards there is no
+     * record left to ask.
+     */
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldReturnToTheDomainsListAfterDeletingARecord() throws Exception {
+        // Arrange
+        when(recordService.findById(1L))
+                .thenReturn(Optional.of(createTestRecord(1L, "alice", "example.com")));
+        doNothing().when(recordService).delete(anyLong());
+
+        // Act & Assert
+        mockMvc.perform(post("/admin/records/1/delete").with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/records?domain=example.com"));
     }
 
     /**

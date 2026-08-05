@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Followed Users</title>
+</head>
+<body>
+    <div th:fragment="content" class="container" style="max-width: 480px;">
+        <div th:replace="~{fragments/page-header :: headerUnder('Settings', '/settings', 'Followed Users', 'People you follow')}"></div>
+
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state-icon">👥</div>
+                <p>You are not following anyone yet</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

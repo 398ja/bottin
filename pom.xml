@@ -7,7 +7,7 @@
 
     <groupId>xyz.tcheeric</groupId>
     <artifactId>bottin</artifactId>
-    <version>0.2.1</version>
+    <version>0.8.0</version>
     <packaging>pom</packaging>
 
     <name>Bottin - NIP-05 Registry Service</name>
@@ -39,9 +39,12 @@
         <module>bottin-core</module>
         <module>bottin-persistence</module>
         <module>bottin-service</module>
-        <module>bottin-web</module>
+        <module>bottin-api</module>
         <module>bottin-verification</module>
+        <module>bottin-reach</module>
         <module>bottin-admin-ui</module>
+        <module>bottin-client-ui</module>
+        <module>bottin-web-assets</module>
         <module>bottin-spring-boot-starter</module>
         <module>bottin-tests</module>
     </modules>
@@ -55,8 +58,13 @@
         <!-- Spring Boot -->
         <spring-boot.version>3.4.1</spring-boot.version>
 
-        <!-- nsecbunker-java integration -->
-        <nsecbunker-java.version>0.1.0</nsecbunker-java.version>
+        <!-- nostr-java (relay client for reach calculation) -->
+        <nostr-java.version>2.0.7</nostr-java.version>
+
+        <!-- NAP (Nostr Authentication Protocol) -->
+        <nap-java.version>0.6.0</nap-java.version>
+        <nostrdb-jni.version>0.1.2</nostrdb-jni.version>
+
         <!-- Database -->
         <flyway.version>10.10.0</flyway.version>
         <h2.version>2.2.224</h2.version>
@@ -102,6 +110,12 @@
 
         <!-- Docker/Jib -->
         <jib-maven-plugin.version>3.4.1</jib-maven-plugin.version>
+
+        <!-- bottin-client-ui JS test toolchain -->
+        <frontend-maven-plugin.version>1.15.1</frontend-maven-plugin.version>
+        <node.version>v20.11.1</node.version>
+        <npm.version>10.2.4</npm.version>
+
         <docker.registry>docker.398ja.xyz</docker.registry>
         <docker.image.prefix>${docker.registry}</docker.image.prefix>
     </properties>
@@ -116,6 +130,11 @@
             </dependency>
             <dependency>
                 <groupId>xyz.tcheeric</groupId>
+                <artifactId>bottin-web-assets</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
                 <artifactId>bottin-persistence</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -126,7 +145,7 @@
             </dependency>
             <dependency>
                 <groupId>xyz.tcheeric</groupId>
-                <artifactId>bottin-web</artifactId>
+                <artifactId>bottin-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -136,13 +155,55 @@
             </dependency>
             <dependency>
                 <groupId>xyz.tcheeric</groupId>
+                <artifactId>bottin-client-ui</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
                 <artifactId>bottin-verification</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>bottin-reach</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>xyz.tcheeric</groupId>
                 <artifactId>bottin-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- nostr-java (relay client) -->
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>nostr-java-client</artifactId>
+                <version>${nostr-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>nostr-java-event</artifactId>
+                <version>${nostr-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>nostr-java-core</artifactId>
+                <version>${nostr-java.version}</version>
+            </dependency>
+
+            <!-- NAP (Nostr Authentication Protocol) -->
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>nap-spring</artifactId>
+                <version>${nap-java.version}</version>
+            </dependency>
+
+
+            <!-- nostrdb (search index) -->
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>imani-nostrdb</artifactId>
+                <version>${nostrdb-jni.version}</version>
             </dependency>
 
             <!-- Spring Boot BOM -->
@@ -152,18 +213,6 @@
                 <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <!-- nsecbunker-java -->
-            <dependency>
-                <groupId>xyz.tcheeric</groupId>
-                <artifactId>nsecbunker-account</artifactId>
-                <version>${nsecbunker-java.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>xyz.tcheeric</groupId>
-                <artifactId>nsecbunker-core</artifactId>
-                <version>${nsecbunker-java.version}</version>
             </dependency>
 
             <!-- Jackson BOM -->
@@ -377,8 +426,8 @@
         <!--
             Docker Profile: Build and push Docker images
             Usage:
-              Build to local Docker: mvn -Pdocker jib:dockerBuild -pl bottin-web,bottin-admin-ui
-              Push to registry:      mvn -Pdocker jib:build -pl bottin-web,bottin-admin-ui
+              Build to local Docker: mvn -Pdocker jib:dockerBuild -pl bottin-api,bottin-admin-ui
+              Push to registry:      mvn -Pdocker jib:build -pl bottin-api,bottin-admin-ui
         -->
         <profile>
             <id>docker</id>

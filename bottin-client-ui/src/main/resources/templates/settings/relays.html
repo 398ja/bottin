@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Relays</title>
+</head>
+<body>
+    <div th:fragment="content" class="container" style="max-width: 600px;">
+        <div th:replace="~{fragments/page-header :: headerUnder('Settings', '/settings', 'Relays', 'Manage your Nostr relay connections')}"></div>
+
+        <div class="card">
+            <h2 class="card-title">Read Relays</h2>
+            <div id="read-relays">
+                <div class="empty-state" style="padding: 1rem;">
+                    <p style="font-size: 0.875rem;">No read relays configured</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 1rem;">
+            <h2 class="card-title">Write Relays</h2>
+            <div id="write-relays">
+                <div class="empty-state" style="padding: 1rem;">
+                    <p style="font-size: 0.875rem;">No write relays configured</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 1rem;">
+            <h2 class="card-title">Add Relay</h2>
+            <div class="form-group">
+                <label class="form-label">Relay URL</label>
+                <input type="text" id="relay-url" class="form-input" placeholder="wss://relay.example.com">
+                <div class="form-error" id="relay-url-error" style="display: none;">URL must start with wss://</div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                    <input type="checkbox" id="relay-read" checked> Read
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                    <input type="checkbox" id="relay-write" checked> Write
+                </label>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%;" onclick="addRelay()">Add Relay</button>
+        </div>
+
+        <button class="btn btn-primary" id="publish-btn" style="width: 100%; margin-top: 1rem; display: none;" onclick="publishRelays()">
+            Save &amp; Publish
+        </button>
+    </div>
+
+    <script src="/js/nostr-publish.js" defer></script>
+    <script src="/js/settings-relays.js" defer></script>
+</body>
+</html>

@@ -8,7 +8,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>bottin</artifactId>
-        <version>0.2.1</version>
+        <version>0.8.0</version>
     </parent>
 
     <artifactId>bottin-spring-boot-starter</artifactId>
@@ -35,14 +35,11 @@
         </dependency>
         <dependency>
             <groupId>xyz.tcheeric</groupId>
-            <artifactId>bottin-web</artifactId>
+            <artifactId>bottin-reach</artifactId>
         </dependency>
-
-        <!-- nsecbunker-java integration -->
         <dependency>
             <groupId>xyz.tcheeric</groupId>
-            <artifactId>nsecbunker-account</artifactId>
-            <version>${nsecbunker-java.version}</version>
+            <artifactId>bottin-api</artifactId>
         </dependency>
 
         <!-- Spring Boot -->

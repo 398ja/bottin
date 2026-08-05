@@ -6,11 +6,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import xyz.tcheeric.bottin.admin.config.AdminPermissions;
+import xyz.tcheeric.nap.spring.annotation.RequiresPermission;
 import xyz.tcheeric.bottin.admin.service.AdminDashboardService;
 
 /**
  * Controller for admin dashboard.
  */
+@RequiresPermission(AdminPermissions.READ)
 @Controller
 @RequestMapping("/admin")
 @RequiredArgsConstructor

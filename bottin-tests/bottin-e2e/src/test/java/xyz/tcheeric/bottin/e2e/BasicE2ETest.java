@@ -10,7 +10,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Base class for basic E2E tests that only require PostgreSQL.
- * Does not include nsecbunkerd or relay containers.
+ * Does not include relay containers.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(PostgresOnlyTestConfig.class)

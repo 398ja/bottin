@@ -8,7 +8,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>bottin</artifactId>
-        <version>0.2.1</version>
+        <version>0.8.0</version>
     </parent>
 
     <artifactId>bottin-admin-ui</artifactId>
@@ -20,6 +20,12 @@
         <dependency>
             <groupId>xyz.tcheeric</groupId>
             <artifactId>bottin-core</artifactId>
+        </dependency>
+
+        <!-- Browser key handling and the NAP handshake, shared with the other UI. -->
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>bottin-web-assets</artifactId>
         </dependency>
         <dependency>
             <groupId>xyz.tcheeric</groupId>
@@ -64,6 +70,22 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- NAP: administrators sign in by proving control of a Nostr key.
+             Version comes from the parent's dependencyManagement, as it does for
+             bottin-client-ui, so the two applications cannot drift onto
+             different protocol versions. -->
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>nap-spring</artifactId>
+        </dependency>
+
+        <!-- Bech32, for decoding the configured administrator npub to the hex
+             form NAP proves. Principle VI forbids hand-rolling it. -->
+        <dependency>
+            <groupId>xyz.tcheeric</groupId>
+            <artifactId>nostr-java-core</artifactId>
         </dependency>
 
         <!-- Lombok -->
@@ -148,6 +170,46 @@
                             <!-- Use classifier to keep original jar for dependencies.
                                  Creates: bottin-admin-ui.jar (normal) and bottin-admin-ui-exec.jar (executable) -->
                             <classifier>exec</classifier>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>${frontend-maven-plugin.version}</version>
+                <configuration>
+                    <nodeVersion>${node.version}</nodeVersion>
+                    <npmVersion>${npm.version}</npmVersion>
+                    <installDirectory>target</installDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-and-npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <phase>generate-test-resources</phase>
+                    </execution>
+                    <execution>
+                        <id>npm-install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>generate-test-resources</phase>
+                        <configuration>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-test</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <arguments>run test</arguments>
+                            <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
                 </executions>

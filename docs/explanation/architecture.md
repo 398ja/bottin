@@ -12,7 +12,7 @@ bottin/
 ├── bottin-persistence/    # JPA entities and repositories
 ├── bottin-service/        # Business logic services
 ├── bottin-verification/   # Domain verification logic
-├── bottin-web/            # REST API controllers
+├── bottin-api/            # REST API controllers
 ├── bottin-admin-ui/       # Admin dashboard (Thymeleaf)
 ├── bottin-spring-boot-starter/  # Auto-configuration
 └── bottin-tests/          # Test modules
@@ -31,7 +31,7 @@ bottin-service (depends on persistence, core)
     ↑
 bottin-verification (depends on service, core)
     ↑
-├── bottin-web (depends on verification, service, persistence, core)
+├── bottin-api (depends on verification, service, persistence, core)
 └── bottin-admin-ui (depends on verification, service, persistence, core)
 ```
 
@@ -39,7 +39,7 @@ bottin-verification (depends on service, core)
 
 The system provides two deployable Spring Boot applications:
 
-### bottin-web (REST API)
+### bottin-api (REST API)
 
 The REST API service handles:
 - NIP-05 identity resolution (`/.well-known/nostr.json`)
@@ -47,7 +47,7 @@ The REST API service handles:
 - Domain management
 - External NIP-05 verification
 
-**Package**: `xyz.tcheeric.bottin.web.app.BottinWebApplication`
+**Package**: `xyz.tcheeric.bottin.api.app.BottinApiApplication`
 
 ### bottin-admin (Admin Dashboard)
 
@@ -66,7 +66,7 @@ The Admin Dashboard provides:
 ```
 Client Request
     ↓
-WellKnownController (bottin-web)
+WellKnownController (bottin-api)
     ↓
 Nip05RecordService (bottin-service)
     ↓
@@ -107,7 +107,7 @@ Located in `bottin-persistence/src/main/resources/db/migration/`:
 
 ## Security
 
-### REST API (bottin-web)
+### REST API (bottin-api)
 
 - HTTP Basic authentication for API endpoints
 - Public access for `/.well-known/nostr.json`
@@ -148,8 +148,7 @@ bottin-tests/
 The E2E tests use [Testcontainers](https://testcontainers.org/) to spin up real infrastructure:
 
 - **PostgreSQL** - Database for persistent storage
-- **nsecbunkerd** - Key management container for integration testing
-- **strfry** - Nostr relay (optional, for NIP-46 tests)
+- **strfry** - Nostr relay fixture for relay-dependent tests (optional)
 
 ### Test Profiles
 
@@ -160,14 +159,5 @@ Maven profiles control test execution:
 | default | `mvn test` | Unit tests only |
 | e2e | `mvn -Pe2e test` | E2E tests with Testcontainers |
 | it | `mvn -Pit test` | Integration tests |
-
-### nsecbunker-java Integration Tests
-
-The `NsecbunkerIntegrationE2ETest` verifies the integration between bottin's `PersistentNip05Manager` and nsecbunker-java:
-
-- NIP-05 record creation with generated keypairs
-- NIP-05 verification and lookup
-- Record management (CRUD operations)
-- Well-known endpoint integration
 
 See [Running E2E Tests](../how-to/running-e2e-tests.md) for detailed instructions.

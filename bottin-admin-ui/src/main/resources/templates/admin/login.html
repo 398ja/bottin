@@ -1,62 +1,217 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Login')}"></head>
+<head th:replace="~{fragments/layout :: head('Sign in')}"></head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
-    <div class="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
+    <div class="max-w-md w-full space-y-6 p-8 bg-white rounded-lg shadow-md">
         <div>
             <h2 class="text-center text-3xl font-extrabold text-gray-900">Bottin Admin</h2>
-            <p class="mt-2 text-center text-sm text-gray-600">Sign in to your account</p>
+            <p class="mt-2 text-center text-sm text-gray-600">Sign in with your Nostr key</p>
         </div>
 
-        <div th:if="${error}" class="rounded-md bg-red-50 p-4">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-red-800" th:text="${error}">Invalid credentials</p>
-                </div>
-            </div>
+        <!-- No administrator key configured: say so rather than showing a form
+             that cannot succeed, and say what to do about it. -->
+        <div th:if="${keyState == 'NOT_CONFIGURED'}" class="rounded-md bg-yellow-50 p-4">
+            <p class="text-sm font-medium text-yellow-800">No administrator key is configured.</p>
+            <p class="mt-2 text-sm text-yellow-700">
+                Nobody can sign in until an operator sets <code>BOTTIN_ADMIN_NPUB</code> to the
+                administrator's public key and restarts the deployment.
+            </p>
         </div>
 
-        <div th:if="${message}" class="rounded-md bg-green-50 p-4">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-green-800" th:text="${message}">Success</p>
-                </div>
-            </div>
+        <!-- Configured, but not with something that is a key. A different
+             mistake with a different fix, so it reads differently. -->
+        <div th:if="${keyState == 'UNREADABLE'}" class="rounded-md bg-red-50 p-4">
+            <p class="text-sm font-medium text-red-800">The configured administrator key is not readable.</p>
+            <p class="mt-2 text-sm text-red-700">
+                <code>BOTTIN_ADMIN_NPUB</code> is set but is not a Nostr public key. It should be an
+                <code>npub1&hellip;</code> value, or a 64-character hex key.
+            </p>
         </div>
 
-        <form class="mt-8 space-y-6" th:action="@{/admin/login}" method="post">
-            <div class="rounded-md shadow-sm -space-y-px">
-                <div>
-                    <label for="username" class="sr-only">Username</label>
-                    <input id="username" name="username" type="text" required
-                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                           placeholder="Username">
-                </div>
-                <div>
-                    <label for="password" class="sr-only">Password</label>
-                    <input id="password" name="password" type="password" required
-                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                           placeholder="Password">
-                </div>
+        <div th:if="${deploymentReady}">
+            <div id="signin-error" class="rounded-md bg-red-50 p-4 mb-4 hidden">
+                <p class="text-sm font-medium text-red-800" id="signin-error-text"></p>
             </div>
 
-            <div>
-                <button type="submit"
-                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <!-- First sign-in on this device. The key is encrypted here with the
+                 passphrase and never sent; what reaches the server is a signed
+                 challenge. There is no sign-up: the deployment already knows
+                 which key it accepts. -->
+            <div id="first-signin">
+                <div class="mb-4">
+                    <label for="admin-nsec" class="block text-sm font-medium text-gray-700">Your private key (nsec)</label>
+                    <input type="password" id="admin-nsec" autocomplete="off"
+                           placeholder="nsec1..."
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    <p class="mt-1 text-xs text-gray-500">
+                        Kept in this browser, encrypted with the passphrase below. It is never sent to
+                        the server.
+                    </p>
+                </div>
+
+                <div class="mb-4">
+                    <label for="admin-passphrase" class="block text-sm font-medium text-gray-700">Passphrase</label>
+                    <input type="password" id="admin-passphrase" autocomplete="new-password"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    <p class="mt-1 text-xs text-gray-500">
+                        Unlocks the key on this device. It cannot be recovered &mdash; nothing that
+                        could decrypt your key ever leaves this browser.
+                    </p>
+                </div>
+
+                <!-- Asked twice because it cannot be recovered: a typo here does
+                     not fail now, it locks the key away and is discovered on the
+                     next visit, when only the nsec can get the administrator
+                     back in. -->
+                <div class="mb-4">
+                    <label for="admin-passphrase-confirm" class="block text-sm font-medium text-gray-700">Confirm passphrase</label>
+                    <input type="password" id="admin-passphrase-confirm" autocomplete="new-password"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+
+                <button type="button" id="first-signin-btn"
+                        class="w-full inline-flex justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
                     Sign in
                 </button>
             </div>
-        </form>
+
+            <!-- This device already holds the key, so only the passphrase is
+                 asked for. Which of the two blocks is shown is decided in the
+                 browser, because the server cannot know what this device holds. -->
+            <div id="unlock" class="hidden">
+                <div class="mb-4">
+                    <label for="unlock-passphrase" class="block text-sm font-medium text-gray-700">Passphrase</label>
+                    <input type="password" id="unlock-passphrase" autocomplete="current-password"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    <p class="mt-1 text-xs text-gray-500">
+                        Unlocks the key already stored in this browser.
+                    </p>
+                </div>
+
+                <button type="button" id="unlock-btn"
+                        class="w-full inline-flex justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                    Unlock
+                </button>
+
+                <!-- The only way back from a forgotten passphrase. Nothing that
+                     could decrypt the key leaves this browser, so it cannot be
+                     recovered — only discarded and replaced. -->
+                <button type="button" id="forget-btn"
+                        class="mt-3 w-full text-center text-xs text-gray-500 hover:text-gray-700 underline">
+                    Forgotten your passphrase? Start again from your key.
+                </button>
+            </div>
+        </div>
     </div>
+
+    <script src="/js/nostr-tools.js"></script>
+    <script src="/js/nostr-crypto.js"></script>
+    <script src="/js/nap-client.js"></script>
+    <script src="/js/admin-signin.js"></script>
+    <script>
+        (function () {
+            var firstSignInBlock = document.getElementById('first-signin');
+            if (!firstSignInBlock) return;
+
+            var unlockBlock = document.getElementById('unlock');
+            var firstSignInBtn = document.getElementById('first-signin-btn');
+            var unlockBtn = document.getElementById('unlock-btn');
+            var forgetBtn = document.getElementById('forget-btn');
+            var errorBox = document.getElementById('signin-error');
+            var errorText = document.getElementById('signin-error-text');
+
+            function showError(message) {
+                errorText.textContent = message;
+                errorBox.classList.remove('hidden');
+            }
+
+            function clearError() {
+                errorBox.classList.add('hidden');
+            }
+
+            // Ask for the key only when this device does not already hold it.
+            function chooseForm() {
+                var held = AdminSignIn.stored() !== null;
+                unlockBlock.classList.toggle('hidden', !held);
+                firstSignInBlock.classList.toggle('hidden', held);
+            }
+
+            function onSignedIn() {
+                window.location.href = '/admin/dashboard';
+            }
+
+            // What went wrong, as far as the deployment is willing to say.
+            //
+            // Reporting every failure as an unauthorised key is what hid a bug
+            // that refused all keys: the message named the one cause an operator
+            // could do nothing about, so the real cause went unlooked-for. A
+            // rate limit and an unreachable server are ordinary and worth
+            // distinguishing.
+            function failureMessage(error) {
+                if (!error) {
+                    return 'Could not sign in.';
+                }
+                if (error.status === 401 || error.status === 403) {
+                    // Deliberately does not name the key that would be accepted.
+                    return 'That key is not authorised for this deployment.';
+                }
+                if (error.status === 429) {
+                    return 'Too many sign-in attempts. Wait a minute and try again.';
+                }
+                return error.message || 'Could not sign in.';
+            }
+
+            firstSignInBtn.addEventListener('click', function () {
+                var nsec = document.getElementById('admin-nsec').value.trim();
+                var passphrase = document.getElementById('admin-passphrase').value;
+                var confirmation = document.getElementById('admin-passphrase-confirm').value;
+
+                clearError();
+                if (!nsec || !passphrase) {
+                    showError('Enter your key and a passphrase.');
+                    return;
+                }
+
+                firstSignInBtn.disabled = true;
+                AdminSignIn.firstSignIn(nsec, passphrase, confirmation)
+                    .then(onSignedIn)
+                    .catch(function (error) {
+                        firstSignInBtn.disabled = false;
+                        showError(failureMessage(error));
+                    });
+            });
+
+            unlockBtn.addEventListener('click', function () {
+                var passphrase = document.getElementById('unlock-passphrase').value;
+
+                clearError();
+                if (!passphrase) {
+                    showError('Enter your passphrase.');
+                    return;
+                }
+
+                unlockBtn.disabled = true;
+                AdminSignIn.unlock(passphrase)
+                    .then(onSignedIn)
+                    .catch(function (error) {
+                        unlockBtn.disabled = false;
+                        document.getElementById('unlock-passphrase').value = '';
+                        showError(failureMessage(error));
+                    });
+            });
+
+            forgetBtn.addEventListener('click', function () {
+                if (!window.confirm('Discard the key stored in this browser? '
+                        + 'You will need your nsec to sign in again.')) {
+                    return;
+                }
+                AdminSignIn.forget();
+                clearError();
+                chooseForm();
+            });
+
+            chooseForm();
+        })();
+    </script>
 </body>
 </html>

@@ -15,7 +15,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
  * E2E tests focus on the web API layer.
  *
  * <p>UserDetailsServiceAutoConfiguration is excluded to prevent Spring Boot
- * from overriding the UserDetailsService. The SecurityConfig from bottin-web
+ * from overriding the UserDetailsService. The SecurityConfig from bottin-api
  * is excluded via ComponentScan filter to prevent duplicate security chains.
  * TestSecurityConfig provides the security configuration for E2E tests.</p>
  */
@@ -29,9 +29,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
                 "xyz.tcheeric.bottin.persistence",
                 "xyz.tcheeric.bottin.service",
                 "xyz.tcheeric.bottin.verification",
-                "xyz.tcheeric.bottin.web.controller",
-                "xyz.tcheeric.bottin.web.dto",
-                "xyz.tcheeric.bottin.web.ratelimit",
+                "xyz.tcheeric.bottin.api.controller",
+                "xyz.tcheeric.bottin.api.dto",
+                "xyz.tcheeric.bottin.api.ratelimit",
                 "xyz.tcheeric.bottin.starter",
                 "xyz.tcheeric.bottin.e2e"
         }
