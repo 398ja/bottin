@@ -223,7 +223,7 @@ class ClientListRelayE2ETest {
                     statuses[scripts[i]] = response.status;
                 }
                 var missing = ['ReplaceableList', 'FollowList', 'BlockList', 'ListFeedback', 'SettingsLists',
-                               'NostrPublish', 'NostrTools', 'APP']
+                               'ProfileLookup', 'NostrPublish', 'NostrTools', 'APP']
                         .filter(function (name) { return typeof window[name] === 'undefined'; });
                 return { url: location.href, title: document.title, scripts: scripts, statuses: statuses,
                          missing: missing, html: document.documentElement.outerHTML.slice(0, 400) };

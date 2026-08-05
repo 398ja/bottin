@@ -5,64 +5,15 @@
 // that also makes an otherwise write-only list recoverable: entries are encrypted,
 // so this page is the only way to read back what was blocked.
 //
-// Profiles are resolved in one batched kind-0 query for every key on the list rather
-// than one query per row. A key whose owner has published nothing renders as an
-// abbreviated key, which is a limitation of their data rather than a failure here.
+// Profiles come from ProfileLookup, one batched kind-0 query for every key on the
+// list rather than one query per row. A key whose owner has published nothing renders
+// as an abbreviated key, which is a limitation of their data rather than a failure here.
 var SettingsLists = (function () {
-    var METADATA_KIND = 0;
-    var QUERY_MAX_WAIT_MS = 4000;
-    var DEFAULT_AVATAR = '/img/default-avatar.svg';
-
     function abbreviate(pubkeyHex) {
         return pubkeyHex.slice(0, 8) + '…' + pubkeyHex.slice(-8);
     }
 
     function el(id) { return document.getElementById(id); }
-
-    // Resolves profiles for many keys at once. Never rejects: a profile is a nicety
-    // and an unreachable relay must not stop the list itself from rendering.
-    function resolveProfiles(userId, pubkeys) {
-        if (!pubkeys.length) return Promise.resolve({});
-
-        return window.APP.effectiveReadRelays(userId).then(function (readRelays) {
-            if (!readRelays || !readRelays.length) return {};
-            var pool = new window.NostrTools.SimplePool();
-
-            // Released on both paths. Closing only on success leaks the sockets in
-            // exactly the case the outer catch exists for - an unreachable relay.
-            function release() {
-                try { pool.close(readRelays); } catch (ignored) { /* already closed */ }
-            }
-
-            return pool.querySync(
-                readRelays,
-                { kinds: [METADATA_KIND], authors: pubkeys },
-                { maxWait: QUERY_MAX_WAIT_MS }
-            ).then(function (events) {
-                var newest = {};
-                (events || []).forEach(function (event) {
-                    var held = newest[event.pubkey];
-                    if (!held || event.created_at > held.created_at) newest[event.pubkey] = event;
-                });
-                var profiles = {};
-                Object.keys(newest).forEach(function (pubkey) {
-                    try {
-                        var metadata = JSON.parse(newest[pubkey].content || '{}');
-                        profiles[pubkey] = {
-                            name: metadata.display_name || metadata.name,
-                            picture: metadata.picture,
-                            nip05: metadata.nip05
-                        };
-                    } catch (ignored) { /* a profile we cannot parse has nothing to show */ }
-                });
-                release();
-                return profiles;
-            }, function (err) {
-                release();
-                throw err;
-            });
-        }).catch(function () { return {}; });
-    }
 
     function row(pubkey, profile, options, undo) {
         var found = profile || {};
@@ -79,8 +30,8 @@ var SettingsLists = (function () {
         avatar.className = 'avatar-sm';
         // A picture URL that will not load is as good as none: the placeholder keeps
         // the row's shape rather than leaving a broken image beside the name.
-        avatar.onerror = function () { this.src = DEFAULT_AVATAR; };
-        avatar.src = found.picture || DEFAULT_AVATAR;
+        avatar.onerror = function () { this.src = window.ProfileLookup.DEFAULT_AVATAR; };
+        avatar.src = found.picture || window.ProfileLookup.DEFAULT_AVATAR;
         link.appendChild(avatar);
 
         var info = document.createElement('div');
@@ -160,7 +111,7 @@ var SettingsLists = (function () {
                 message(container, options.emptyIcon, options.emptyText);
                 return;
             }
-            return resolveProfiles(userId, found.pubkeys).then(function (profiles) {
+            return window.ProfileLookup.resolve(userId, found.pubkeys).then(function (profiles) {
                 container.innerHTML = '';
                 found.pubkeys.forEach(function (pubkey) {
                     container.appendChild(row(pubkey, profiles[pubkey], options, function (key) {
