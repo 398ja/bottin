@@ -292,6 +292,36 @@ describe('ReplaceableList.mutate', () => {
     expect(cacheWrites).toEqual([]);
   });
 
+  // created_at is in whole seconds, so two edits in the same second tie, and NIP-01
+  // breaks the tie by keeping the lowest event id - not the later intent. Observed
+  // against strfry: a follow and an unfollow in the same second left the relay
+  // holding the follow. The replacement must therefore outrank what it replaces.
+  it('publishes a timestamp strictly later than the event it replaces', async () => {
+    const future = Math.floor(Date.now() / 1000) + 500;
+    installMutateApp();
+    window.NostrPublish.buildReplaceableListEvent = (kind, tags, content) =>
+      ({ kind, created_at: Math.floor(Date.now() / 1000), tags, content });
+
+    await ReplaceableList.mutate(USER, passthroughSpec, (tags) => tags.concat([['p', 'z'.repeat(64)]]),
+      fakePool({ [RELAY_A]: { events: [{ ...event(future, FORTY) }] } }));
+
+    expect(published[0].created_at).toBe(future + 1);
+  });
+
+  // The ordinary case leaves the clock alone.
+  it('keeps the current timestamp when the previous event is older', async () => {
+    const past = Math.floor(Date.now() / 1000) - 500;
+    installMutateApp();
+    const now = Math.floor(Date.now() / 1000);
+    window.NostrPublish.buildReplaceableListEvent = (kind, tags, content) =>
+      ({ kind, created_at: now, tags, content });
+
+    await ReplaceableList.mutate(USER, passthroughSpec, (tags) => tags.concat([['p', 'z'.repeat(64)]]),
+      fakePool({ [RELAY_A]: { events: [{ ...event(past, FORTY) }] } }));
+
+    expect(published[0].created_at).toBe(now);
+  });
+
   // SC-003: an outcome is always stated, even when nothing ever answers.
   it('resolves to a stated outcome within the bound when nothing answers', async () => {
     vi.useFakeTimers();

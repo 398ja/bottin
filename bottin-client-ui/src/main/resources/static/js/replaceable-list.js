@@ -147,7 +147,8 @@ var ReplaceableList = (function () {
                     }
 
                     var unsigned = spec.encode(found.event, merged, hexKey, identity.pubkeyHex);
-                    var signed = window.NostrCrypto.signEvent(unsigned, hexKey);
+                    var signed = window.NostrCrypto.signEvent(
+                        supersede(unsigned, found.event), hexKey);
                     return publishBounded(pool, writeRelays, signed).then(function (results) {
                         var accepted = results.filter(function (r) { return r.accepted; }).length;
                         return {
@@ -160,6 +161,24 @@ var ReplaceableList = (function () {
                 });
             });
         });
+    }
+
+    // Guarantees the replacement outranks what it replaces.
+    //
+    // created_at is in whole seconds, so two edits inside the same second tie. NIP-01
+    // breaks a tie on replaceable events by keeping the LOWEST event id, which is
+    // unrelated to which the user meant - so a follow immediately undone could leave
+    // the follow standing and the undo discarded. Observed against strfry: a follow
+    // and an unfollow in the same second left the relay holding the follow.
+    //
+    // Stepping past the previous timestamp costs nothing and removes the tie. It can
+    // put created_at slightly ahead of the wall clock, which is correct: it describes
+    // this list's ordering, not the time of day.
+    function supersede(unsigned, previous) {
+        if (previous && unsigned.created_at <= previous.created_at) {
+            unsigned.created_at = previous.created_at + 1;
+        }
+        return unsigned;
     }
 
     // A relay that never answers must not leave the caller without an outcome, so the
