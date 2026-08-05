@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-05
+
+### Added
+
+- Profile search returns results. `/api/v1/search` was a stub answering an empty list
+  for every query, so the page always read "No profiles found". It now searches the
+  directory's own NIP-05 records — the same rows `/.well-known/nostr.json` serves, so
+  for this deployment's domain reading them *is* the verification a relay-sourced
+  `nip05` claim would have to be checked against. Results link to the profile and show
+  the full identifier, domain included, because the domain is what distinguishes
+  `alice@example.com` from a lookalike.
+- Follow and unfollow, from search results and from another key's profile, published
+  as the user's own NIP-02 contact list. The follow travels with their key to any
+  other Nostr client rather than living here.
+- Block and unblock, published as a NIP-51 mute list whose entries are NIP-44 sealed
+  to the user's own key. Blocked keys are dropped from search results before they are
+  rendered. Nothing about who is blocked is published in the clear: a public blocklist
+  is a durable, unretractable statement about another person, and this directory ties
+  keys to real handles.
+- `/settings/follows` and `/settings/blocks` list what is actually published, read
+  from the relays with names resolved in one batched query. The blocks page is what
+  keeps an encrypted list correctable rather than write-only.
+
+### Changed
+
+- An unreachable directory now answers `502 DIRECTORY_UNAVAILABLE` on search rather
+  than an empty `200`. "Nobody matches" is a claim about the directory's contents that
+  only an answer supports; an empty result would have told a searcher the person is
+  not registered.
+- A list replacement now carries a timestamp strictly later than the event it
+  replaces. `created_at` is in whole seconds, and NIP-01 breaks a tie on replaceable
+  events by keeping the lowest event id — so a follow immediately undone could leave
+  the follow standing. Found against a running relay, not by the suite.
+
+### Removed
+
+- **Breaking.** `POST /api/v1/follow`, `/unfollow`, `/block`, `/unblock` and
+  `GET /api/v1/follows`, `/blocks`. These validated a pubkey, answered
+  `{"status":"followed"}` and stored nothing, and could never do otherwise: the
+  private key never leaves the browser, so the server had nothing to sign with. No
+  caller existed. Not a protocol break — no public NIP shape changes.
+
+### Security
+
+- A follow or block is refused rather than published when the current list could not
+  be read. Both event kinds are replaceable, so publishing over an unread list
+  destroys it; the read distinguishes "the relays hold nothing" from "no relay
+  answered" and acts only on the first. An encrypted mute list whose content will not
+  decrypt is unreadable in the same sense and refused the same way. Verified against a
+  stopped relay with a 40-entry list: zero entries lost.
+
 ## [0.8.0] - 2026-08-02
 
 ### Added
