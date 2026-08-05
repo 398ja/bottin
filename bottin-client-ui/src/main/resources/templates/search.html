@@ -44,10 +44,14 @@
                 link.className = 'search-result-link';
                 link.href = '/profile/' + encodeURIComponent(r.pubkey);
 
+                // The placeholder stands in until the relays answer; a picture URL
+                // that will not load falls back to it rather than leaving a broken
+                // image beside the handle.
                 var img = document.createElement('img');
-                img.src = '/img/default-avatar.svg';
+                img.src = ProfileLookup.DEFAULT_AVATAR;
                 img.alt = '';
                 img.className = 'avatar-sm';
+                img.onerror = function() { this.src = ProfileLookup.DEFAULT_AVATAR; };
                 link.appendChild(img);
 
                 var info = document.createElement('div');
@@ -132,6 +136,26 @@
                 return button;
             }
 
+            // The directory knows a handle and a key, never a picture: that lives in
+            // the owner's kind-0 on the relays. Rows are therefore rendered at once
+            // with the placeholder and painted when the relays answer, so a slow or
+            // unreachable relay costs the searcher nothing but the faces.
+            //
+            // Needs no guard against a superseded search: every render rebuilds its
+            // rows, so a late answer holds only the images its own search created,
+            // long since detached. Look these up from the live DOM instead and that
+            // stops being true.
+            function paintAvatars(avatars) {
+                var pubkeys = Object.keys(avatars);
+                ProfileLookup.resolve(APP.getIdentityUserId(), pubkeys)
+                    .then(function(profiles) {
+                        pubkeys.forEach(function(pubkey) {
+                            var profile = profiles[pubkey];
+                            if (profile && profile.picture) avatars[pubkey].src = profile.picture;
+                        });
+                    });
+            }
+
             var debouncedSearch = APP.debounce(function(query) {
                 if (!query || !query.trim()) {
                     results.innerHTML = '';
@@ -165,9 +189,13 @@
                             return blocked.indexOf(r.pubkey) === -1;
                         });
                         if (visible.length > 0) {
+                            var avatars = {};
                             visible.forEach(function(r) {
-                                results.appendChild(buildRow(r));
+                                var row = buildRow(r);
+                                avatars[r.pubkey] = row.querySelector('img');
+                                results.appendChild(row);
                             });
+                            paintAvatars(avatars);
                         } else {
                             var empty = document.createElement('div');
                             empty.className = 'empty-state';
