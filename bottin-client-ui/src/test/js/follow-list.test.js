@@ -122,6 +122,19 @@ describe('FollowList.follow', () => {
     expect(cacheWrites).toEqual([]);
   });
 
+  // An `unchanged` result means the read succeeded and the list already held the key,
+  // so those entries are the confirmed current list. Skipping the cache here left it
+  // stale, and the control's label reverted on the next render.
+  it('reconciles a stale cache when the list already held the key', async () => {
+    installApp([]);
+
+    const result = await FollowList.follow(USER, ALICE, fakePool([existingList()]));
+
+    expect(result.unchanged).toBe(true);
+    expect(published).toEqual([]);
+    expect(cacheWrites).toEqual([[ALICE, BOB]]);
+  });
+
   it('refuses a malformed pubkey without publishing', async () => {
     await expect(FollowList.follow(USER, 'not-a-key', fakePool([existingList()]))).rejects.toThrow();
     expect(published).toEqual([]);

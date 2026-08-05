@@ -41,10 +41,12 @@ var FollowList = (function () {
         }
     }
 
-    // Records the change locally only once the network has confirmed it. The cache
-    // labels controls; it is never consulted for what gets published.
+    // Records the list locally once the network has confirmed it. `unchanged` counts:
+    // it means the read succeeded and the list already held what was asked for, so
+    // those entries are the confirmed current list. Skipping it would leave a stale
+    // cache mislabelling the control, and the label would revert on the next render.
     function cacheOnConfirmed(userId, result) {
-        if (result.published > 0) {
+        if (result.published > 0 || result.unchanged) {
             window.APP.saveFollowList(userId, followedKeys(result.entries));
         }
         return result;

@@ -57,8 +57,25 @@ var ReplaceableList = (function () {
                 return { event: null, readable: false };
             }
             var pool = injectedPool || new window.NostrTools.SimplePool();
-            return readFrom(pool, relayUrls, kind, identity.pubkeyHex);
+            return readFrom(pool, relayUrls, kind, identity.pubkeyHex)
+                .then(function (found) {
+                    if (!injectedPool) releasePool(pool, relayUrls);
+                    return found;
+                }, function (err) {
+                    if (!injectedPool) releasePool(pool, relayUrls);
+                    throw err;
+                });
         });
+    }
+
+    // Closes the relay sockets a pool opened. Closing subscriptions frees the REQ but
+    // leaves the connections up, so a pool this module created must be released or
+    // every follow leaves sockets behind for the rest of the page's life. A pool
+    // handed in belongs to the caller and is left alone.
+    function releasePool(pool, relayUrls) {
+        try {
+            pool.close(relayUrls);
+        } catch (ignored) { /* already closed, or a test double with no sockets */ }
     }
 
     function readFrom(pool, relayUrls, kind, pubkeyHex) {
@@ -129,12 +146,27 @@ var ReplaceableList = (function () {
         }
         var pool = injectedPool || new window.NostrTools.SimplePool();
 
+        // Every relay this pool touches, so the sockets can be released once. The
+        // pool spans the read and the publish, so `read` is not used here - it would
+        // release a pool that still has a publish to do.
+        var touched = [];
+        function release() {
+            if (!injectedPool) releasePool(pool, touched);
+        }
+
         return app.effectiveRelays(userId, 'write').then(function (writeRelays) {
             if (!writeRelays || !writeRelays.length) {
                 throw error('no_write_relays', 'No write relay is configured');
             }
+            touched = touched.concat(writeRelays);
 
-            return read(userId, spec.kind, pool).then(function (found) {
+            return app.effectiveReadRelays(userId).then(function (readRelays) {
+                if (!readRelays || !readRelays.length) {
+                    throw error('unreadable', 'No read relay is configured');
+                }
+                touched = touched.concat(readRelays);
+                return readFrom(pool, readRelays, spec.kind, identity.pubkeyHex);
+            }).then(function (found) {
                 if (!found.readable) {
                     throw error('unreadable', 'The list could not be read');
                 }
@@ -160,6 +192,12 @@ var ReplaceableList = (function () {
                     });
                 });
             });
+        }).then(function (result) {
+            release();
+            return result;
+        }, function (err) {
+            release();
+            throw err;
         });
     }
 
@@ -174,6 +212,13 @@ var ReplaceableList = (function () {
     // Stepping past the previous timestamp costs nothing and removes the tie. It can
     // put created_at slightly ahead of the wall clock, which is correct: it describes
     // this list's ordering, not the time of day.
+    //
+    // ponytail: unbounded by design. If another client once published this list with a
+    // wildly future created_at, every replacement inherits it and may exceed a relay's
+    // timestamp limit, at which point the list cannot be replaced at all. Capping would
+    // not help - a capped timestamp loses to the future one and the replacement is
+    // discarded either way. The real fix is a relay-side or client-side rejection of
+    // absurd timestamps on read, which is a larger change than this feature.
     function supersede(unsigned, previous) {
         if (previous && unsigned.created_at <= previous.created_at) {
             unsigned.created_at = previous.created_at + 1;
@@ -187,10 +232,14 @@ var ReplaceableList = (function () {
         var timedOut = writeRelays.map(function (url) {
             return { url: url, accepted: false, reason: 'no response within ' + PUBLISH_DEADLINE_MS + 'ms' };
         });
+        var timer;
         return Promise.race([
             window.NostrPublish.publish(pool, writeRelays, signed),
-            new Promise(function (resolve) { setTimeout(function () { resolve(timedOut); }, PUBLISH_DEADLINE_MS); })
-        ]);
+            new Promise(function (resolve) { timer = setTimeout(function () { resolve(timedOut); }, PUBLISH_DEADLINE_MS); })
+        ]).then(function (results) {
+            clearTimeout(timer);
+            return results;
+        });
     }
 
     return {

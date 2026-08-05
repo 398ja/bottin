@@ -322,6 +322,45 @@ describe('ReplaceableList.mutate', () => {
     expect(published[0].created_at).toBe(now);
   });
 
+  // Closing subscriptions frees the REQ but leaves the sockets up. A pool this module
+  // opened must be released, or every follow leaves connections behind for the life of
+  // the page - invisible to a fake pool, which is why it went unnoticed until review.
+  it('closes a pool it opened itself', async () => {
+    installMutateApp();
+    const closed = [];
+    const pool = fakePool({ [RELAY_A]: { events: [event(1, FORTY)] } });
+    pool.close = (urls) => closed.push(urls);
+    window.NostrTools = { SimplePool: function () { return pool; } };
+
+    await ReplaceableList.mutate(USER, passthroughSpec, (tags) => tags.concat([['p', 'z'.repeat(64)]]));
+
+    expect(closed).toHaveLength(1);
+  });
+
+  it('closes a pool it opened even when the read fails', async () => {
+    installMutateApp();
+    const closed = [];
+    const pool = fakePool({});
+    pool.close = (urls) => closed.push(urls);
+    window.NostrTools = { SimplePool: function () { return pool; } };
+
+    await ReplaceableList.mutate(USER, passthroughSpec, (tags) => tags, undefined).catch(() => {});
+
+    expect(closed).toHaveLength(1);
+  });
+
+  // A pool handed in belongs to the caller, who may still have work for it.
+  it('leaves an injected pool open', async () => {
+    installMutateApp();
+    const closed = [];
+    const pool = fakePool({ [RELAY_A]: { events: [event(1, FORTY)] } });
+    pool.close = (urls) => closed.push(urls);
+
+    await ReplaceableList.mutate(USER, passthroughSpec, (tags) => tags.concat([['p', 'z'.repeat(64)]]), pool);
+
+    expect(closed).toEqual([]);
+  });
+
   // SC-003: an outcome is always stated, even when nothing ever answers.
   it('resolves to a stated outcome within the bound when nothing answers', async () => {
     vi.useFakeTimers();

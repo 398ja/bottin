@@ -48,9 +48,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return pubkeyHex.slice(0, 8) + '…' + pubkeyHex.slice(-8);
     }
 
-    // Offers the follow control for another key's profile. Nothing is rendered for a
-    // reader who is not signed in: they hold no key, so there is nothing to follow
-    // with, and a control that fails when pressed is worse than none.
     // Offers the follow and block controls for another key's profile. Nothing is
     // rendered for a reader who is not signed in: they hold no key, so there is
     // nothing to follow or block with, and a control that fails when pressed is
@@ -89,24 +86,10 @@ document.addEventListener('DOMContentLoaded', function () {
             var doneLabel = blocked ? 'Unblocked' : 'Blocked';
             action(user, pubkey)
                 .then(function (result) {
-                    if (result.published === 0 && !result.unchanged) {
-                        APP.showToast('Publish failed on all relays', 'error');
-                        return;
-                    }
-                    if (!result.unchanged) {
-                        APP.showToast(result.published < result.of
-                            ? doneLabel + ' · published to ' + result.published + ' of ' + result.of + ' relays'
-                            : doneLabel, 'success');
-                    }
-                    renderActions(pubkey);
+                    ListFeedback.reportOutcome(result, doneLabel);
+                    if (result.published > 0 || result.unchanged) renderActions(pubkey);
                 })
-                .catch(function (err) {
-                    if (err && err.code === 'unreadable') {
-                        APP.showToast('Could not read your block list. Not publishing.', 'error');
-                    } else if (err && err.code === 'no_write_relays') {
-                        APP.showToast('Add at least one write relay before blocking.', 'error');
-                    }
-                })
+                .catch(function (err) { ListFeedback.reportRefusal(err, 'block', 'blocking'); })
                 .then(function () { button.disabled = false; });
         });
 
@@ -130,23 +113,9 @@ document.addEventListener('DOMContentLoaded', function () {
             action(user, pubkey)
                 .then(function (result) {
                     if (result.published > 0 || result.unchanged) following = !following;
-                    if (result.unchanged) return;
-                    if (result.published === 0) {
-                        APP.showToast('Publish failed on all relays', 'error');
-                    } else if (result.published < result.of) {
-                        APP.showToast(doneLabel + ' · published to ' + result.published
-                                + ' of ' + result.of + ' relays', 'success');
-                    } else {
-                        APP.showToast(doneLabel, 'success');
-                    }
+                    ListFeedback.reportOutcome(result, doneLabel);
                 })
-                .catch(function (err) {
-                    if (err && err.code === 'unreadable') {
-                        APP.showToast('Could not read your follow list. Not publishing.', 'error');
-                    } else if (err && err.code === 'no_write_relays') {
-                        APP.showToast('Add at least one write relay before following.', 'error');
-                    }
-                })
+                .catch(function (err) { ListFeedback.reportRefusal(err, 'follow', 'following'); })
                 .then(function () { button.disabled = false; paint(); });
         });
 

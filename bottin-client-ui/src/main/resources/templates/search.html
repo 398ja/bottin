@@ -32,31 +32,8 @@
             var results = document.getElementById('search-results');
             var loading = document.getElementById('search-loading');
 
-            // Reports what actually happened rather than a flat success. A publish
-            // some relays refused is neither a success nor a failure, and saying so
-            // is the difference between a user who knows where they stand and one
-            // who finds out later.
-            function reportOutcome(result, doneLabel) {
-                if (result.unchanged) return;
-                if (result.published === 0) {
-                    APP.showToast('Publish failed on all relays', 'error');
-                } else if (result.published < result.of) {
-                    APP.showToast(doneLabel + ' · published to ' + result.published
-                            + ' of ' + result.of + ' relays', 'success');
-                } else {
-                    APP.showToast(doneLabel, 'success');
-                }
-            }
-
-            // A refusal names what could not be done. A cancelled unlock is a
-            // decision, not a failure, and says nothing at all.
-            function reportRefusal(err, listName, verb) {
-                if (err && err.code === 'unreadable') {
-                    APP.showToast('Could not read your ' + listName + ' list. Not publishing.', 'error');
-                } else if (err && err.code === 'no_write_relays') {
-                    APP.showToast('Add at least one write relay before ' + verb + '.', 'error');
-                }
-            }
+            var reportOutcome = ListFeedback.reportOutcome;
+            var reportRefusal = ListFeedback.reportRefusal;
 
             function buildRow(r) {
                 var row = document.createElement('div');
@@ -181,8 +158,11 @@
                         results.innerHTML = '';
                         // Blocked keys never reach the page. Filtered here rather than
                         // by the directory, which knows nothing of who blocked whom.
+                        // Read once per search, not once per row: this parses the
+                        // stored list, and a keystroke renders up to twenty rows.
+                        var blocked = blockedKeys();
                         var visible = (data.results || []).filter(function(r) {
-                            return blockedKeys().indexOf(r.pubkey) === -1;
+                            return blocked.indexOf(r.pubkey) === -1;
                         });
                         if (visible.length > 0) {
                             visible.forEach(function(r) {

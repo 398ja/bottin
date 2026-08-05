@@ -26,6 +26,13 @@ var SettingsLists = (function () {
         return window.APP.effectiveReadRelays(userId).then(function (readRelays) {
             if (!readRelays || !readRelays.length) return {};
             var pool = new window.NostrTools.SimplePool();
+
+            // Released on both paths. Closing only on success leaks the sockets in
+            // exactly the case the outer catch exists for - an unreachable relay.
+            function release() {
+                try { pool.close(readRelays); } catch (ignored) { /* already closed */ }
+            }
+
             return pool.querySync(
                 readRelays,
                 { kinds: [METADATA_KIND], authors: pubkeys },
@@ -44,13 +51,17 @@ var SettingsLists = (function () {
                         if (name) names[pubkey] = name;
                     } catch (ignored) { /* a profile we cannot parse has no name to show */ }
                 });
-                try { pool.close(readRelays); } catch (ignored) { /* already closed */ }
+                release();
                 return names;
+            }, function (err) {
+                release();
+                throw err;
             });
         }).catch(function () { return {}; });
     }
 
-    function row(pubkey, name, undoLabel, undo) {
+    function row(pubkey, name, options, undo) {
+        var undoLabel = options.undoLabel;
         var element = document.createElement('div');
         element.className = 'search-result';
 
@@ -86,15 +97,11 @@ var SettingsLists = (function () {
                     if (result.published > 0 || result.unchanged) {
                         element.remove();
                     } else {
-                        window.APP.showToast('Publish failed on all relays', 'error');
+                        window.ListFeedback.reportOutcome(result, undoLabel);
                     }
                 })
                 .catch(function (err) {
-                    if (err && err.code === 'unreadable') {
-                        window.APP.showToast('Could not read your list. Not publishing.', 'error');
-                    } else if (err && err.code === 'no_write_relays') {
-                        window.APP.showToast('Add at least one write relay first.', 'error');
-                    }
+                    window.ListFeedback.reportRefusal(err, options.listName, options.verb);
                 })
                 .then(function () { button.disabled = false; });
         });
@@ -136,7 +143,7 @@ var SettingsLists = (function () {
             return resolveNames(userId, found.pubkeys).then(function (names) {
                 container.innerHTML = '';
                 found.pubkeys.forEach(function (pubkey) {
-                    container.appendChild(row(pubkey, names[pubkey], options.undoLabel, function (key) {
+                    container.appendChild(row(pubkey, names[pubkey], options, function (key) {
                         return options.undo(userId, key);
                     }));
                 });
@@ -154,6 +161,8 @@ var SettingsLists = (function () {
             load: function (user) { return window.FollowList.current(user); },
             undo: function (user, key) { return window.FollowList.unfollow(user, key); },
             undoLabel: 'Unfollow',
+            listName: 'follow',
+            verb: 'unfollowing',
             emptyIcon: '👥',
             emptyText: 'You are not following anyone yet',
             unreadableText: 'Your follow list could not be read'
@@ -168,6 +177,8 @@ var SettingsLists = (function () {
             load: function (user) { return window.BlockList.current(user); },
             undo: function (user, key) { return window.BlockList.unblock(user, key); },
             undoLabel: 'Unblock',
+            listName: 'block',
+            verb: 'unblocking',
             emptyIcon: '🚫',
             emptyText: 'No blocked users',
             unreadableText: 'Your block list could not be read'

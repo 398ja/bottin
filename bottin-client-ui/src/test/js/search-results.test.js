@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+// The real feedback module, so the assertions below pin the wording users actually
+// see rather than a stub's idea of it.
+import '../../main/resources/static/js/list-feedback.js';
 
 // The search behaviour lives in an inline <script> in search.html rather than
 // in a file under static/js, so it is extracted from the real template and

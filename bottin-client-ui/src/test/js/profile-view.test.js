@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import '../../main/resources/static/js/list-feedback.js';
 import '../../main/resources/static/js/profile-view.js';
 
 const OWN_PUBKEY = 'a'.repeat(64);
