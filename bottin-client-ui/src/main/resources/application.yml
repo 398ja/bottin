@@ -52,10 +52,12 @@ nap:
   # would strand the denied user: they could not sign in as anyone else, because the
   # endpoint that signs them in is the one refusing them.
   #
-  # Matched by prefix, so /api/v1/follow covers /api/v1/follows but not /api/v1/unfollow -
-  # the retired RequireNapAuthenticationFilter derived servlet patterns from this same
-  # list, where /api/v1/follow matched neither, and /api/v1/unfollow was open to anyone.
-  protected-path-prefixes: /api/v1/follow,/api/v1/unfollow,/api/v1/block,/api/v1/unblock,/api/v1/relays,/api/v1/register
+  # Matched by prefix, and a prefix that reads as though it covers a sibling route may not:
+  # /api/v1/follow once covered /api/v1/follows but never /api/v1/unfollow, which was open
+  # to anyone until each was listed in its own right. The follow and block routes are gone
+  # (007: a server with no private key cannot sign a list), but the lesson outlives them -
+  # every guarded route is spelled out here, never inferred from a neighbour's prefix.
+  protected-path-prefixes: /api/v1/relays,/api/v1/register
   cookie:
     name: client_session
     http-only: true

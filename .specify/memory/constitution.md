@@ -1,7 +1,15 @@
 <!--
   Sync Impact Report
   ==================
-  Version change: 0.0.0 (template) -> 1.0.0 -> 1.1.0 -> 1.2.0
+  Version change: 0.0.0 (template) -> 1.0.0 -> 1.1.0 -> 1.2.0 -> 1.3.0
+  1.3.0 amendment (sourced from the 007-follow-block-lists feature):
+    - Principle II: added NIP-51 (Lists) and NIP-44 (Encrypted Payloads,
+      Versioned) to the feature-driven NIPs. 007 publishes a client user's
+      blocks as a NIP-51 mute list whose entries are NIP-44 sealed to their
+      own author, so both are relied upon and, per this principle, both now
+      imply a passing test against the linked spec.
+    - No principle was added, removed or redefined; this is a material
+      expansion of an existing list, hence MINOR.
   1.2.0 amendment (sourced from the 004-006 feature cycle):
     - Principle III: corrected `bottin-web` to `bottin-api` — the named
       module did not exist. Added `bottin-client-ui` and
@@ -129,6 +137,11 @@ Nostr protocol repository:
 - **Feature-driven NIPs** (implemented where a feature requires them; advertised
   or relied-upon support implies a passing test against the linked spec):
   - [NIP-02 — Follow List (contact lists)](https://github.com/nostr-protocol/nips/blob/master/02.md)
+  - [NIP-51 — Lists](https://github.com/nostr-protocol/nips/blob/master/51.md) — the mute list
+    a client user's blocks are published as
+  - [NIP-44 — Encrypted Payloads (Versioned)](https://github.com/nostr-protocol/nips/blob/master/44.md) —
+    seals the mute list's entries to their own author, so a block is not a public
+    statement about the person blocked
   - [NIP-65 — Relay List Metadata](https://github.com/nostr-protocol/nips/blob/master/65.md)
   - [NIP-11 — Relay Information Document](https://github.com/nostr-protocol/nips/blob/master/11.md)
   - [NIP-98 — HTTP Auth](https://github.com/nostr-protocol/nips/blob/master/98.md) — the signed
@@ -447,4 +460,4 @@ It supersedes ad-hoc practices and informal conventions.
 - **Runtime guidance**: See `CLAUDE.md` and `AGENTS.md` for build commands,
   module structure, coding standards, and operational patterns.
 
-**Version**: 1.2.0 | **Ratified**: 2026-06-25 | **Last Amended**: 2026-08-02
+**Version**: 1.3.0 | **Ratified**: 2026-06-25 | **Last Amended**: 2026-08-05

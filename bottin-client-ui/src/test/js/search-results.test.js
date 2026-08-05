@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+// The real feedback module, so the assertions below pin the wording users actually
+// see rather than a stub's idea of it.
+import '../../main/resources/static/js/list-feedback.js';
 
 // The search behaviour lives in an inline <script> in search.html rather than
 // in a file under static/js, so it is extracted from the real template and
@@ -23,12 +26,58 @@ function renderPage() {
     <div id="search-loading" style="display: none;"></div>`;
 }
 
+let toasts;
+let followCalls;
+let followResult;
+
 // Runs the template's script against the page. Debounce is collapsed to a
 // direct call so a keystroke reaches fetch without waiting out 300ms.
-function runSearchScript() {
-  global.APP = { debounce: (fn) => fn, showToast: vi.fn() };
+//
+// `identity` null models a signed-out visitor, for whom no control is offered.
+function runSearchScript(options) {
+  const opts = options || {};
+  toasts = [];
+  followCalls = [];
+  followResult = opts.followResult || { published: 1, of: 1, unchanged: false };
+
+  global.APP = {
+    debounce: (fn) => fn,
+    showToast: (message, level) => toasts.push({ message, level }),
+    getIdentityUserId: () => ('identity' in opts ? opts.identity : 'npub1me')
+  };
   window.APP = global.APP;
+
+  const action = (verb) => (userId, pubkey) => {
+    followCalls.push({ verb, pubkey });
+    return opts.rejectWith ? Promise.reject(opts.rejectWith) : Promise.resolve(followResult);
+  };
+  global.FollowList = window.FollowList = {
+    cached: () => opts.cachedFollows || [],
+    follow: action('follow'),
+    unfollow: action('unfollow')
+  };
+  global.BlockList = window.BlockList = {
+    cached: () => opts.cachedBlocks || [],
+    block: (userId, pubkey) => {
+      followCalls.push({ verb: 'block', pubkey });
+      return opts.blockRejectsWith
+        ? Promise.reject(opts.blockRejectsWith)
+        : Promise.resolve(opts.blockResult || { published: 1, of: 1, unchanged: false });
+    },
+    unblock: () => Promise.resolve({ published: 1, of: 1, unchanged: false })
+  };
+
   new Function(inlineScript)();
+}
+
+function buttonLabelled(label) {
+  return Array.from(results().querySelectorAll('.search-result button'))
+    .find((b) => b.textContent === label) || null;
+}
+
+function followButton() {
+  return Array.from(results().querySelectorAll('.search-result button'))
+    .find((b) => b.textContent === 'Follow' || b.textContent === 'Following') || null;
 }
 
 function type(query) {
@@ -65,7 +114,9 @@ describe('search.html result rendering', () => {
     type('alice');
 
     await vi.waitFor(() => {
-      const link = results().querySelector('a.search-result');
+      // The anchor wraps only the navigating part of the row: a follow control
+      // cannot legally live inside it.
+      const link = results().querySelector('.search-result a.search-result-link');
       expect(link).not.toBeNull();
       expect(link.getAttribute('href')).toBe('/profile/' + ALICE.pubkey);
       expect(link.textContent).toContain('alice@example.test');
@@ -106,5 +157,183 @@ describe('search.html result rendering', () => {
       expect(results().textContent).toContain('No profiles found');
     });
     expect(results().textContent).not.toContain('Search failed');
+  });
+});
+
+describe('search.html follow control', () => {
+  beforeEach(() => {
+    renderPage();
+    vi.restoreAllMocks();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ query: 'alice', results: [ALICE], total: 1 })
+    });
+  });
+
+  async function search(options) {
+    runSearchScript(options);
+    type('alice');
+    await vi.waitFor(() => expect(results().querySelector('.search-result')).not.toBeNull());
+  }
+
+  // A visitor with no identity cannot follow anyone, so no control is offered
+  // rather than one that fails when pressed.
+  it('offers no control to a signed-out visitor', async () => {
+    await search({ identity: null });
+
+    expect(followButton()).toBeNull();
+  });
+
+  it('offers Follow for a key the cache does not hold', async () => {
+    await search();
+
+    expect(followButton().textContent).toBe('Follow');
+  });
+
+  it('offers Following for a key the cache holds', async () => {
+    await search({ cachedFollows: [ALICE.pubkey] });
+
+    expect(followButton().textContent).toBe('Following');
+  });
+
+  it('follows the key and relabels on success', async () => {
+    await search();
+
+    followButton().click();
+
+    await vi.waitFor(() => expect(followButton().textContent).toBe('Following'));
+    expect(followCalls).toEqual([{ verb: 'follow', pubkey: ALICE.pubkey }]);
+  });
+
+  it('unfollows a key the cache holds', async () => {
+    await search({ cachedFollows: [ALICE.pubkey] });
+
+    followButton().click();
+
+    await vi.waitFor(() => expect(followButton().textContent).toBe('Follow'));
+    expect(followCalls).toEqual([{ verb: 'unfollow', pubkey: ALICE.pubkey }]);
+  });
+
+  // The refusal names the list that could not be read, and the label does not move:
+  // claiming a follow that was never published is the failure this guards.
+  it('reports an unreadable list and leaves the label alone', async () => {
+    await search({ rejectWith: Object.assign(new Error('x'), { code: 'unreadable' }) });
+
+    followButton().click();
+
+    await vi.waitFor(() => expect(toasts).toHaveLength(1));
+    expect(toasts[0].message).toContain('Could not read your follow list');
+    expect(followButton().textContent).toBe('Follow');
+  });
+
+  it('reports having nowhere to publish', async () => {
+    await search({ rejectWith: Object.assign(new Error('x'), { code: 'no_write_relays' }) });
+
+    followButton().click();
+
+    await vi.waitFor(() => expect(toasts).toHaveLength(1));
+    expect(toasts[0].message).toContain('Add at least one write relay');
+  });
+
+  // A cancelled unlock is a decision, not a failure, and says nothing.
+  it('says nothing when the unlock is cancelled', async () => {
+    await search({ rejectWith: new Error('cancelled') });
+
+    followButton().click();
+
+    await vi.waitFor(() => expect(followButton().disabled).toBe(false));
+    expect(toasts).toEqual([]);
+    expect(followButton().textContent).toBe('Follow');
+  });
+
+  // A publish some relays refused is its own outcome, and the count is stated.
+  it('states the count when only some relays accepted', async () => {
+    await search({ followResult: { published: 2, of: 3, unchanged: false } });
+
+    followButton().click();
+
+    await vi.waitFor(() => expect(toasts).toHaveLength(1));
+    expect(toasts[0].message).toBe('Following · published to 2 of 3 relays');
+  });
+
+  it('reports a total publish failure and leaves the label alone', async () => {
+    await search({ followResult: { published: 0, of: 2, unchanged: false } });
+
+    followButton().click();
+
+    await vi.waitFor(() => expect(toasts).toHaveLength(1));
+    expect(toasts[0].message).toBe('Publish failed on all relays');
+    expect(followButton().textContent).toBe('Follow');
+  });
+});
+
+describe('search.html block control', () => {
+  beforeEach(() => {
+    renderPage();
+    vi.restoreAllMocks();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ query: 'alice', results: [ALICE], total: 1 })
+    });
+  });
+
+  async function search(options) {
+    runSearchScript(options);
+    type('alice');
+    await vi.waitFor(() => expect(results().textContent.length).toBeGreaterThan(0));
+  }
+
+  it('offers Block alongside Follow when signed in', async () => {
+    await search();
+
+    expect(buttonLabelled('Block')).not.toBeNull();
+  });
+
+  it('offers no Block control to a signed-out visitor', async () => {
+    await search({ identity: null });
+
+    expect(buttonLabelled('Block')).toBeNull();
+  });
+
+  // FR-006 and SC-004: a blocked key never reaches the page at all.
+  it('never renders a key the block cache holds', async () => {
+    await search({ cachedBlocks: [ALICE.pubkey] });
+
+    expect(results().querySelector('.search-result')).toBeNull();
+    expect(results().textContent).toContain('No profiles found');
+  });
+
+  // The row goes immediately, with no second search: the point of blocking someone
+  // is not to see them.
+  it('removes the row on a confirmed block without refetching', async () => {
+    await search();
+    const fetchCallsBefore = global.fetch.mock.calls.length;
+
+    buttonLabelled('Block').click();
+
+    await vi.waitFor(() => expect(results().querySelector('.search-result')).toBeNull());
+    expect(global.fetch.mock.calls.length).toBe(fetchCallsBefore);
+  });
+
+  // A block that never reached a relay must leave the person on show, or the user
+  // believes they are blocked when they are not.
+  it('leaves the row in place when the block fails to publish', async () => {
+    await search({ blockResult: { published: 0, of: 2, unchanged: false } });
+
+    buttonLabelled('Block').click();
+
+    await vi.waitFor(() => expect(toasts).toHaveLength(1));
+    expect(toasts[0].message).toBe('Publish failed on all relays');
+    expect(results().querySelector('.search-result')).not.toBeNull();
+  });
+
+  it('reports an unreadable block list and keeps the row', async () => {
+    await search({ blockRejectsWith: Object.assign(new Error('x'), { code: 'unreadable' }) });
+
+    buttonLabelled('Block').click();
+
+    await vi.waitFor(() => expect(toasts).toHaveLength(1));
+    expect(toasts[0].message).toContain('Could not read your block list');
+    expect(results().querySelector('.search-result')).not.toBeNull();
   });
 });

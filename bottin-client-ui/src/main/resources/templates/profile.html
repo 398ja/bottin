@@ -29,6 +29,11 @@
             </dl>
 
             <a th:if="${profilePubkey} == null" href="/profile/edit" class="btn btn-outline btn-full mt-3">Edit profile</a>
+
+            <!-- Populated by profile-view.js only for another key's profile, and only
+                 when someone is signed in: a visitor with no key has nothing to follow
+                 with, and one's own profile is not someone to follow. -->
+            <div id="profile-actions" class="flex-row-gap-sm mt-3 hidden"></div>
         </div>
     </div>
 

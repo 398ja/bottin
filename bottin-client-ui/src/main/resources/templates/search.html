@@ -32,6 +32,106 @@
             var results = document.getElementById('search-results');
             var loading = document.getElementById('search-loading');
 
+            var reportOutcome = ListFeedback.reportOutcome;
+            var reportRefusal = ListFeedback.reportRefusal;
+
+            function buildRow(r) {
+                var row = document.createElement('div');
+                row.className = 'search-result';
+
+                // Only the navigating part is a link; the controls sit beside it.
+                var link = document.createElement('a');
+                link.className = 'search-result-link';
+                link.href = '/profile/' + encodeURIComponent(r.pubkey);
+
+                var img = document.createElement('img');
+                img.src = '/img/default-avatar.svg';
+                img.alt = '';
+                img.className = 'avatar-sm';
+                link.appendChild(img);
+
+                var info = document.createElement('div');
+                info.className = 'search-result-info';
+
+                var name = document.createElement('div');
+                name.className = 'search-result-name';
+                name.textContent = r.name;
+                info.appendChild(name);
+
+                // The full identifier, not just the local part: the domain is what a
+                // reader has to look at to tell alice@example.com from a lookalike.
+                var detail = document.createElement('div');
+                detail.className = 'search-result-detail';
+                detail.textContent = r.nip05;
+                info.appendChild(detail);
+
+                link.appendChild(info);
+                row.appendChild(link);
+
+                var userId = APP.getIdentityUserId();
+                if (userId) {
+                    row.appendChild(buildFollowButton(userId, r.pubkey));
+                    row.appendChild(buildBlockButton(userId, r.pubkey, row));
+                }
+
+                return row;
+            }
+
+            function blockedKeys() {
+                var userId = APP.getIdentityUserId();
+                return userId ? BlockList.cached(userId) : [];
+            }
+
+            // Blocking removes the row there and then, without re-running the search:
+            // the point of blocking someone is not to see them.
+            function buildBlockButton(userId, pubkey, row) {
+                var button = document.createElement('button');
+                button.className = 'btn btn-sm btn-outline';
+                button.textContent = 'Block';
+
+                button.addEventListener('click', function() {
+                    button.disabled = true;
+                    BlockList.block(userId, pubkey)
+                        .then(function(result) {
+                            reportOutcome(result, 'Blocked');
+                            if (result.published > 0 || result.unchanged) row.remove();
+                        })
+                        .catch(function(err) { reportRefusal(err, 'block', 'blocking'); })
+                        .then(function() { button.disabled = false; });
+                });
+
+                return button;
+            }
+
+            // Labelled from the cache so a keystroke costs no relay round-trip. The
+            // cache may be stale, which can mislabel this button but can never
+            // influence what gets published - every mutation re-reads first.
+            function buildFollowButton(userId, pubkey) {
+                var button = document.createElement('button');
+                var following = FollowList.cached(userId).indexOf(pubkey) !== -1;
+
+                function paint() {
+                    button.textContent = following ? 'Following' : 'Follow';
+                    button.className = 'btn btn-sm ' + (following ? 'btn-outline' : 'btn-primary');
+                }
+                paint();
+
+                button.addEventListener('click', function() {
+                    button.disabled = true;
+                    var action = following ? FollowList.unfollow : FollowList.follow;
+                    var doneLabel = following ? 'Unfollowed' : 'Following';
+                    action(userId, pubkey)
+                        .then(function(result) {
+                            if (result.published > 0 || result.unchanged) following = !following;
+                            reportOutcome(result, doneLabel);
+                        })
+                        .catch(function(err) { reportRefusal(err, 'follow', 'following'); })
+                        .then(function() { button.disabled = false; paint(); });
+                });
+
+                return button;
+            }
+
             var debouncedSearch = APP.debounce(function(query) {
                 if (!query || !query.trim()) {
                     results.innerHTML = '';
@@ -56,39 +156,17 @@
                     .then(function(data) {
                         loading.style.display = 'none';
                         results.innerHTML = '';
-                        if (data.results && data.results.length > 0) {
-                            data.results.forEach(function(r) {
-                                // The whole row opens the profile. The directory
-                                // knows the handle and the key, nothing else, so
-                                // the published profile is where the rest lives.
-                                var row = document.createElement('a');
-                                row.className = 'search-result';
-                                row.href = '/profile/' + encodeURIComponent(r.pubkey);
-
-                                var img = document.createElement('img');
-                                img.src = '/img/default-avatar.svg';
-                                img.alt = '';
-                                img.className = 'avatar-sm';
-                                row.appendChild(img);
-
-                                var info = document.createElement('div');
-                                info.className = 'search-result-info';
-
-                                var name = document.createElement('div');
-                                name.className = 'search-result-name';
-                                name.textContent = r.name;
-                                info.appendChild(name);
-
-                                // The full identifier, not just the local part: the
-                                // domain is what a reader has to look at to tell
-                                // alice@example.com from a lookalike.
-                                var detail = document.createElement('div');
-                                detail.className = 'search-result-detail';
-                                detail.textContent = r.nip05;
-                                info.appendChild(detail);
-
-                                row.appendChild(info);
-                                results.appendChild(row);
+                        // Blocked keys never reach the page. Filtered here rather than
+                        // by the directory, which knows nothing of who blocked whom.
+                        // Read once per search, not once per row: this parses the
+                        // stored list, and a keystroke renders up to twenty rows.
+                        var blocked = blockedKeys();
+                        var visible = (data.results || []).filter(function(r) {
+                            return blocked.indexOf(r.pubkey) === -1;
+                        });
+                        if (visible.length > 0) {
+                            visible.forEach(function(r) {
+                                results.appendChild(buildRow(r));
                             });
                         } else {
                             var empty = document.createElement('div');

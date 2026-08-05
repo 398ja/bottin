@@ -35,3 +35,4 @@ Information-oriented technical descriptions of the system.
 Understanding-oriented discussions that clarify and illuminate particular topics.
 
 - [Architecture Overview](explanation/architecture.md) - System architecture and module structure
+- [Follow and Block Lists](explanation/follow-and-block-lists.md) - Why these lists are published to the user's own relays rather than stored here, why blocks are encrypted, and why an unreadable list is never overwritten
