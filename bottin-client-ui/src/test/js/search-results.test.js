@@ -53,12 +53,28 @@ function runSearchScript(options) {
     follow: action('follow'),
     unfollow: action('unfollow')
   };
+  global.BlockList = window.BlockList = {
+    cached: () => opts.cachedBlocks || [],
+    block: (userId, pubkey) => {
+      followCalls.push({ verb: 'block', pubkey });
+      return opts.blockRejectsWith
+        ? Promise.reject(opts.blockRejectsWith)
+        : Promise.resolve(opts.blockResult || { published: 1, of: 1, unchanged: false });
+    },
+    unblock: () => Promise.resolve({ published: 1, of: 1, unchanged: false })
+  };
 
   new Function(inlineScript)();
 }
 
+function buttonLabelled(label) {
+  return Array.from(results().querySelectorAll('.search-result button'))
+    .find((b) => b.textContent === label) || null;
+}
+
 function followButton() {
-  return results().querySelector('.search-result button');
+  return Array.from(results().querySelectorAll('.search-result button'))
+    .find((b) => b.textContent === 'Follow' || b.textContent === 'Following') || null;
 }
 
 function type(query) {
@@ -245,5 +261,76 @@ describe('search.html follow control', () => {
     await vi.waitFor(() => expect(toasts).toHaveLength(1));
     expect(toasts[0].message).toBe('Publish failed on all relays');
     expect(followButton().textContent).toBe('Follow');
+  });
+});
+
+describe('search.html block control', () => {
+  beforeEach(() => {
+    renderPage();
+    vi.restoreAllMocks();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ query: 'alice', results: [ALICE], total: 1 })
+    });
+  });
+
+  async function search(options) {
+    runSearchScript(options);
+    type('alice');
+    await vi.waitFor(() => expect(results().textContent.length).toBeGreaterThan(0));
+  }
+
+  it('offers Block alongside Follow when signed in', async () => {
+    await search();
+
+    expect(buttonLabelled('Block')).not.toBeNull();
+  });
+
+  it('offers no Block control to a signed-out visitor', async () => {
+    await search({ identity: null });
+
+    expect(buttonLabelled('Block')).toBeNull();
+  });
+
+  // FR-006 and SC-004: a blocked key never reaches the page at all.
+  it('never renders a key the block cache holds', async () => {
+    await search({ cachedBlocks: [ALICE.pubkey] });
+
+    expect(results().querySelector('.search-result')).toBeNull();
+    expect(results().textContent).toContain('No profiles found');
+  });
+
+  // The row goes immediately, with no second search: the point of blocking someone
+  // is not to see them.
+  it('removes the row on a confirmed block without refetching', async () => {
+    await search();
+    const fetchCallsBefore = global.fetch.mock.calls.length;
+
+    buttonLabelled('Block').click();
+
+    await vi.waitFor(() => expect(results().querySelector('.search-result')).toBeNull());
+    expect(global.fetch.mock.calls.length).toBe(fetchCallsBefore);
+  });
+
+  // A block that never reached a relay must leave the person on show, or the user
+  // believes they are blocked when they are not.
+  it('leaves the row in place when the block fails to publish', async () => {
+    await search({ blockResult: { published: 0, of: 2, unchanged: false } });
+
+    buttonLabelled('Block').click();
+
+    await vi.waitFor(() => expect(toasts).toHaveLength(1));
+    expect(toasts[0].message).toBe('Publish failed on all relays');
+    expect(results().querySelector('.search-result')).not.toBeNull();
+  });
+
+  it('reports an unreadable block list and keeps the row', async () => {
+    await search({ blockRejectsWith: Object.assign(new Error('x'), { code: 'unreadable' }) });
+
+    buttonLabelled('Block').click();
+
+    await vi.waitFor(() => expect(toasts).toHaveLength(1));
+    expect(toasts[0].message).toContain('Could not read your block list');
+    expect(results().querySelector('.search-result')).not.toBeNull();
   });
 });

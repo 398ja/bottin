@@ -65,6 +65,11 @@ describe('profile-view.js', () => {
       follow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
       unfollow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
     };
+    window.BlockList = {
+      cached: () => [],
+      block: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unblock: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
   });
 
   // Own profile: what this browser holds is the profile, and no relay is asked.
@@ -154,6 +159,11 @@ describe('profile-view.js follow control', () => {
       follow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
       unfollow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
     };
+    window.BlockList = {
+      cached: () => [],
+      block: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unblock: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
   });
 
   // Nobody is signed in, so there is no key to follow with. A control that fails
@@ -209,5 +219,86 @@ describe('profile-view.js follow control', () => {
     await vi.waitFor(() => expect(window.APP.showToast).toHaveBeenCalled());
     expect(window.APP.showToast.mock.calls[0][0]).toContain('Could not read your follow list');
     expect(actionButton('Follow')).not.toBeNull();
+  });
+});
+
+describe('profile-view.js block control', () => {
+  beforeEach(() => {
+    window.APP = {
+      getIdentityUserId: () => STORED_IDENTITY.userId,
+      loadIdentity: () => STORED_IDENTITY,
+      saveIdentity: vi.fn(),
+      safeImageUrl: () => null,
+      effectiveReadRelays: vi.fn(() => Promise.resolve(['wss://read'])),
+      showToast: vi.fn()
+    };
+    window.NostrTools = { SimplePool: function () { return { close: vi.fn() }; } };
+    window.ProfileFetch = { fetch: vi.fn(() => Promise.resolve({ displayName: 'Alice' })) };
+    window.FollowList = {
+      cached: () => [],
+      follow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unfollow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
+    window.BlockList = {
+      cached: () => [],
+      block: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unblock: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
+  });
+
+  it('offers Block for a key the cache does not hold', () => {
+    renderPage(OTHER_PUBKEY);
+
+    expect(actionButton('Block')).not.toBeNull();
+  });
+
+  // FR-008. A blocked key's profile stays reachable and readable by direct link:
+  // this page is the only route back from a block reached any other way, and hiding
+  // it would strand the user with no way to undo what they did.
+  it('keeps a blocked key\'s profile readable, marked, and offering Unblock', async () => {
+    window.BlockList.cached = () => [OTHER_PUBKEY];
+
+    renderPage(OTHER_PUBKEY);
+
+    await vi.waitFor(() => expect(name()).toBe('Alice'));
+    expect(document.getElementById('profile-actions').textContent).toContain('Blocked');
+    expect(actionButton('Unblock')).not.toBeNull();
+  });
+
+  // A blocked key is not someone to follow, so the follow control gives way to the
+  // one action that matters on that page.
+  it('offers no follow control while the key is blocked', () => {
+    window.BlockList.cached = () => [OTHER_PUBKEY];
+
+    renderPage(OTHER_PUBKEY);
+
+    expect(actionButton('Follow')).toBeNull();
+  });
+
+  it('blocks the viewed key and marks the profile', async () => {
+    let blocked = [];
+    window.BlockList.cached = () => blocked;
+    window.BlockList.block = vi.fn(() => {
+      blocked = [OTHER_PUBKEY];
+      return Promise.resolve({ published: 1, of: 1, unchanged: false });
+    });
+
+    renderPage(OTHER_PUBKEY);
+    actionButton('Block').click();
+
+    await vi.waitFor(() => expect(actionButton('Unblock')).not.toBeNull());
+    expect(window.BlockList.block).toHaveBeenCalledWith(STORED_IDENTITY.userId, OTHER_PUBKEY);
+  });
+
+  it('reports an unreadable block list and leaves the page unmarked', async () => {
+    window.BlockList.block = vi.fn(() =>
+      Promise.reject(Object.assign(new Error('x'), { code: 'unreadable' })));
+
+    renderPage(OTHER_PUBKEY);
+    actionButton('Block').click();
+
+    await vi.waitFor(() => expect(window.APP.showToast).toHaveBeenCalled());
+    expect(window.APP.showToast.mock.calls[0][0]).toContain('Could not read your block list');
+    expect(actionButton('Unblock')).toBeNull();
   });
 });

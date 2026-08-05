@@ -92,9 +92,38 @@
                 row.appendChild(link);
 
                 var userId = APP.getIdentityUserId();
-                if (userId) row.appendChild(buildFollowButton(userId, r.pubkey));
+                if (userId) {
+                    row.appendChild(buildFollowButton(userId, r.pubkey));
+                    row.appendChild(buildBlockButton(userId, r.pubkey, row));
+                }
 
                 return row;
+            }
+
+            function blockedKeys() {
+                var userId = APP.getIdentityUserId();
+                return userId ? BlockList.cached(userId) : [];
+            }
+
+            // Blocking removes the row there and then, without re-running the search:
+            // the point of blocking someone is not to see them.
+            function buildBlockButton(userId, pubkey, row) {
+                var button = document.createElement('button');
+                button.className = 'btn btn-sm btn-outline';
+                button.textContent = 'Block';
+
+                button.addEventListener('click', function() {
+                    button.disabled = true;
+                    BlockList.block(userId, pubkey)
+                        .then(function(result) {
+                            reportOutcome(result, 'Blocked');
+                            if (result.published > 0 || result.unchanged) row.remove();
+                        })
+                        .catch(function(err) { reportRefusal(err, 'block', 'blocking'); })
+                        .then(function() { button.disabled = false; });
+                });
+
+                return button;
             }
 
             // Labelled from the cache so a keystroke costs no relay round-trip. The
@@ -150,8 +179,13 @@
                     .then(function(data) {
                         loading.style.display = 'none';
                         results.innerHTML = '';
-                        if (data.results && data.results.length > 0) {
-                            data.results.forEach(function(r) {
+                        // Blocked keys never reach the page. Filtered here rather than
+                        // by the directory, which knows nothing of who blocked whom.
+                        var visible = (data.results || []).filter(function(r) {
+                            return blockedKeys().indexOf(r.pubkey) === -1;
+                        });
+                        if (visible.length > 0) {
+                            visible.forEach(function(r) {
                                 results.appendChild(buildRow(r));
                             });
                         } else {
