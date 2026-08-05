@@ -7,10 +7,12 @@
     <div th:fragment="content" class="container" style="max-width: 480px;">
         <div th:replace="~{fragments/page-header :: headerUnder('Settings', '/settings', 'Followed Users', 'People you follow')}"></div>
 
-        <div class="card">
+        <!-- Populated by settings-lists.js from the relays, not from the render
+             cache: this is where a user comes to see what is actually published. -->
+        <div class="card" id="follows-list">
             <div class="empty-state">
                 <div class="empty-state-icon">👥</div>
-                <p>You are not following anyone yet</p>
+                <p>Loading…</p>
             </div>
         </div>
     </div>
