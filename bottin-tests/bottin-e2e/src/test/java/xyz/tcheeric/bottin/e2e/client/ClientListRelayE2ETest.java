@@ -36,6 +36,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * the page is served by the real client application rather than read off disk — which is
  * what makes a missing {@code <script>} in {@code layout.html} or a 404 on a module a
  * test failure rather than something someone notices later.
+ *
+ * <p><strong>What this does not cover.</strong> The application booted here is not
+ * configured as production is: this module's classpath forces several auto-configurations
+ * off, Spring Security among them. Templates and static assets are served identically, so
+ * the asset contract below holds — but a regression that only appears behind the real
+ * security chain would not surface here. That remains {@code ClientSessionGuardTest}'s
+ * subject.
  */
 @SpringBootTest(classes = BottinClientApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -110,6 +117,10 @@ class ClientListRelayE2ETest {
         driver = (RemoteWebDriver) browser.getWebDriver();
         driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(60));
         driver.get(pageUrl());
+        // A clean slate per test: the browser container is reused, so a previous test's
+        // stored identity and cached lists would otherwise carry over.
+        run("localStorage.clear(); sessionStorage.clear();");
+        driver.get(pageUrl());
     }
 
     private String pageUrl() {
@@ -183,10 +194,11 @@ class ClientListRelayE2ETest {
      */
     private int establishedRelayConnections() {
         try {
-            // 1E61 is 7777 in hex; state 01 is ESTABLISHED.
-            var result = RELAY.execInContainer("sh", "-c", """
-                    cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | awk '$2 ~ /:1E61$/ && $4 == "01"' | wc -l
-                    """);
+            // /proc/net/tcp renders the local port in hex, and state 01 is ESTABLISHED.
+            String portInHex = String.format("%04X", NostrRelayContainer.RELAY_PORT);
+            var result = RELAY.execInContainer("sh", "-c",
+                    "cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | awk '$2 ~ /:"
+                            + portInHex + "$/ && $4 == \"01\"' | wc -l");
             return Integer.parseInt(result.getStdout().trim());
         } catch (Exception e) {
             throw new IllegalStateException("Could not count relay connections", e);
@@ -283,10 +295,16 @@ class ClientListRelayE2ETest {
                 var current = await FollowList.current(window.__e2e.userId);
                 return { entries: current.pubkeys.length };
                 """, listSize);
+        assertThat(before.get("error")).isNull();
         assertThat((Long) before.get("entries")).isEqualTo(listSize);
 
-        RELAY.stop();
+        // The relay is made unreachable by pointing the page at a dead port rather than by
+        // stopping the container. Testcontainers gives a restarted container a new mapped
+        // port, which the page and the host-port exposure would both still be holding the
+        // old value of - so the "after" read would fail for that reason instead of the one
+        // under test. A refused connection reaches the guard by the same path either way.
         Map<String, Object> whileDown = await("""
+                APP.saveRelays(window.__e2e.userId, [{ url: 'ws://localhost:1', read: true, write: true }]);
                 var r = await FollowList.follow(window.__e2e.userId, arguments[0]);
                 return { published: r.published };
                 """, TARGET_B);
@@ -295,11 +313,17 @@ class ClientListRelayE2ETest {
                 .as("a follow attempted against an unreadable list must be refused, not published")
                 .isEqualTo("unreadable");
 
-        RELAY.start();
         Map<String, Object> after = await("""
+                APP.saveRelays(window.__e2e.userId, [{ url: arguments[1], read: true, write: true }]);
                 var current = await FollowList.current(window.__e2e.userId);
-                return { entries: current.pubkeys.length, holdsTheAttempt: current.pubkeys.indexOf(arguments[0]) !== -1 };
-                """, TARGET_B);
+                return { entries: current.pubkeys.length, readable: current.readable,
+                         holdsTheAttempt: current.pubkeys.indexOf(arguments[0]) !== -1 };
+                """, TARGET_B, relayUrl());
+
+        assertThat(after.get("error")).isNull();
+        assertThat(after.get("readable"))
+                .as("the list has to be readable again before its size means anything")
+                .isEqualTo(true);
 
         assertThat((Long) after.get("entries"))
                 .as("no entry may be lost when a change is refused")
@@ -365,16 +389,26 @@ class ClientListRelayE2ETest {
     void shouldReleaseRelaySocketsAfterEachChange() {
         seedIdentity();
         int changes = 10;
-        await("""
+        Map<String, Object> made = await("""
+                var accepted = 0;
                 for (var i = 0; i < arguments[0]; i++) {
-                    await FollowList.follow(window.__e2e.userId, i.toString(16).padStart(64, '0'));
+                    var r = await FollowList.follow(window.__e2e.userId, i.toString(16).padStart(64, '0'));
+                    accepted += r.published;
                 }
-                return {};
+                return { accepted: accepted };
                 """, changes);
+
+        // Asserted first, and deliberately: with no connections ever opened the count
+        // below is trivially zero, so a leak test that only checked it would pass most
+        // loudly when nothing worked at all.
+        assertThat(made.get("error")).isNull();
+        assertThat((Long) made.get("accepted"))
+                .as("every change must have reached the relay, or there were no sockets to leak")
+                .isEqualTo((long) changes);
 
         assertThat(establishedRelayConnections())
                 .as("%d changes must not leave sockets open", changes)
-                .isLessThanOrEqualTo(1);
+                .isZero();
     }
 
     /**
