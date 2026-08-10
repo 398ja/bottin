@@ -27,9 +27,7 @@ public class OnboardingController {
 
     private static final Map<String, String> STEP_TITLES = Map.of(
             "method", "Get Started",
-            "profile", "Profile Setup",
-            "security", "Set Password",
-            "confirm", "Review",
+            "register", "Create Your Account",
             "import", "Login"
     );
 
@@ -48,29 +46,6 @@ public class OnboardingController {
     public String stepMethod(Model model) {
         model.addAttribute("title", "Get Started");
         model.addAttribute("content", "onboarding/step-method");
-        return "layout";
-    }
-
-    @PostMapping("/onboarding/step-method")
-    public String postStepMethod(Model model) {
-        model.addAttribute("title", "Profile Setup");
-        model.addAttribute("content", "onboarding/step-profile");
-        model.addAttribute("bottinDomain", clientProperties.getDomain());
-        model.addAttribute("blossomUrl", settingsClient.current().blossomUrl());
-        return "layout";
-    }
-
-    @PostMapping("/onboarding/step-profile")
-    public String postStepProfile(Model model) {
-        model.addAttribute("title", "Set Password");
-        model.addAttribute("content", "onboarding/step-security");
-        return "layout";
-    }
-
-    @PostMapping("/onboarding/step-security")
-    public String postStepSecurity(Model model) {
-        model.addAttribute("title", "Review");
-        model.addAttribute("content", "onboarding/step-confirm");
         return "layout";
     }
 
@@ -94,9 +69,8 @@ public class OnboardingController {
         }
         model.addAttribute("title", title);
         model.addAttribute("content", "onboarding/step-" + step);
-        if ("profile".equals(step)) {
+        if ("register".equals(step)) {
             model.addAttribute("bottinDomain", clientProperties.getDomain());
-            model.addAttribute("blossomUrl", settingsClient.current().blossomUrl());
         }
         if ("import".equals(step)) {
             model.addAttribute("discoveryRelays", String.join(",", discoveryRelays()));

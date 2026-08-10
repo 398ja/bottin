@@ -1,6 +1,8 @@
 package xyz.tcheeric.bottin.client.controller;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -56,28 +58,75 @@ class OnboardingControllerTest {
                 .andExpect(model().attribute("content", "onboarding/step-method"));
     }
 
+    /**
+     * Tests that registering is a single step, reached from the entry page. The
+     * three screens it replaced — profile, security and review — no longer exist,
+     * so this is the only thing between choosing to register and having an account.
+     */
     @Test
-    void shouldAdvanceToProfileStep() throws Exception {
-        mockMvc.perform(post("/onboarding/step-method").with(csrf()))
+    void shouldShowTheRegisterStep() throws Exception {
+        // Given: a visitor who chose to register
+        // When: the register step is requested
+        mockMvc.perform(get("/onboarding/step/register"))
+                // Then: the single registration screen renders
                 .andExpect(status().isOk())
                 .andExpect(view().name("layout"))
-                .andExpect(model().attribute("content", "onboarding/step-profile"));
+                .andExpect(model().attribute("content", "onboarding/step-register"));
     }
 
-    @Test
-    void shouldAdvanceToSecurityStep() throws Exception {
-        mockMvc.perform(post("/onboarding/step-profile").with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(view().name("layout"))
-                .andExpect(model().attribute("content", "onboarding/step-security"));
+    /**
+     * Tests that the multi-step wizard's intermediate posts are gone rather than
+     * merely unreachable from the UI. A route that still answers is a route that
+     * can still be addressed directly, and each of these rendered a template this
+     * feature deleted.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"/onboarding/step-method", "/onboarding/step-profile", "/onboarding/step-security"})
+    void shouldNoLongerServeTheRemovedWizardSteps(String removedRoute) throws Exception {
+        // Given: a route from the four-step wizard
+        // When: it is posted to directly
+        mockMvc.perform(post(removedRoute).with(csrf()))
+                // Then: nothing answers
+                .andExpect(status().isNotFound());
     }
 
+    /**
+     * Tests that the register step asks for a handle and two passwords and
+     * nothing else. This is the feature's whole claim, so it is asserted on the
+     * rendered form rather than on the template name.
+     */
     @Test
-    void shouldAdvanceToConfirmStep() throws Exception {
-        mockMvc.perform(post("/onboarding/step-security").with(csrf()))
+    void shouldOfferOnlyAHandleAndTwoPasswordsOnTheRegisterStep() throws Exception {
+        // Given: the register step
+        // When: it is rendered
+        mockMvc.perform(get("/onboarding/step/register"))
+                // Then: the three inputs are present
                 .andExpect(status().isOk())
-                .andExpect(view().name("layout"))
-                .andExpect(model().attribute("content", "onboarding/step-confirm"));
+                .andExpect(content().string(containsString("name=\"username\"")))
+                .andExpect(content().string(containsString("name=\"password\"")))
+                .andExpect(content().string(containsString("name=\"confirm\"")))
+                // And: none of the profile fields it used to collect are
+                .andExpect(content().string(not(containsString("name=\"display_name\""))))
+                .andExpect(content().string(not(containsString("name=\"about\""))))
+                .andExpect(content().string(not(containsString("name=\"picture\""))))
+                .andExpect(content().string(not(containsString("name=\"banner\""))))
+                .andExpect(content().string(not(containsString("name=\"lud16\""))))
+                .andExpect(content().string(not(containsString("name=\"website\""))));
+    }
+
+    /**
+     * Tests that the register step says the password cannot be recovered. The
+     * word "password" ordinarily implies a reset link, and here there is none:
+     * the deployment holds nothing that could restore access.
+     */
+    @Test
+    void shouldWarnThatThePasswordCannotBeRecovered() throws Exception {
+        // Given: the register step
+        // When: it is rendered
+        mockMvc.perform(get("/onboarding/step/register"))
+                // Then: the consequence of forgetting it is stated
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("cannot be reset or recovered")));
     }
 
     @Test
@@ -236,43 +285,23 @@ class OnboardingControllerTest {
     }
 
     /**
-     * The onboarding profile step uploads avatars before any account exists, so
-     * it needs the Blossom URL on the model just like the profile page.
+     * Tests that registering asks for no image at all. Uploading one used to
+     * require a key before the account existed, which is why a key was minted
+     * early and stashed; with the field gone, neither the upload nor that
+     * workaround has any reason to run.
      */
     @Test
-    void shouldExposeBlossomUrlOnTheProfileStep() throws Exception {
-        mockMvc.perform(get("/onboarding/step/profile"))
+    void shouldNotOfferImageUploadsDuringRegistration() throws Exception {
+        // Given: the register step
+        // When: it is rendered
+        mockMvc.perform(get("/onboarding/step/register"))
+                // Then: there is nothing to upload with, and no media server to upload to
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("blossomUrl", MEDIA_SERVER));
+                .andExpect(content().string(not(containsString("type=\"file\""))))
+                .andExpect(content().string(not(containsString("id=\"blossom-url\""))))
+                .andExpect(content().string(not(containsString(MEDIA_SERVER))));
     }
 
-    /**
-     * The profile step is also reached by posting the method step, which renders
-     * the same template and therefore needs the same attribute.
-     */
-    @Test
-    void shouldExposeBlossomUrlWhenPostingTheMethodStep() throws Exception {
-        mockMvc.perform(post("/onboarding/step-method").with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("blossomUrl", MEDIA_SERVER));
-    }
-
-    /**
-     * The onboarding profile step now takes images from the device, so it must
-     * render file pickers, the hidden fields the uploaded URLs land in, and the
-     * Blossom URL the uploader reads.
-     */
-    @Test
-    void shouldRenderImageFilePickersOnTheProfileStep() throws Exception {
-        mockMvc.perform(get("/onboarding/step/profile"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("id=\"onboarding-picture-file\"")))
-                .andExpect(content().string(containsString("id=\"onboarding-banner-file\"")))
-                .andExpect(content().string(containsString("name=\"picture\"")))
-                .andExpect(content().string(containsString("name=\"banner\"")))
-                .andExpect(content().string(containsString("id=\"blossom-url\"")))
-                .andExpect(content().string(containsString(MEDIA_SERVER)));
-    }
     /**
      * Tests that the import step is handed the relays to search for an existing
      * profile: the administrator's discovery relays followed by the deployment's

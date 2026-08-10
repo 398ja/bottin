@@ -9,10 +9,6 @@
             <div class="wizard-step active">1</div>
             <div class="wizard-connector"></div>
             <div class="wizard-step">2</div>
-            <div class="wizard-connector"></div>
-            <div class="wizard-step">3</div>
-            <div class="wizard-connector"></div>
-            <div class="wizard-step">4</div>
         </div>
 
         <div class="card" style="max-width: 480px; margin: 0 auto;">
@@ -33,8 +29,9 @@
                         <div>
                             <strong>Register</strong>
                             <p class="text-secondary text-xs mt-1">
-                                Create a new identity. A fresh key is generated here, encrypted with a
-                                passphrase and stored in this browser.
+                                Create a new identity. All you need is a handle and a password: a fresh
+                                key is generated here, encrypted with that password and stored in this
+                                browser.
                             </p>
                         </div>
                     </div>
@@ -72,12 +69,6 @@
     <script>
         function onMethodChange(method) {
             document.getElementById('import-section').className = method === 'import' ? 'mt-2' : 'hidden';
-            // The import path is two steps; the create path is four.
-            var steps = document.querySelectorAll('.wizard-step-indicator .wizard-step');
-            var connectors = document.querySelectorAll('.wizard-step-indicator .wizard-connector');
-            var hide = method === 'import';
-            steps[2].style.display = steps[3].style.display = hide ? 'none' : '';
-            connectors[1].style.display = connectors[2].style.display = hide ? 'none' : '';
         }
 
         document.querySelectorAll('input[name="method"]').forEach(function(r) {
@@ -110,7 +101,7 @@
                 error.style.display = 'none';
                 htmx.ajax('GET', '/onboarding/step/import', { target: 'body' });
             } else {
-                htmx.ajax('GET', '/onboarding/step/profile', { target: 'body' });
+                htmx.ajax('GET', '/onboarding/step/register', { target: 'body' });
             }
         }
 
