@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-10
+
+### Changed
+
+- **Registration in the client UI is one screen with three fields** — a handle, a
+  password and its confirmation. The display name, about text, avatar, banner,
+  lightning address and website it used to collect are now entered on the profile
+  edit page after signing in, which already accepted and published all of them.
+  Nine fields across four screens become three on one.
+- **The handle is now claimed before any identity is stored.** Registration
+  generates the key, signs in with it, claims the handle in the directory, and
+  only then encrypts the key and writes it to the browser. Previously the
+  identity was stored first and the handle claimed afterwards, so a user who lost
+  a race for a handle was left holding an identity that asserted a NIP-05 the
+  directory had granted to somebody else. A failed claim now leaves no account at
+  all, and the user picks another handle without re-entering their password.
+- The profile published at registration carries the NIP-05 handle and a name
+  equal to the chosen username, so a new user reads as their handle in other
+  Nostr clients rather than as a raw key.
+- The client UI now calls the local key-encryption secret a "password"
+  throughout, replacing the "passphrase" wording used on some screens, and states
+  on the registration form that it cannot be reset or recovered.
+
+### Added
+
+- A dismissible banner offering the profile edit page to users who have published
+  no display name. The dismissal is per user and survives logout of that user.
+- `docs/tutorials/register-your-identity.md`, the first tutorial in the
+  documentation.
+
+### Removed
+
+- The onboarding profile, security and review steps, and the
+  `OnboardingComplete` browser module they finished through.
+- Image upload during registration, and with it the workaround that minted a key
+  early so that an avatar could be signed before any account existed.
+
 ## [0.9.0] - 2026-08-05
 
 ### Added
