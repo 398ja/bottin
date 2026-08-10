@@ -267,9 +267,15 @@ Authentication is a NAP session cookie rather than HTTP Basic.
 
 ### POST /api/v1/register
 
-Registers the handle chosen during onboarding. The client UI calls
+Registers the handle chosen during registration. The client UI calls
 `POST /api/v1/records` on the API above with its own credentials, so the browser
 never holds them.
+
+The browser calls this *before* it stores anything: the key is generated and
+signed in with so that the claim can be authenticated, but it is only encrypted
+and written to the browser once this endpoint has answered `200`. A `409`
+therefore leaves no account behind, rather than one asserting a handle the
+directory holds for another key.
 
 **Request Body:**
 
@@ -298,8 +304,9 @@ record yet), `502 DIRECTORY_UNAVAILABLE`.
 
 ### GET /api/v1/resolve?username={username}
 
-Checks whether a handle can still be claimed, during onboarding. Requires no
-authentication.
+Checks whether a handle can still be claimed, as the registration form is typed
+into. Requires no authentication. A handle can still be taken between this check
+and the claim, which `POST /api/v1/register` answers with `409`.
 
 **Response:**
 

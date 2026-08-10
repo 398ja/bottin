@@ -8,7 +8,7 @@ This documentation is organized following the [Diátaxis framework](https://diat
 
 Learning-oriented guides that take you through a series of steps to complete a project.
 
-*Coming soon*
+- [Register Your Nostr Identity](tutorials/register-your-identity.md) - Create an identity, save your backup key, and fill in your profile
 
 ## How-To Guides
 

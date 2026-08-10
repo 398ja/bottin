@@ -5,7 +5,8 @@ and how to point the client at the media server that stores them.
 
 ## Choose an image
 
-1. Open `/profile/edit` (or reach the profile step during onboarding).
+1. Open `/profile/edit`. This is the only place images are set: registration asks
+   for a handle and a password and nothing else.
 2. Under **Avatar** or **Banner**, choose a file from your device.
 3. The image appears immediately as a local preview while it uploads.
 4. If your session is locked, the unlock prompt appears: the upload is
@@ -38,8 +39,9 @@ network. Entering a compose service name such as `blossom` resolves on the serve
 and fails for every user.
 
 Until an administrator sets it, the file pickers are disabled and show "Media
-server not configured". The rest of onboarding still works: a visitor cannot fix
-the deployment's configuration, so they are not blocked by its absence.
+server not configured". Registering is unaffected either way: it never touches
+the media server, so a visitor is never blocked by a configuration they cannot
+fix.
 
 The upload goes straight from your browser to that server: no image bytes pass
 through Bottin, and every blob is owned by your pubkey, so you can delete it
