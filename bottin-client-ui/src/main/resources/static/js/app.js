@@ -3,6 +3,7 @@ window.APP = {
     identityKey: function(userId) { return 'imani.identity.' + userId; },
     followsKey: function(userId) { return 'imani.follows.' + userId; },
     blocksKey: function(userId) { return 'imani.blocks.' + userId; },
+    nudgeKey: function(userId) { return 'imani.nudge.dismissed.' + userId; },
 
     debounce: function(fn, delay) {
         let timer;
@@ -67,6 +68,7 @@ window.APP = {
         localStorage.removeItem(this.followsKey(userId));
         localStorage.removeItem(this.blocksKey(userId));
         localStorage.removeItem(this.relaysKey(userId));
+        localStorage.removeItem(this.nudgeKey(userId));
         this.lockSession(userId);
     },
 
@@ -163,7 +165,7 @@ window.APP = {
         if (!identity) return Promise.reject(new Error('No identity found'));
         return NostrCrypto.verifyPassword(identity.passwordHash, identity.passwordSalt, passphrase)
             .then(function(valid) {
-                if (!valid) throw new Error('Wrong passphrase');
+                if (!valid) throw new Error('Wrong password');
                 return NostrCrypto.decryptPrivateKey(
                     identity.privateKeyEncrypted, identity.privateKeyIv, identity.privateKeySalt, passphrase);
             })
@@ -203,7 +205,7 @@ window.APP = {
                 self.unlockSession(userId, input.value)
                     .then(function(hexKey) { cleanup(); resolve(hexKey); })
                     .catch(function() {
-                        error.textContent = 'Wrong passphrase';
+                        error.textContent = 'Wrong password';
                         error.className = 'form-error mt-1';
                     });
             };

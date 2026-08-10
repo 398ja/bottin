@@ -944,6 +944,18 @@ textarea.form-input {
 .gap-md { gap: 0.75rem; }
 .gap-lg { gap: 1rem; }
 
+/* Laid out here rather than inline on the element: an inline `display` beats
+   `.hidden`, which would leave the banner on screen however the class is
+   toggled — including on the backup-key screen it must never compete with.
+   Declared above `.hidden` so that, at equal specificity, `.hidden` wins. */
+.profile-nudge {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.75rem auto;
+    max-width: 720px;
+}
+
 .hidden {
     display: none;
 }

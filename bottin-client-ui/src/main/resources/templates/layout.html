@@ -22,9 +22,25 @@
     <script src="/js/follow-list.js"></script>
     <script src="/js/block-list.js"></script>
     <script src="/js/settings-lists.js"></script>
+    <script src="/js/profile-nudge.js"></script>
 </head>
 <body>
     <nav th:replace="~{fragments/nav :: nav}"></nav>
+    <!--/* Not on another key's profile: that page is public and belongs to
+           somebody else, so markup addressing the reader about their own profile
+           must never be painted onto it, hidden or not. profilePubkey is set only
+           by the /profile/{key} route.
+
+           The condition wraps the include rather than sitting beside it:
+           th:replace has higher precedence than th:if, so a th:if on the same tag
+           is replaced away before it is ever evaluated.
+
+           A parser-level comment, not an HTML one: an HTML comment is rendered
+           into the response, where its text would count against assertions about
+           what the page says. */-->
+    <th:block th:if="${profilePubkey == null}">
+        <div th:replace="~{fragments/profile-nudge :: banner}"></div>
+    </th:block>
     <main th:remove="tag">
         <div th:replace="${content}"></div>
     </main>
@@ -32,9 +48,9 @@
         <div class="modal">
             <div class="modal-title">Unlock to Sign</div>
             <p class="text-secondary text-sm mb-2">
-                Enter your passphrase to sign and publish. It stays unlocked for this session.
+                Enter your password to sign and publish. It stays unlocked for this session.
             </p>
-            <input type="password" id="unlock-password" class="form-input" placeholder="Passphrase" autocomplete="off">
+            <input type="password" id="unlock-password" class="form-input" placeholder="Password" autocomplete="off">
             <div id="unlock-error" class="form-error hidden mt-1"></div>
             <div class="flex-row-gap-sm mt-2">
                 <button class="btn btn-outline" style="flex: 1;" id="unlock-cancel">Cancel</button>
