@@ -73,6 +73,20 @@ describe('profile-view.js', () => {
     };
   });
 
+  // Registration collects a handle and nothing else, so a user who has not yet
+  // visited the profile page has no display name at all. They must read as their
+  // handle rather than as an empty line, which is what the page would otherwise
+  // show for every newly registered account.
+  it('falls back to the handle when no display name has been published', () => {
+    window.APP.loadIdentity = () => ({
+      userId: 'npub1own', pubkeyHex: OWN_PUBKEY, nip05: 'newcomer@imani.test'
+    });
+
+    renderPage(null);
+
+    expect(name()).toBe('newcomer@imani.test');
+  });
+
   // Own profile: what this browser holds is the profile, and no relay is asked.
   it('renders the stored identity when no key is being viewed', () => {
     renderPage(null);
