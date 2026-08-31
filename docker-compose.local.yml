@@ -1,0 +1,64 @@
+# Isolated local test stack for the 004-admin-settings branch.
+#
+# Use explicitly, never on its own:
+#   docker compose -p bottin004 -f docker-compose.yml -f docker-compose.local.yml up -d
+#
+# Deliberately NOT named docker-compose.override.yml: that name is auto-loaded,
+# which would silently change every plain `docker compose up` in this directory.
+#
+# Everything is renamed and re-ported so this runs alongside the dalia-pilot
+# stack rather than colliding with it. The project name also scopes the volumes,
+# so this gets its own empty database — which is the point: it exercises the
+# "a deployment comes up unconfigured by design" path.
+services:
+  bottin-api:
+    image: bottin004/api:local
+    container_name: bottin004-api
+    ports: !override
+      - "8090:8080"
+
+  bottin-admin:
+    image: bottin004/admin:local
+    container_name: bottin004-admin
+    environment:
+      # Must match the address the browser uses. This stack publishes the
+      # dashboard on 8091, not the compose default, and a mismatch makes the
+      # signed proof name a different address than it is sent to.
+      - BOTTIN_ADMIN_EXTERNAL_URL=http://localhost:8091
+      # The session cookie defaults to Secure, which a browser will not store
+      # over plain HTTP. This stack is HTTP, so sign-in would succeed and then
+      # every page would bounce back to the login form.
+      - COOKIE_SECURE=false
+    ports: !override
+      - "8091:8081"
+
+  bottin-client:
+    image: bottin004/client:local
+    # The base file builds this from source; the image above is already built
+    # from the same 0.6.0 jar, so the build stage is dropped.
+    build: !reset null
+    container_name: bottin004-client
+    ports: !override
+      - "8092:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NAP_ENABLED=true
+      - BOTTIN_CLIENT_DOMAIN=imani.test
+      - BOTTIN_DIRECTORY_URL=http://bottin-api:8080
+      - BOTTIN_API_USER=api
+      - BOTTIN_API_PASSWORD=changeme-api
+      - BOTTIN_EXTERNAL_URL=http://localhost:8092
+      - COOKIE_SECURE=false
+
+  relay:
+    container_name: bottin004-relay
+    ports: !override
+      - "8093:7777"
+
+  blossom:
+    container_name: bottin004-blossom
+    ports: !override
+      - "8094:3000"
+
+  postgres:
+    container_name: bottin004-postgres
