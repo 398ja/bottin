@@ -1,0 +1,10 @@
+# Names in docs that are not Java types in this repository. Checked by `doccheck`.
+
+# nostr-tools (JavaScript) types named in the client guidance
+SimplePool
+
+# Deliberately deleted stubs. CLAUDE.md records that the server-side
+# FollowController / BlockController stubs were removed rather than implemented;
+# the shipped types are FollowListController and BlockListController.
+FollowController
+BlockController
