@@ -5,18 +5,18 @@
 </head>
 <body>
     <div th:fragment="content" class="container-narrow">
-        <div th:replace="~{fragments/page-header :: headerUnder('Settings', '/settings', 'Security', 'Manage your passphrase and identity export')}"></div>
+        <div th:replace="~{fragments/page-header :: headerUnder('Settings', '/settings', 'Security', 'Manage your password and identity export')}"></div>
 
         <div class="card">
-            <h2 class="card-title">Change Passphrase</h2>
+            <h2 class="card-title">Change Password</h2>
 
             <div class="form-group">
-                <label class="form-label">Current Passphrase</label>
+                <label class="form-label">Current Password</label>
                 <input type="password" id="current-password" class="form-input" autocomplete="current-password">
             </div>
 
             <div class="form-group">
-                <label class="form-label">New Passphrase</label>
+                <label class="form-label">New Password</label>
                 <input type="password" id="new-password" class="form-input" minlength="8" autocomplete="new-password">
                 <div class="password-strength">
                     <div class="password-strength-bar" id="strength-bar"></div>
@@ -24,21 +24,21 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">Confirm New Passphrase</label>
+                <label class="form-label">Confirm New Password</label>
                 <input type="password" id="confirm-password" class="form-input" minlength="8" autocomplete="new-password">
             </div>
 
             <div id="passphrase-error" class="form-error hidden mb-2"></div>
 
             <button class="btn btn-primary btn-full" onclick="handlePassphraseChange()">
-                Update Passphrase
+                Update Password
             </button>
         </div>
 
         <div class="card mt-2">
             <h2 class="card-title">Export Identity</h2>
             <div class="callout callout-warning mb-2">
-                <p>Reveal your nsec private key. Anyone with your nsec has full control of your identity — never share it. You will need to enter your passphrase to confirm.</p>
+                <p>Reveal your nsec private key. Anyone with your nsec has full control of your identity — never share it. You will need to enter your password to confirm.</p>
             </div>
             <button class="btn btn-outline btn-full" onclick="showNsecModal()">
                 Reveal nsec
@@ -55,11 +55,11 @@
 
     <div id="nsec-modal" class="modal-overlay hidden">
         <div class="modal">
-            <div class="modal-title">Enter Your Passphrase</div>
+            <div class="modal-title">Enter Your Password</div>
             <p class="text-secondary text-sm mb-2">
-                Enter your encryption passphrase to reveal your nsec.
+                Enter your encryption password to reveal your nsec.
             </p>
-            <input type="password" id="modal-password" class="form-input" placeholder="Passphrase" autocomplete="off">
+            <input type="password" id="modal-password" class="form-input" placeholder="Password" autocomplete="off">
             <div id="modal-error" class="form-error hidden mt-1"></div>
             <div class="flex-row-gap-sm mt-2">
                 <button class="btn btn-outline" style="flex: 1;" onclick="closeNsecModal()">Cancel</button>
@@ -128,12 +128,12 @@
                 window.APP.saveIdentity(identity);
 
                 error.style.display = 'none';
-                window.APP.showToast('Passphrase updated', 'success');
+                window.APP.showToast('Password updated', 'success');
                 document.getElementById('current-password').value = '';
                 document.getElementById('new-password').value = '';
                 document.getElementById('confirm-password').value = '';
             } catch (err) {
-                error.textContent = 'Current passphrase is incorrect';
+                error.textContent = 'Current password is incorrect';
                 error.style.display = 'block';
             }
         }
@@ -158,7 +158,7 @@
                 if (!identity) throw new Error('No identity');
 
                 var valid = await NostrCrypto.verifyPassword(identity.passwordHash, identity.passwordSalt, password);
-                if (!valid) throw new Error('Wrong passphrase');
+                if (!valid) throw new Error('Wrong password');
 
                 var hexKey = await NostrCrypto.decryptPrivateKey(
                     identity.privateKeyEncrypted, identity.privateKeyIv, identity.privateKeySalt, password

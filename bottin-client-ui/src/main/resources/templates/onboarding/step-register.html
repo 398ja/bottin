@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bottin - Create Your Account</title>
+</head>
+<body>
+    <div th:fragment="content" class="container-narrow">
+        <div class="wizard-step-indicator">
+            <div class="wizard-step completed">✓</div>
+            <div class="wizard-connector completed"></div>
+            <div class="wizard-step active">2</div>
+        </div>
+
+        <div class="card" style="max-width: 480px; margin: 0 auto;">
+            <h1 class="page-title" style="margin-bottom: 0.75rem;">Create Your Account</h1>
+            <p class="text-secondary text-sm mb-3">
+                Choose a handle and a password. That is all — you can add a name, picture and
+                anything else to your profile once you are signed in.
+            </p>
+
+            <!-- The password is typed here and never leaves the browser: this form is
+                 not submitted anywhere. Completion posts the empty #complete-form
+                 below, so there is no request that could carry these fields. -->
+            <form id="register-form" onsubmit="handleRegister(event); return false;">
+                <div class="form-group">
+                    <label class="form-label" for="register-username">Handle</label>
+                    <div style="display: flex; gap: 0.25rem; align-items: stretch;">
+                        <span class="form-input" style="flex: 0 0 auto; width: auto; border-right: none; border-radius: var(--radius) 0 0 var(--radius); background: var(--color-bg); display: flex; align-items: center; padding: 0 0.75rem; font-size: 0.875rem; color: var(--color-text-secondary);">@</span>
+                        <input type="text" name="username" id="register-username" class="form-input"
+                               pattern="[a-z0-9_\-]+" maxlength="64"
+                               placeholder="alice" required autocomplete="off"
+                               style="border-radius: 0 var(--radius) var(--radius) 0;"
+                               hx-get="/api/v1/resolve"
+                               hx-trigger="keyup changed delay:500ms"
+                               hx-target="#username-hint"
+                               hx-swap="innerHTML"
+                               hx-params="username">
+                    </div>
+                    <div class="form-error hidden" id="register-error-username"></div>
+                    <div class="form-hint" id="username-hint">
+                        NIP-05: <strong th:text="${bottinDomain} ?: 'alice@bottin.example.com'">alice@bottin.example.com</strong>
+                        (auto-registered)
+                    </div>
+                    <span id="nip05-domain" th:text="${bottinDomain} ?: 'bottin.example.com'" hidden>bottin.example.com</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" name="password" id="password" class="form-input"
+                           minlength="8" required autocomplete="new-password">
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="strength-bar"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirm">Confirm password</label>
+                    <input type="password" name="confirm" id="confirm" class="form-input"
+                           minlength="8" required autocomplete="new-password">
+                    <div class="form-error hidden" id="register-error-password"></div>
+                </div>
+
+                <div class="callout callout-warning" style="text-align: left;">
+                    <p class="text-2xs" style="margin: 0;">
+                        This password encrypts your key in this browser. It cannot be reset or recovered
+                        by anyone — not by us — so keep it somewhere safe.
+                    </p>
+                </div>
+
+                <div id="register-error" class="form-error hidden mt-2"></div>
+
+                <div class="flex-row-gap-sm mt-2">
+                    <button type="button" class="btn btn-outline" style="flex: 1;"
+                            hx-get="/onboarding/step/method" hx-target="body" hx-push-url="false"
+                            hx-params="none" onclick="Registration.reset()">Back</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;"
+                            id="register-submit-btn">Create account</button>
+                </div>
+            </form>
+
+            <div id="register-status" class="hidden text-center mt-2 text-secondary text-sm"></div>
+        </div>
+
+        <!-- Carries nothing. Its only job is the navigation to the backup screen
+             once the account exists. -->
+        <form action="/onboarding/complete" method="post" id="complete-form" hidden></form>
+    </div>
+
+    <script src="/js/registration.js"></script>
+    <script>
+        (function () {
+            var submitBtn = document.getElementById('register-submit-btn');
+            var hint = document.getElementById('username-hint');
+            var usernameInput = document.getElementById('register-username');
+
+            // The availability badge is swapped into #username-hint by htmx, and the
+            // submit button follows it, so a handle the directory already holds cannot
+            // be carried into key generation only to be refused at the claim. The
+            // button is also held while a check is in flight, since the badge on
+            // screen then describes the previous handle.
+            usernameInput.addEventListener('htmx:beforeRequest', function () { submitBtn.disabled = true; });
+
+            hint.addEventListener('htmx:afterSwap', function () {
+                var badge = hint.querySelector('[data-available]');
+                submitBtn.disabled = !!badge && badge.getAttribute('data-available') === 'false';
+            });
+
+            document.getElementById('password').addEventListener('input', function () {
+                var score = 0;
+                if (this.value.length >= 8) score++;
+                if (this.value.length >= 12) score++;
+                if (/[a-z]/.test(this.value) && /[A-Z]/.test(this.value)) score++;
+                if (/\d/.test(this.value)) score++;
+                if (/[^a-zA-Z0-9]/.test(this.value)) score++;
+                var labels = ['', 'weak', 'fair', 'good', 'strong', 'strong'];
+                document.getElementById('strength-bar').className = 'password-strength-bar ' + labels[score];
+            });
+        })();
+
+        function showFieldError(id, text) {
+            var el = document.getElementById(id);
+            el.textContent = text;
+            el.classList.remove('hidden');
+        }
+
+        function clearRegisterErrors() {
+            ['register-error-username', 'register-error-password', 'register-error']
+                .forEach(function (id) { document.getElementById(id).classList.add('hidden'); });
+        }
+
+        function setBusy(text) {
+            var status = document.getElementById('register-status');
+            status.textContent = text;
+            status.classList.remove('hidden');
+            document.getElementById('register-submit-btn').disabled = true;
+        }
+
+        function endBusy() {
+            document.getElementById('register-status').classList.add('hidden');
+            document.getElementById('register-submit-btn').disabled = false;
+        }
+
+        function handleRegister(event) {
+            if (event) event.preventDefault();
+            clearRegisterErrors();
+
+            var username = document.getElementById('register-username').value.trim().toLowerCase();
+            var password = document.getElementById('password').value;
+            var confirm = document.getElementById('confirm').value;
+            var domain = (document.getElementById('nip05-domain').textContent || '').trim();
+
+            if (password.length < 8) {
+                showFieldError('register-error-password', 'Your password must be at least 8 characters.');
+                return;
+            }
+            if (password !== confirm) {
+                showFieldError('register-error-password', 'The two passwords do not match.');
+                return;
+            }
+
+            setBusy('Creating your account…');
+            Registration.submit({ username: username, password: password, domain: domain })
+                .then(function (outcome) {
+                    sessionStorage.setItem('onboarding-nsec', outcome.nsec);
+                    sessionStorage.setItem('onboarding-summary', JSON.stringify({
+                        nip05: outcome.nip05,
+                        published: outcome.published,
+                        relayCount: outcome.relayCount,
+                        publishError: outcome.publishError
+                    }));
+                    document.getElementById('complete-form').submit();
+                })
+                .catch(function (err) {
+                    endBusy();
+                    // A handle taken while the form was being filled in is the one
+                    // failure the user can fix here, so it is shown against the field
+                    // they need to change rather than as a general error.
+                    if (err && err.code === 'USERNAME_TAKEN') {
+                        showFieldError('register-error-username', err.message);
+                        document.getElementById('register-username').focus();
+                        return;
+                    }
+                    showFieldError('register-error', (err && err.message) || String(err));
+                });
+        }
+    </script>
+</body>
+</html>

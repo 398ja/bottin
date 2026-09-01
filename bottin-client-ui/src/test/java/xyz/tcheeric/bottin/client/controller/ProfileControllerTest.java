@@ -117,6 +117,41 @@ class ProfileControllerTest {
     }
 
     /**
+     * Tests that the banner is rendered on the signed-in user's own pages. Paired
+     * deliberately with the negative case below: a condition that excluded the
+     * banner everywhere would satisfy that one on its own, and the feature would
+     * quietly do nothing.
+     */
+    @Test
+    void shouldRenderTheProfileNudgeOnTheOwnProfilePage() throws Exception {
+        // Given: the signed-in user's own profile
+        // When: it is rendered
+        mockMvc.perform(get("/profile"))
+                // Then: the banner is present, for the script to reveal or hide
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"profile-nudge\"")));
+    }
+
+    /**
+     * Tests that the "complete your profile" banner is not rendered onto another
+     * key's page. It speaks to the signed-in user about their own profile, and
+     * that page belongs to somebody else and is public. Hiding it from script is
+     * not enough: the markup would still be painted before the script ran, which
+     * is the same defect the edit link above guards against.
+     */
+    @Test
+    void shouldNotRenderTheProfileNudgeOnAnotherKeysProfile() throws Exception {
+        // Given: somebody else's key
+        String pubkey = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+
+        // When: their profile is rendered
+        mockMvc.perform(get("/profile/" + pubkey))
+                // Then: the banner is absent from the markup entirely
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("id=\"profile-nudge\""))));
+    }
+
+    /**
      * An npub in the URL reaches the same profile as its hex, because an npub is
      * the form people copy and paste. The page carries the canonical hex, which
      * is what the relay query filters on.

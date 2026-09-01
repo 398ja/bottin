@@ -21,6 +21,19 @@ describe('buildProfileEvent', () => {
     const ev = NostrPublish.buildProfileEvent({ display_name: 'Bob' });
     expect(JSON.parse(ev.content)).toEqual({ display_name: 'Bob' });
   });
+
+  // The profile published at registration, where the handle is the only thing
+  // the user has given. NIP-01 kind-0 content is a plain object of the fields
+  // the author chose to publish, so the assertion is that exactly two keys are
+  // present: anything more would be a field invented on the user's behalf, and
+  // anything less would leave them showing as a raw npub in other clients.
+  it('publishes only name and nip05 when the handle is all there is', () => {
+    const ev = NostrPublish.buildProfileEvent({ nip05: 'alice@bottin.example.com' });
+
+    expect(JSON.parse(ev.content)).toEqual({
+      name: 'alice', nip05: 'alice@bottin.example.com',
+    });
+  });
 });
 
 describe('buildRelayListEvent / relaysToTags', () => {

@@ -7,10 +7,14 @@
     <div th:fragment="content" class="container" style="max-width: 480px;">
         <div th:replace="~{fragments/page-header :: headerUnder('Settings', '/settings', 'Blocked Users', 'People you have blocked')}"></div>
 
-        <div class="card">
+        <!-- Populated by settings-lists.js. Reading this list needs the key, since
+             its entries are encrypted, so the page may ask for the password. It is
+             the only way to read back what was blocked, which is what keeps a private
+             list correctable rather than write-only. -->
+        <div class="card" id="blocks-list">
             <div class="empty-state">
                 <div class="empty-state-icon">🚫</div>
-                <p>No blocked users</p>
+                <p>Loading…</p>
             </div>
         </div>
     </div>

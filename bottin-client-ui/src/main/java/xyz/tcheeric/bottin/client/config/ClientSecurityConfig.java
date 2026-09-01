@@ -1,5 +1,6 @@
 package xyz.tcheeric.bottin.client.config;
 
+import jakarta.servlet.Filter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -38,14 +39,13 @@ public class ClientSecurityConfig {
      * default, matching {@link #napSessionFilter} and avoiding that same silence.
      */
     @Bean
-    public FilterRegistrationBean<NapServletFilter> napServletFilter(
+    public FilterRegistrationBean<Filter> napServletFilter(
             ObjectProvider<NapProperties> napPropertiesProvider) {
-        FilterRegistrationBean<NapServletFilter> registrationBean = new FilterRegistrationBean<>();
+        FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
 
         NapProperties napProperties = napPropertiesProvider.getIfAvailable();
         if (napProperties == null) {
-            registrationBean.setEnabled(false);
-            return registrationBean;
+            return disabled(registrationBean);
         }
 
         registrationBean.setFilter(new NapServletFilter(NAP_COMPLETE_PATH, napProperties.maxBodyBytes()));
@@ -67,19 +67,18 @@ public class ClientSecurityConfig {
      * registration is disabled instead of failing.
      */
     @Bean
-    public FilterRegistrationBean<NapSessionFilter> napSessionFilter(
+    public FilterRegistrationBean<Filter> napSessionFilter(
             ObjectProvider<SessionStore> sessionStoreProvider,
             ObjectProvider<AclResolver> aclResolverProvider,
             ObjectProvider<NapProperties> napPropertiesProvider
     ) {
-        FilterRegistrationBean<NapSessionFilter> registrationBean = new FilterRegistrationBean<>();
+        FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
 
         SessionStore sessionStore = sessionStoreProvider.getIfAvailable();
         AclResolver aclResolver = aclResolverProvider.getIfAvailable();
         NapProperties napProperties = napPropertiesProvider.getIfAvailable();
         if (sessionStore == null || aclResolver == null || napProperties == null) {
-            registrationBean.setEnabled(false);
-            return registrationBean;
+            return disabled(registrationBean);
         }
 
         registrationBean.setFilter(new NapSessionFilter(
@@ -106,5 +105,25 @@ public class ClientSecurityConfig {
         return protectedPathPrefixes.stream()
                 .flatMap(prefix -> Stream.of(prefix, prefix + "/*"))
                 .toArray(String[]::new);
+    }
+
+    /**
+     * Turns a registration off in a way that actually starts.
+     *
+     * <p>Setting {@code enabled} to false is not enough on its own. Spring Boot asks a
+     * registration to describe itself before it consults whether the registration is
+     * enabled, and the description is derived from the filter — so a disabled
+     * registration holding no filter fails the application's start with "Filter must not
+     * be null" rather than being skipped. Disabling therefore has to leave something
+     * behind to describe.
+     *
+     * <p>Found by ClientListRelayE2ETest, which boots this application in a context where
+     * nap-spring's beans are absent. Both registrations claimed in their documentation to
+     * degrade here and both in fact threw, so the promise was never kept and never tested.
+     */
+    private static FilterRegistrationBean<Filter> disabled(FilterRegistrationBean<Filter> registrationBean) {
+        registrationBean.setFilter((request, response, chain) -> chain.doFilter(request, response));
+        registrationBean.setEnabled(false);
+        return registrationBean;
     }
 }

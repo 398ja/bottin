@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <!-- Offered to a user who registered with a handle and nothing else. Hidden
+         by default and revealed by profile-nudge.js, so a signed-out visitor and
+         a user who has already filled their profile in never see it flash. -->
+    <div th:fragment="banner" id="profile-nudge" class="callout profile-nudge hidden" role="status">
+        <span class="text-sm" style="flex: 1;">
+            Your profile is empty. Add a name and a picture so people recognise you.
+        </span>
+        <a href="/profile/edit" id="profile-nudge-link" class="btn btn-sm btn-primary"
+           style="text-decoration: none;">Complete profile</a>
+        <button type="button" id="profile-nudge-dismiss" class="btn-ghost"
+                aria-label="Dismiss this reminder" style="font-size: 1rem; line-height: 1;">&times;</button>
+    </div>
+</body>
+</html>

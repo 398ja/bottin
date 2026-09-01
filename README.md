@@ -161,9 +161,12 @@ Add the Spring Boot starter to your project to embed the registry:
 <dependency>
     <groupId>xyz.tcheeric</groupId>
     <artifactId>bottin-spring-boot-starter</artifactId>
-    <version>0.8.0</version>
+    <version>0.10.0</version>
 </dependency>
 ```
+
+Consumers that import `imani-bom` should omit the `<version>` element and let the
+BOM manage it.
 
 With the starter on the classpath and `bottin.enabled=true` (the default), it
 auto-configures bottin's **services**: database-backed NIP-05 record management,
@@ -240,8 +243,8 @@ mvn jib:build -pl bottin-api,bottin-admin-ui
 ```
 
 Images are published to `docker.398ja.xyz`:
-- `docker.398ja.xyz/bottin-api:0.8.0` / `latest`
-- `docker.398ja.xyz/bottin-admin-ui:0.8.0` / `latest`
+- `docker.398ja.xyz/bottin-api:0.10.0` / `latest`
+- `docker.398ja.xyz/bottin-admin-ui:0.10.0` / `latest`
 
 ## License
 

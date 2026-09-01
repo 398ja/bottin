@@ -753,6 +753,18 @@ textarea.form-input {
     border-bottom: none;
 }
 
+/* The row's link region. A follow or block control cannot live inside an anchor,
+   so the anchor wraps only the part that navigates and the control sits beside it. */
+.search-result-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
 .search-result-info {
     flex: 1;
     min-width: 0;
@@ -931,6 +943,18 @@ textarea.form-input {
 .gap-sm { gap: 0.5rem; }
 .gap-md { gap: 0.75rem; }
 .gap-lg { gap: 1rem; }
+
+/* Laid out here rather than inline on the element: an inline `display` beats
+   `.hidden`, which would leave the banner on screen however the class is
+   toggled — including on the backup-key screen it must never compete with.
+   Declared above `.hidden` so that, at equal specificity, `.hidden` wins. */
+.profile-nudge {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.75rem auto;
+    max-width: 720px;
+}
 
 .hidden {
     display: none;

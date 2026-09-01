@@ -48,6 +48,80 @@ document.addEventListener('DOMContentLoaded', function () {
         return pubkeyHex.slice(0, 8) + '…' + pubkeyHex.slice(-8);
     }
 
+    // Offers the follow and block controls for another key's profile. Nothing is
+    // rendered for a reader who is not signed in: they hold no key, so there is
+    // nothing to follow or block with, and a control that fails when pressed is
+    // worse than none.
+    //
+    // A blocked key's profile stays reachable and readable. Hiding it would leave
+    // no way to undo the block from the page that caused it.
+    function renderActions(pubkey) {
+        var actions = el('profile-actions');
+        if (!actions || !userId) return;
+
+        actions.classList.remove('hidden');
+        actions.innerHTML = '';
+
+        if (BlockList.cached(userId).indexOf(pubkey) !== -1) {
+            var badge = document.createElement('span');
+            badge.className = 'badge badge-danger';
+            badge.textContent = 'Blocked';
+            actions.appendChild(badge);
+            actions.appendChild(blockControl(userId, pubkey, true));
+            return;
+        }
+
+        actions.appendChild(followControl(userId, pubkey));
+        actions.appendChild(blockControl(userId, pubkey, false));
+    }
+
+    function blockControl(user, pubkey, blocked) {
+        var button = document.createElement('button');
+        button.className = 'btn btn-outline';
+        button.textContent = blocked ? 'Unblock' : 'Block';
+
+        button.addEventListener('click', function () {
+            button.disabled = true;
+            var action = blocked ? BlockList.unblock : BlockList.block;
+            var doneLabel = blocked ? 'Unblocked' : 'Blocked';
+            action(user, pubkey)
+                .then(function (result) {
+                    ListFeedback.reportOutcome(result, doneLabel);
+                    if (result.published > 0 || result.unchanged) renderActions(pubkey);
+                })
+                .catch(function (err) { ListFeedback.reportRefusal(err, 'block', 'blocking'); })
+                .then(function () { button.disabled = false; });
+        });
+
+        return button;
+    }
+
+    function followControl(user, pubkey) {
+        var button = document.createElement('button');
+        var following = FollowList.cached(user).indexOf(pubkey) !== -1;
+
+        function paint() {
+            button.textContent = following ? 'Following' : 'Follow';
+            button.className = 'btn ' + (following ? 'btn-outline' : 'btn-primary');
+        }
+        paint();
+
+        button.addEventListener('click', function () {
+            button.disabled = true;
+            var action = following ? FollowList.unfollow : FollowList.follow;
+            var doneLabel = following ? 'Unfollowed' : 'Following';
+            action(user, pubkey)
+                .then(function (result) {
+                    if (result.published > 0 || result.unchanged) following = !following;
+                    ListFeedback.reportOutcome(result, doneLabel);
+                })
+                .catch(function (err) { ListFeedback.reportRefusal(err, 'follow', 'following'); })
+                .then(function () { button.disabled = false; paint(); });
+        });
+
+        return button;
+    }
+
     var viewedEl = el('profile-pubkey');
     var viewedPubkey = viewedEl ? viewedEl.textContent.trim() : '';
 
@@ -56,6 +130,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (identity) render(identity, 'Your profile');
         return;
     }
+
+    renderActions(viewedPubkey);
 
     // This browser holds nothing about anyone but its own user, so another key's
     // profile is read from relays and is never saved: the stored identity belongs

@@ -8,7 +8,7 @@ This documentation is organized following the [Diátaxis framework](https://diat
 
 Learning-oriented guides that take you through a series of steps to complete a project.
 
-*Coming soon*
+- [Register Your Nostr Identity](tutorials/register-your-identity.md) - Create an identity, save your backup key, and fill in your profile
 
 ## How-To Guides
 
@@ -35,3 +35,4 @@ Information-oriented technical descriptions of the system.
 Understanding-oriented discussions that clarify and illuminate particular topics.
 
 - [Architecture Overview](explanation/architecture.md) - System architecture and module structure
+- [Follow and Block Lists](explanation/follow-and-block-lists.md) - Why these lists are published to the user's own relays rather than stored here, why blocks are encrypted, and why an unreadable list is never overwritten

@@ -7,7 +7,7 @@
 
     <groupId>xyz.tcheeric</groupId>
     <artifactId>bottin</artifactId>
-    <version>0.8.0</version>
+    <version>0.10.0</version>
     <packaging>pom</packaging>
 
     <name>Bottin - NIP-05 Registry Service</name>
@@ -84,6 +84,10 @@
         <mockito.version>5.11.0</mockito.version>
         <assertj.version>3.25.3</assertj.version>
         <testcontainers.version>1.19.7</testcontainers.version>
+        <!-- Aligned with what org.testcontainers:selenium pulls in: declaring 4.19.1 left
+             selenium-api and the chrome driver at 4.25.0 while the devtools artifacts stayed
+             at 4.19.1, an accidental pairing that happened to work. -->
+        <selenium.version>4.25.0</selenium.version>
         <wiremock.version>3.4.2</wiremock.version>
 
         <!-- API Documentation -->

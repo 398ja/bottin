@@ -17,12 +17,12 @@
                     <div id="recognition-nip05" class="text-secondary text-sm"></div>
                 </div>
                 <p class="text-secondary text-sm text-center mb-3">
-                    Enter your passphrase to unlock and sign in.
+                    Enter your password to unlock and sign in.
                 </p>
                 <div class="form-group">
-                    <label class="form-label">Passphrase</label>
+                    <label class="form-label">Password</label>
                     <input type="password" id="passphrase-input" class="form-input"
-                           autocomplete="current-password" placeholder="Your passphrase">
+                           autocomplete="current-password" placeholder="Your password">
                 </div>
                 <button id="unlock-btn" class="btn btn-primary btn-full" onclick="handleUnlock()">
                     Unlock &amp; Sign In
@@ -59,7 +59,7 @@
         async function handleUnlock() {
             var passphrase = document.getElementById('passphrase-input').value;
             if (!passphrase) {
-                showError('Please enter your passphrase');
+                showError('Please enter your password');
                 return;
             }
             setBusy(true);
@@ -69,7 +69,7 @@
 
                 var valid = await NostrCrypto.verifyPassword(
                     identity.passwordHash, identity.passwordSalt, passphrase);
-                if (!valid) throw new Error('Incorrect passphrase');
+                if (!valid) throw new Error('Incorrect password');
 
                 var hexKey = await NostrCrypto.decryptPrivateKey(
                     identity.privateKeyEncrypted, identity.privateKeyIv, identity.privateKeySalt, passphrase);

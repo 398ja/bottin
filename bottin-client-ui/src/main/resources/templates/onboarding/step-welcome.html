@@ -12,7 +12,7 @@
                 Your key has been generated and encrypted locally. Save your backup key below.
             </p>
 
-            <p id="onboarding-status" class="text-secondary text-sm mb-3">Registering your handle…</p>
+            <p id="onboarding-status" class="text-secondary text-sm mb-3"></p>
 
             <div class="callout callout-warning" style="text-align: left;">
                 <strong class="text-sm">Your Backup Key (nsec)</strong>
@@ -42,8 +42,6 @@
         </div>
     </div>
 
-    <script src="/js/nostr-publish.js"></script>
-    <script src="/js/onboarding-complete.js"></script>
     <script>
         (function() {
             var nsec = sessionStorage.getItem('onboarding-nsec');
@@ -89,42 +87,26 @@
 
             continueBtn.addEventListener('click', function() {
                 sessionStorage.removeItem('onboarding-nsec');
+                sessionStorage.removeItem('onboarding-summary');
             });
 
+            // The account already exists by the time this page loads: the handle was
+            // claimed and the profile published on the register step, before the key
+            // was stored. This screen only reports what happened and hands over the
+            // one thing the user must keep.
             var status = document.getElementById('onboarding-status');
+            var raw = sessionStorage.getItem('onboarding-summary');
+            if (!raw) return;
 
-            function describe(summary) {
-                var parts = [];
-                if (summary.registered) {
-                    parts.push('Handle registered in the directory');
-                } else if (summary.registerError) {
-                    parts.push(summary.registerError === 'USERNAME_TAKEN'
-                        ? 'That handle is already taken — pick another in Settings'
-                        : 'Handle registration failed (' + summary.registerError + ')');
-                }
-                if (summary.publishError) {
-                    parts.push('Profile not published: ' + summary.publishError);
-                } else if (summary.relayCount) {
-                    parts.push('profile published to ' + summary.published + '/' + summary.relayCount + ' relays');
-                }
-                return parts.join(' · ');
+            var summary = JSON.parse(raw);
+            var parts = ['Handle ' + summary.nip05 + ' registered'];
+            if (summary.publishError) {
+                parts.push('profile not published: ' + summary.publishError
+                    + ' — you can publish it from your profile page');
+            } else if (summary.relayCount) {
+                parts.push('profile published to ' + summary.published + '/' + summary.relayCount + ' relays');
             }
-
-            // The directory registration and the first profile publish both need the
-            // key, which only lives in this tab for the moment. Deferred scripts have
-            // run by DOMContentLoaded, so NostrCrypto and friends are available here.
-            if (!nsec) {
-                status.textContent = '';
-                return;
-            }
-            document.addEventListener('DOMContentLoaded', function() {
-                OnboardingComplete.run(nsec)
-                    .then(function(summary) { status.textContent = describe(summary); })
-                    .catch(function(err) {
-                        status.textContent = 'Could not finish setting up your account: '
-                            + (err && err.message ? err.message : err);
-                    });
-            });
+            status.textContent = parts.join(' · ');
         })();
     </script>
 </body>

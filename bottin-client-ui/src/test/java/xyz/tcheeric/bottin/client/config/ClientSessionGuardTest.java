@@ -78,31 +78,14 @@ class ClientSessionGuardTest {
     }
 
     /**
-     * The follow routes act on one person's follow list, so an anonymous caller is
-     * refused rather than served an empty one.
-     */
-    @Test
-    void shouldRefuseAnAnonymousCallerOnTheFollowRoutes() {
-        var response = rest.postForEntity("/api/v1/follow", Map.of("pubkey", PRINCIPAL_PUBKEY), String.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    /**
-     * Guarding by annotation rather than by URL pattern is what closes this one:
-     * {@code /api/v1/unfollow} matches neither {@code /api/v1/follow} nor
-     * {@code /api/v1/follow/*}, so the prefix list that read as though it covered the
-     * follow routes left this one open to anyone.
-     */
-    @Test
-    void shouldRefuseAnAnonymousCallerOnUnfollow() {
-        var response = rest.postForEntity("/api/v1/unfollow", Map.of("pubkey", PRINCIPAL_PUBKEY), String.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    /**
      * Adding a relay changes the caller's own relay list, so it needs a caller.
+     *
+     * <p>With the follow and block routes gone (007 — a server holding no private key
+     * cannot sign a list), this and {@link #shouldLetASignedInCallerAddARelay()} carry
+     * the prefix-coverage property that four tests used to share: that a route needing
+     * a principal is listed in {@code nap.protected-path-prefixes} in its own right,
+     * never inferred from a neighbour's prefix. Narrowing this further leaves the
+     * property pinned by {@code /api/v1/register} alone.
      */
     @Test
     void shouldRefuseAnAnonymousCallerAddingARelay() {
@@ -112,28 +95,12 @@ class ClientSessionGuardTest {
     }
 
     /**
-     * A caller holding a valid session is let through. This is what
-     * {@code nap.protected-path-prefixes} governs: narrow it and the session filter
+     * A caller holding a valid session is let through {@code /api/v1/relays}. This is
+     * what {@code nap.protected-path-prefixes} governs: narrow it and the session filter
      * stops establishing a principal on this path, at which point the guard refuses
      * the signed-in user too — a 401 for everybody, with every anonymous test still
      * passing.
      */
-    @Test
-    void shouldLetASignedInCallerThroughTheFollowRoutes() {
-        var response = signedInPost("/api/v1/follow", Map.of("pubkey", PRINCIPAL_PUBKEY));
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    /** Pins {@code /api/v1/unfollow}, which no other entry in the prefix list covers. */
-    @Test
-    void shouldLetASignedInCallerThroughUnfollow() {
-        var response = signedInPost("/api/v1/unfollow", Map.of("pubkey", PRINCIPAL_PUBKEY));
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    /** Pins {@code /api/v1/relays}. */
     @Test
     void shouldLetASignedInCallerAddARelay() {
         var response = signedInPost("/api/v1/relays", Map.of("url", "wss://relay.test"));
@@ -169,8 +136,8 @@ class ClientSessionGuardTest {
         when(aclResolver.resolve(any(), any())).thenReturn(AclDecision.denied("suspended", false));
         HttpHeaders headers = signedInHeaders();
 
-        var guarded = rest.exchange("/api/v1/follow", HttpMethod.POST,
-                new HttpEntity<>(Map.of("pubkey", PRINCIPAL_PUBKEY), headers), String.class);
+        var guarded = rest.exchange("/api/v1/relays", HttpMethod.POST,
+                new HttpEntity<>(Map.of("url", "wss://relay.test"), headers), String.class);
         var signIn = rest.exchange("/api/v1/auth/init", HttpMethod.POST,
                 new HttpEntity<>(Map.of("npub", PRINCIPAL_NPUB), headers), String.class);
 

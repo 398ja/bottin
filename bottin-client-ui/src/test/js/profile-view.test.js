@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import '../../main/resources/static/js/list-feedback.js';
 import '../../main/resources/static/js/profile-view.js';
 
 const OWN_PUBKEY = 'a'.repeat(64);
@@ -21,8 +22,14 @@ function renderPage(viewedPubkey) {
     '<p id="profile-about" class="hidden"></p>' +
     '<div class="profile-detail hidden" id="profile-website-row"><a id="profile-website"></a></div>' +
     '<div class="profile-detail hidden" id="profile-lud16-row"><span id="profile-lud16"></span></div>' +
+    '<div id="profile-actions" class="hidden"></div>' +
     (viewedPubkey ? '<span id="profile-pubkey" hidden>' + viewedPubkey + '</span>' : '');
   document.dispatchEvent(new Event('DOMContentLoaded'));
+}
+
+function actionButton(label) {
+  const buttons = Array.from(document.querySelectorAll('#profile-actions button'));
+  return buttons.find((b) => b.textContent === label) || null;
 }
 
 // A browser with no identity of its own: nobody signed in here.
@@ -54,6 +61,30 @@ describe('profile-view.js', () => {
         return Promise.resolve({ displayName: 'Alice', nip05: 'alice@imani.test', about: 'her bio' });
       })
     };
+    window.FollowList = {
+      cached: () => [],
+      follow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unfollow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
+    window.BlockList = {
+      cached: () => [],
+      block: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unblock: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
+  });
+
+  // Registration collects a handle and nothing else, so a user who has not yet
+  // visited the profile page has no display name at all. They must read as their
+  // handle rather than as an empty line, which is what the page would otherwise
+  // show for every newly registered account.
+  it('falls back to the handle when no display name has been published', () => {
+    window.APP.loadIdentity = () => ({
+      userId: 'npub1own', pubkeyHex: OWN_PUBKEY, nip05: 'newcomer@imani.test'
+    });
+
+    renderPage(null);
+
+    expect(name()).toBe('newcomer@imani.test');
   });
 
   // Own profile: what this browser holds is the profile, and no relay is asked.
@@ -123,5 +154,166 @@ describe('profile-view.js', () => {
 
     expect(name()).toBe('');
     expect(window.ProfileFetch.fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('profile-view.js follow control', () => {
+  beforeEach(() => {
+    window.APP = {
+      getIdentityUserId: () => STORED_IDENTITY.userId,
+      loadIdentity: () => STORED_IDENTITY,
+      saveIdentity: vi.fn(),
+      safeImageUrl: () => null,
+      effectiveReadRelays: vi.fn(() => Promise.resolve(['wss://read'])),
+      showToast: vi.fn()
+    };
+    window.NostrTools = { SimplePool: function () { return { close: vi.fn() }; } };
+    window.ProfileFetch = { fetch: vi.fn(() => Promise.resolve({ displayName: 'Alice' })) };
+    window.FollowList = {
+      cached: () => [],
+      follow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unfollow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
+    window.BlockList = {
+      cached: () => [],
+      block: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unblock: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
+  });
+
+  // Nobody is signed in, so there is no key to follow with. A control that fails
+  // when pressed is worse than none at all.
+  it('offers no control to a signed-out reader', () => {
+    signOut();
+
+    renderPage(OTHER_PUBKEY);
+
+    expect(document.querySelectorAll('#profile-actions button')).toHaveLength(0);
+  });
+
+  // Following yourself is not a thing, and the own-profile page returns before the
+  // controls are ever considered.
+  it('offers no control on one\'s own profile', () => {
+    renderPage(null);
+
+    expect(document.querySelectorAll('#profile-actions button')).toHaveLength(0);
+  });
+
+  it('offers Follow for a key the cache does not hold', () => {
+    renderPage(OTHER_PUBKEY);
+
+    expect(actionButton('Follow')).not.toBeNull();
+  });
+
+  it('offers Following for a key the cache holds', () => {
+    window.FollowList.cached = () => [OTHER_PUBKEY];
+
+    renderPage(OTHER_PUBKEY);
+
+    expect(actionButton('Following')).not.toBeNull();
+  });
+
+  it('follows the viewed key and relabels', async () => {
+    renderPage(OTHER_PUBKEY);
+
+    actionButton('Follow').click();
+
+    await vi.waitFor(() => expect(actionButton('Following')).not.toBeNull());
+    expect(window.FollowList.follow).toHaveBeenCalledWith(STORED_IDENTITY.userId, OTHER_PUBKEY);
+  });
+
+  // An unreadable list must not leave the page claiming a follow that never
+  // reached a relay.
+  it('reports an unreadable list and leaves the label alone', async () => {
+    window.FollowList.follow = vi.fn(() =>
+      Promise.reject(Object.assign(new Error('x'), { code: 'unreadable' })));
+
+    renderPage(OTHER_PUBKEY);
+    actionButton('Follow').click();
+
+    await vi.waitFor(() => expect(window.APP.showToast).toHaveBeenCalled());
+    expect(window.APP.showToast.mock.calls[0][0]).toContain('Could not read your follow list');
+    expect(actionButton('Follow')).not.toBeNull();
+  });
+});
+
+describe('profile-view.js block control', () => {
+  beforeEach(() => {
+    window.APP = {
+      getIdentityUserId: () => STORED_IDENTITY.userId,
+      loadIdentity: () => STORED_IDENTITY,
+      saveIdentity: vi.fn(),
+      safeImageUrl: () => null,
+      effectiveReadRelays: vi.fn(() => Promise.resolve(['wss://read'])),
+      showToast: vi.fn()
+    };
+    window.NostrTools = { SimplePool: function () { return { close: vi.fn() }; } };
+    window.ProfileFetch = { fetch: vi.fn(() => Promise.resolve({ displayName: 'Alice' })) };
+    window.FollowList = {
+      cached: () => [],
+      follow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unfollow: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
+    window.BlockList = {
+      cached: () => [],
+      block: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false })),
+      unblock: vi.fn(() => Promise.resolve({ published: 1, of: 1, unchanged: false }))
+    };
+  });
+
+  it('offers Block for a key the cache does not hold', () => {
+    renderPage(OTHER_PUBKEY);
+
+    expect(actionButton('Block')).not.toBeNull();
+  });
+
+  // FR-008. A blocked key's profile stays reachable and readable by direct link:
+  // this page is the only route back from a block reached any other way, and hiding
+  // it would strand the user with no way to undo what they did.
+  it('keeps a blocked key\'s profile readable, marked, and offering Unblock', async () => {
+    window.BlockList.cached = () => [OTHER_PUBKEY];
+
+    renderPage(OTHER_PUBKEY);
+
+    await vi.waitFor(() => expect(name()).toBe('Alice'));
+    expect(document.getElementById('profile-actions').textContent).toContain('Blocked');
+    expect(actionButton('Unblock')).not.toBeNull();
+  });
+
+  // A blocked key is not someone to follow, so the follow control gives way to the
+  // one action that matters on that page.
+  it('offers no follow control while the key is blocked', () => {
+    window.BlockList.cached = () => [OTHER_PUBKEY];
+
+    renderPage(OTHER_PUBKEY);
+
+    expect(actionButton('Follow')).toBeNull();
+  });
+
+  it('blocks the viewed key and marks the profile', async () => {
+    let blocked = [];
+    window.BlockList.cached = () => blocked;
+    window.BlockList.block = vi.fn(() => {
+      blocked = [OTHER_PUBKEY];
+      return Promise.resolve({ published: 1, of: 1, unchanged: false });
+    });
+
+    renderPage(OTHER_PUBKEY);
+    actionButton('Block').click();
+
+    await vi.waitFor(() => expect(actionButton('Unblock')).not.toBeNull());
+    expect(window.BlockList.block).toHaveBeenCalledWith(STORED_IDENTITY.userId, OTHER_PUBKEY);
+  });
+
+  it('reports an unreadable block list and leaves the page unmarked', async () => {
+    window.BlockList.block = vi.fn(() =>
+      Promise.reject(Object.assign(new Error('x'), { code: 'unreadable' })));
+
+    renderPage(OTHER_PUBKEY);
+    actionButton('Block').click();
+
+    await vi.waitFor(() => expect(window.APP.showToast).toHaveBeenCalled());
+    expect(window.APP.showToast.mock.calls[0][0]).toContain('Could not read your block list');
+    expect(actionButton('Unblock')).toBeNull();
   });
 });

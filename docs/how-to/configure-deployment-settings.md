@@ -34,7 +34,8 @@ can resolve `blossom`, and every user's browser cannot. This is the most common
 mistake, and it produces uploads that fail only for real users.
 
 Leave it unset and the file pickers are disabled with "Media server not
-configured". The rest of onboarding still works.
+configured". Registering is unaffected: it asks only for a handle and a
+password, and never contacts the media server.
 
 ### System relays
 
