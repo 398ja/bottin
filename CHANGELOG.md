@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-20
+
+A minor because `HandleNormalizer` is new public API in bottin-core. No migration.
+
 ### Fixed
 
 - **A handle with stray whitespace or capitals is accepted as its canonical lowercase form
