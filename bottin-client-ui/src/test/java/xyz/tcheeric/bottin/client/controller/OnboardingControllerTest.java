@@ -115,6 +115,18 @@ class OnboardingControllerTest {
     }
 
     /**
+     * imani-wallet#342: the browser's own pattern check lets a padded or capitalised handle
+     * through to Registration.submit, which canonicalises it, while an inner space is still
+     * refused because the pattern only allows whitespace around the handle.
+     */
+    @Test
+    void shouldLetTheFormSubmitAPaddedOrCapitalisedHandle() throws Exception {
+        mockMvc.perform(get("/onboarding/step/register"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("pattern=\"\\s*[A-Za-z0-9_\\-]+\\s*\"")));
+    }
+
+    /**
      * Tests that the register step says the password cannot be recovered. The
      * word "password" ordinarily implies a reset link, and here there is none:
      * the deployment holds nothing that could restore access.
@@ -158,11 +170,42 @@ class OnboardingControllerTest {
                 .andExpect(jsonPath("$.available").value(true));
     }
 
+    /**
+     * imani-wallet#342: handles are always stored lowercase, so a capitalised or padded handle
+     * is checked as its canonical form rather than reported as invalid.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"ALICE", "Alice", " alice", "alice ", " ALICE "})
+    void shouldCheckCanonicalHandleWhenCapitalisedOrPadded(String raw) throws Exception {
+        // Given: the directory holds the canonical handle
+        when(registrationService.isTaken("alice")).thenReturn(true);
+
+        // When: availability is checked with the raw form
+        mockMvc.perform(get("/api/v1/resolve").param("username", raw))
+                // Then: the directory was asked about "alice", and it is taken
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("taken"));
+    }
+
+    /**
+     * imani-wallet#342: the path form canonicalises the same way as the query form.
+     */
     @Test
-    void shouldResolveUnavailableUsernameForUppercase() throws Exception {
+    void shouldResolveCanonicalHandleOnThePathForm() throws Exception {
         mockMvc.perform(get("/api/v1/resolve/ALICE"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.available").value(false));
+                .andExpect(jsonPath("$.available").value(true));
+    }
+
+    /**
+     * imani-wallet#342: normalising never repairs an inner space or a forbidden character.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"al ice", "alice!"})
+    void shouldStillMarkInvalidHandleAfterNormalisation(String raw) throws Exception {
+        mockMvc.perform(get("/api/v1/resolve").param("username", raw))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("invalid"));
     }
 
     @Test

@@ -19,6 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import xyz.tcheeric.bottin.core.model.Nip05RecordData;
+import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
 
 import java.time.Instant;
 
@@ -78,7 +79,7 @@ public class Nip05RecordEntity {
         }
         updatedAt = now;
         if (username != null) {
-            username = username.toLowerCase();
+            username = HandleNormalizer.normalizeHandle(username);
         }
         if (relaysJson == null) {
             relaysJson = "[]";

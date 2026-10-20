@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import xyz.tcheeric.bottin.client.dto.RegistrationRequest;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationException;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationService;
+import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
 import xyz.tcheeric.nap.spring.filter.NapSessionFilter;
 
 import java.util.Map;
@@ -38,8 +39,8 @@ public class RegistrationController {
             return error(HttpStatus.UNAUTHORIZED, "NAP_SESSION_REQUIRED");
         }
 
-        String username = request.username() == null ? "" : request.username().trim().toLowerCase();
-        if (!username.matches(USERNAME_PATTERN)) {
+        String username = HandleNormalizer.normalizeHandle(request.username());
+        if (username == null || !username.matches(USERNAME_PATTERN)) {
             return error(HttpStatus.BAD_REQUEST, "INVALID_USERNAME");
         }
 

@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import xyz.tcheeric.bottin.core.model.Nip05RecordData;
+import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
 import xyz.tcheeric.bottin.service.Nip05RecordService;
 import xyz.tcheeric.bottin.api.dto.CreateNip05RecordRequest;
 import xyz.tcheeric.bottin.api.dto.Nip05RecordResponse;
@@ -97,8 +98,9 @@ public class Nip05RecordController {
     })
     public ResponseEntity<Nip05RecordResponse> getRecordByNip05(
             @Parameter(description = "NIP-05 identifier (e.g., alice@example.com)")
-            @PathVariable String nip05) {
+            @PathVariable("nip05") String rawNip05) {
 
+        String nip05 = HandleNormalizer.normalizeNip05(rawNip05);
         log.debug("api_record_get_by_nip05 nip05={}", nip05);
 
         return nip05RecordService.findByNip05(nip05)

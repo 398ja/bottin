@@ -13,6 +13,7 @@ import xyz.tcheeric.bottin.core.exception.DomainNotVerifiedException;
 import xyz.tcheeric.bottin.core.exception.Nip05RecordExistsException;
 import xyz.tcheeric.bottin.core.exception.Nip05RecordNotFoundException;
 import xyz.tcheeric.bottin.core.model.Nip05RecordData;
+import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
 import xyz.tcheeric.bottin.persistence.entity.DomainEntity;
 import xyz.tcheeric.bottin.persistence.entity.Nip05RecordEntity;
 import xyz.tcheeric.bottin.persistence.repository.DomainRepository;
@@ -53,25 +54,27 @@ public class Nip05RecordService {
     }
 
     /**
-     * Retrieves a record by NIP-05 identifier.
+     * Retrieves a record by NIP-05 identifier. Both parts are trimmed and lowercased first, so
+     * {@code "Alice@Example.com "} finds {@code alice@example.com}.
      */
     @Transactional(readOnly = true)
     public Optional<Nip05RecordData> findByNip05(String nip05) {
-        String[] parts = nip05.split("@");
+        String[] parts = HandleNormalizer.normalizeNip05(nip05).split("@");
         if (parts.length != 2) {
             return Optional.empty();
         }
-        return nip05RecordRepository.findByUsernameAndDomainName(parts[0].toLowerCase(), parts[1].toLowerCase())
+        return nip05RecordRepository.findByUsernameAndDomainName(parts[0], parts[1])
                 .map(Nip05RecordEntity::toNip05RecordData);
     }
 
     /**
-     * Creates a new NIP-05 record.
+     * Creates a new NIP-05 record. The handle and domain are stored in their canonical form,
+     * trimmed and lowercased, whatever form the caller sent.
      */
     @Transactional
     public Nip05RecordData create(String username, String domain, String pubkey, List<String> relays) {
-        String normalizedUsername = username.toLowerCase();
-        String normalizedDomain = domain.toLowerCase();
+        String normalizedUsername = HandleNormalizer.normalizeHandle(username);
+        String normalizedDomain = HandleNormalizer.normalizeDomain(domain);
 
         log.debug("nip05_record_create_attempt username={} domain={} pubkey={}",
                 normalizedUsername, normalizedDomain, pubkey);
@@ -170,7 +173,8 @@ public class Nip05RecordService {
      */
     @Transactional(readOnly = true)
     public Page<Nip05RecordData> searchByUsername(String username, Pageable pageable) {
-        return nip05RecordRepository.findByUsernameContainingIgnoreCase(username, pageable)
+        return nip05RecordRepository.findByUsernameContainingIgnoreCase(
+                        HandleNormalizer.normalizeHandle(username), pageable)
                 .map(Nip05RecordEntity::toNip05RecordData);
     }
 
@@ -179,7 +183,7 @@ public class Nip05RecordService {
      */
     @Transactional(readOnly = true)
     public Page<Nip05RecordData> findByDomain(String domain, Pageable pageable) {
-        return nip05RecordRepository.findByDomainName(domain.toLowerCase(), pageable)
+        return nip05RecordRepository.findByDomainName(HandleNormalizer.normalizeDomain(domain), pageable)
                 .map(Nip05RecordEntity::toNip05RecordData);
     }
 
@@ -194,7 +198,8 @@ public class Nip05RecordService {
     @Transactional(readOnly = true)
     public Page<Nip05RecordData> searchByUsernameInDomain(String domain, String username, Pageable pageable) {
         return nip05RecordRepository
-                .findByDomainNameAndUsernameContaining(domain.toLowerCase(), username, pageable)
+                .findByDomainNameAndUsernameContaining(HandleNormalizer.normalizeDomain(domain),
+                        HandleNormalizer.normalizeHandle(username), pageable)
                 .map(Nip05RecordEntity::toNip05RecordData);
     }
 

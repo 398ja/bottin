@@ -230,6 +230,30 @@ class AdminRecordsControllerTest {
     }
 
     /**
+     * imani-wallet#342: an operator who types a padded or capitalised handle creates the
+     * canonical lowercase record instead of a validation error.
+     */
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldCreateCanonicalRecordWhenHandleIsPaddedOrCapitalised() throws Exception {
+        // Arrange
+        when(recordService.create(eq("alice"), eq("example.com"), anyString(), anyList()))
+                .thenReturn(createTestRecord(1L, "alice", "example.com"));
+
+        // Act & Assert
+        mockMvc.perform(post("/admin/records")
+                        .with(csrf())
+                        .param("username", " Alice ")
+                        .param("domain", " Example.com")
+                        .param("pubkey", VALID_PUBKEY))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/records?domain=example.com"))
+                .andExpect(flash().attributeExists("success"));
+
+        verify(recordService).create(eq("alice"), eq("example.com"), anyString(), anyList());
+    }
+
+    /**
      * Tests that deleting a record returns to the list of the domain it was in.
      *
      * <p>The domain is read before the delete, since afterwards there is no

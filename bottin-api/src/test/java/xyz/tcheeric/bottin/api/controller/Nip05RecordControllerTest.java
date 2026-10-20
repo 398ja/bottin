@@ -2,6 +2,8 @@ package xyz.tcheeric.bottin.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -22,6 +24,7 @@ import xyz.tcheeric.bottin.api.dto.UpdateNip05RecordRequest;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -31,6 +34,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -184,6 +189,83 @@ class Nip05RecordControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
+    }
+
+    /**
+     * imani-wallet#342: a padded, mixed-case handle is created as its canonical lowercase form
+     * rather than refused by the username pattern.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {" alice", "alice ", "Alice", " ALICE "})
+    @WithMockUser(roles = "API")
+    void shouldCreateRecordWithCanonicalHandleWhenHandleIsPaddedOrMixedCase(String raw) throws Exception {
+        // Arrange: the service only answers for the canonical handle
+        when(nip05RecordService.create(eq("alice"), eq("example.com"), eq(TEST_PUBKEY), any()))
+                .thenReturn(createTestRecord(1L, "alice", "example.com"));
+
+        // Act & Assert
+        mockMvc.perform(post(API_BASE)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("username", raw, "domain", "example.com", "pubkey", TEST_PUBKEY))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.username", is("alice")));
+    }
+
+    /**
+     * imani-wallet#342: normalisation does not repair a handle with an inner space or a
+     * forbidden character, and nothing reaches the service.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"al ice", "alice!"})
+    @WithMockUser(roles = "API")
+    void shouldStillRejectHandleThatIsInvalidAfterNormalisation(String raw) throws Exception {
+        mockMvc.perform(post(API_BASE)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("username", raw, "domain", "example.com", "pubkey", TEST_PUBKEY))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode", is("VALIDATION_ERROR")));
+
+        verify(nip05RecordService, never()).create(any(), any(), any(), any());
+    }
+
+    /**
+     * imani-wallet#342: an existing handle is still a 409 when the claim arrives padded and
+     * mixed-case, because the service is asked about the canonical handle.
+     */
+    @Test
+    @WithMockUser(roles = "API")
+    void shouldReturn409WhenExistingHandleIsClaimedPaddedAndMixedCase() throws Exception {
+        // Arrange
+        when(nip05RecordService.create(eq("alice"), eq("example.com"), eq(TEST_PUBKEY), any()))
+                .thenThrow(new Nip05RecordExistsException("alice@example.com"));
+
+        // Act & Assert
+        mockMvc.perform(post(API_BASE)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("username", " Alice ", "domain", "Example.com", "pubkey", TEST_PUBKEY))))
+                .andExpect(status().isConflict());
+    }
+
+    /**
+     * imani-wallet#342: a lookup by "Alice@Example.com " finds alice@example.com.
+     */
+    @Test
+    @WithMockUser(roles = "API")
+    void shouldFindRecordByCanonicalNip05WhenLookupIsPaddedOrMixedCase() throws Exception {
+        // Arrange
+        when(nip05RecordService.findByNip05("alice@example.com"))
+                .thenReturn(Optional.of(createTestRecord(1L, "alice", "example.com")));
+
+        // Act & Assert
+        mockMvc.perform(get(API_BASE + "/by-nip05/{nip05}", "Alice@Example.com "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username", is("alice")));
     }
 
     /**

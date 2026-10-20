@@ -65,6 +65,13 @@ curl "http://localhost:8080/.well-known/nostr.json?name=alice"
 
 ## NIP-05 Records
 
+Handles are always stored lowercase. Every handle, domain and `name@domain` these
+endpoints receive is trimmed and lowercased first (imani-wallet#342), so
+`" Alice "` is the handle `alice`. On `POST /api/v1/records` this happens while the
+body is deserialised, before validation, and the username pattern then checks the
+canonical value: an inner space (`"al ice"`) or a forbidden character (`"alice!"`)
+is still a `400`. Lookups stay case-insensitive and otherwise exact.
+
 ### GET /api/v1/records
 
 List all NIP-05 records with pagination.
@@ -84,7 +91,8 @@ Get a specific record by ID.
 
 ### GET /api/v1/records/by-nip05/{nip05}
 
-Get a record by NIP-05 identifier (e.g., `alice@example.com`).
+Get a record by NIP-05 identifier (e.g., `alice@example.com`). Both parts are
+trimmed and lowercased, so `Alice@Example.com ` finds `alice@example.com`.
 
 ### POST /api/v1/records
 
@@ -289,6 +297,9 @@ directory holds for another key.
 The pubkey is taken from the caller's NAP session, not from the request, so a
 handle can only be claimed for the key that signed in.
 
+`username` is trimmed and lowercased before it is checked, so `" Alice "` claims
+`alice`.
+
 **Response:**
 
 ```json
@@ -318,9 +329,10 @@ and the claim, which `POST /api/v1/register` answers with `409`.
 ```
 
 `status` is `available`, `taken` (the directory holds a record for it),
-`invalid` (outside `[a-z0-9_-]{1,64}`), or `unknown` (the directory could not be
-reached). Only `available` leaves `available` true, so a handle is never offered
-on the strength of a failed check.
+`invalid` (outside `[a-z0-9_-]{1,64}` once trimmed and lowercased), or `unknown`
+(the directory could not be reached). `ALICE` and `alice ` are checked as `alice`,
+the handle registration would store. Only `available` leaves `available` true, so a
+handle is never offered on the strength of a failed check.
 
 With an `HX-Request` header the same check returns the inline status badge as
 HTML instead of JSON.

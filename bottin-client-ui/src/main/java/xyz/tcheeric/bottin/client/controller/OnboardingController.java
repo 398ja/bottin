@@ -16,9 +16,11 @@ import xyz.tcheeric.bottin.client.dto.DirectorySettings;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationException;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationService;
 import xyz.tcheeric.bottin.client.service.DirectorySettingsClient;
+import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Controller
@@ -115,8 +117,13 @@ public class OnboardingController {
      * holds no record for it, so onboarding cannot end on a name that registration
      * will reject. An unreachable directory is reported as such rather than as a
      * free handle.
+     *
+     * <p>The handle is trimmed and lowercased first (imani-wallet#342), the same way
+     * registration stores it, so {@code "Alice "} is checked as {@code alice} instead of
+     * being reported as invalid. An inner space or a forbidden character is still invalid.
      */
-    private Availability resolve(String username) {
+    private Availability resolve(String rawUsername) {
+        String username = HandleNormalizer.normalizeHandle(rawUsername);
         if (username == null || !username.matches(USERNAME_PATTERN)) {
             return Availability.INVALID;
         }
@@ -129,7 +136,7 @@ public class OnboardingController {
     }
 
     private Map<String, Object> asJson(Availability availability) {
-        return Map.of("available", availability.available, "status", availability.name().toLowerCase());
+        return Map.of("available", availability.available, "status", availability.name().toLowerCase(Locale.ROOT));
     }
 
     /**

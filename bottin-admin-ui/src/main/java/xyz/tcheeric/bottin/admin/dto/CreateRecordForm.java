@@ -6,12 +6,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Form DTO for creating a new NIP-05 record.
+ *
+ * <p>The handle and domain are trimmed and lowercased as Spring binds them, before validation
+ * (imani-wallet#342). Lombok generates every other accessor; it does not replace these two.
  */
 @Data
 @Builder
@@ -34,6 +38,14 @@ public class CreateRecordForm {
     private List<String> relays = new ArrayList<>();
 
     private String relaysText;
+
+    public void setUsername(String username) {
+        this.username = HandleNormalizer.normalizeHandle(username);
+    }
+
+    public void setDomain(String domain) {
+        this.domain = HandleNormalizer.normalizeDomain(domain);
+    }
 
     public List<String> getRelays() {
         if (relaysText != null && !relaysText.isBlank()) {

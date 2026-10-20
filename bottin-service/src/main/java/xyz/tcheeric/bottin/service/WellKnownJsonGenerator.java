@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
 import xyz.tcheeric.bottin.persistence.entity.Nip05RecordEntity;
 import xyz.tcheeric.bottin.persistence.repository.DomainRepository;
 import xyz.tcheeric.bottin.persistence.repository.Nip05RecordRepository;
@@ -55,8 +56,8 @@ public class WellKnownJsonGenerator {
     public Optional<Map<String, Object>> generateForUsername(String domain, String username) {
         log.debug("wellknown_lookup domain={} username={}", domain, username);
 
-        String normalizedUsername = username.toLowerCase();
-        String normalizedDomain = domain.toLowerCase();
+        String normalizedUsername = HandleNormalizer.normalizeHandle(username);
+        String normalizedDomain = HandleNormalizer.normalizeDomain(domain);
 
         Optional<Nip05RecordEntity> recordOpt = nip05RecordRepository
                 .findByUsernameAndDomainName(normalizedUsername, normalizedDomain);
@@ -86,7 +87,7 @@ public class WellKnownJsonGenerator {
      */
     @Transactional(readOnly = true)
     public Map<String, Object> generateForDomain(String domain) {
-        String normalizedDomain = domain.toLowerCase();
+        String normalizedDomain = HandleNormalizer.normalizeDomain(domain);
         log.debug("wellknown_domain_lookup domain={}", normalizedDomain);
 
         if (!domainRepository.existsByName(normalizedDomain)) {
