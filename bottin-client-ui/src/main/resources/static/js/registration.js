@@ -15,6 +15,15 @@
         return error;
     }
 
+    // Handles are always stored lowercase. A mobile keyboard, autofill or a paste
+    // adds a stray space, so the handle is put into its canonical form here, once,
+    // before it is claimed or stored (imani-wallet#342). It mirrors bottin-core's
+    // HandleNormalizer; the server applies the same rule and its pattern still
+    // refuses an inner space.
+    function normalizeHandle(raw) {
+        return raw == null ? raw : String(raw).trim().toLowerCase();
+    }
+
     function describeClaimFailure(code, username) {
         if (code === 'USERNAME_TAKEN') {
             return 'Registration stopped. The handle "' + username + '" was claimed by somebody else '
@@ -122,6 +131,7 @@
      */
     function submit(form) {
         var outcome = { nsec: null, nip05: null, published: 0, relayCount: 0, publishError: null };
+        var username = normalizeHandle(form.username);
         var keypair;
         var relays;
 
@@ -133,11 +143,11 @@
             .then(function (relayUrls) {
                 relays = relayUrls;
                 outcome.relayCount = relayUrls.length;
-                return claimHandle(form.username, relayUrls);
+                return claimHandle(username, relayUrls);
             })
             .then(function () {
                 outcome.nsec = keypair.nsec;
-                outcome.nip05 = form.username + '@' + form.domain;
+                outcome.nip05 = username + '@' + form.domain;
                 return storeIdentity(keypair, form.password, outcome.nip05);
             })
             .then(function (identity) {

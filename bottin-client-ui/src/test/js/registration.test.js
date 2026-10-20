@@ -194,6 +194,15 @@ describe('Registration.submit directory call', () => {
       .toEqual({ username: 'alice', relays: SYSTEM_RELAYS });
   });
 
+  // imani-wallet#342: a handle typed with a stray space or capitals is claimed, and
+  // stored in the identity's nip05, as the canonical lowercase handle.
+  it.each([' alice', 'alice ', 'Alice', ' ALICE '])('claims and stores %j as alice', async (raw) => {
+    const outcome = await submit({ username: raw });
+
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body).username).toBe('alice');
+    expect(outcome.nip05).toBe('alice@' + DOMAIN);
+  });
+
   // The stored identity carries the handle it was granted, and nothing else the
   // registration form no longer collects.
   it('stores the identity carrying only its nip05', async () => {

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A handle with stray whitespace or capitals is accepted as its canonical lowercase form
+  instead of being refused (imani-wallet#342).** A trailing space from a mobile keyboard,
+  autofill or a paste made `"alice "` fail validation on `POST /api/v1/records`, and the client
+  UI's availability check reported `ALICE` as `invalid`. Handles are always stored lowercase, so
+  every handle, domain and `name@domain` is now trimmed and lowercased (`Locale.ROOT`) before it
+  is validated, checked, stored or looked up, through one shared `HandleNormalizer` in
+  bottin-core:
+  - **bottin-api:** `CreateNip05RecordRequest` normalises `username` and `domain` in its builder,
+    which `@Jacksonized` makes the JSON deserialiser, so `@Valid` checks the canonical value.
+    `GET /api/v1/records/by-nip05/{nip05}` normalises both parts.
+  - **bottin-service:** `Nip05RecordService` (create, `findByNip05`, `findByDomain`, both
+    username searches) and `WellKnownJsonGenerator` (`/.well-known/nostr.json?name=`).
+  - **bottin-client-ui:** the onboarding availability check (`GET /api/v1/resolve`, both forms)
+    and `POST /api/v1/register`; `Registration.submit` claims and stores the canonical handle,
+    and the form's own pattern lets a padded or capitalised handle through to it.
+  - **bottin-admin-ui:** the create-record form.
+  - `Nip05RecordEntity` and `Nip05RecordData` use the same normaliser in place of their own
+    `toLowerCase()`, which also makes them locale-independent.
+
+  The username patterns stay as the final guard: `"al ice"` and `"alice!"` are still refused,
+  and an existing handle is still a `409` however it is padded or cased. No stored data changes
+  and no migration: a read-only query on staging found all 823 `nip05_records` already lowercase
+  and unpadded.
+
 ## [0.10.0] - 2026-08-10
 
 ### Changed

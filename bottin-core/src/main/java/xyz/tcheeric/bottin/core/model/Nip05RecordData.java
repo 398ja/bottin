@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Builder;
 import lombok.Value;
+import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -106,8 +107,8 @@ public class Nip05RecordData {
         Instant now = Instant.now();
         return Nip05RecordData.builder()
                 .domainId(domainId)
-                .username(username.toLowerCase())
-                .domain(domain.toLowerCase())
+                .username(HandleNormalizer.normalizeHandle(username))
+                .domain(HandleNormalizer.normalizeDomain(domain))
                 .pubkey(pubkey)
                 .relaysJson(relaysJson)
                 .enabled(true)

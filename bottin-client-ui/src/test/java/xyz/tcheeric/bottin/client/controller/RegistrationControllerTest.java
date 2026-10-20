@@ -95,6 +95,26 @@ class RegistrationControllerTest {
     }
 
     /**
+     * imani-wallet#342: a padded, capitalised handle registers as its canonical lowercase form.
+     */
+    @Test
+    void shouldRegisterCanonicalHandleWhenPaddedOrCapitalised() throws Exception {
+        // Given: an authenticated session
+        givenNapSession();
+        when(registrationService.register(eq("alice"), eq(SESSION_PUBKEY), any()))
+                .thenReturn("alice@imani.test");
+
+        // When: the handle arrives padded and capitalised
+        mockMvc.perform(post("/api/v1/register").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("username", " ALICE "))))
+                // Then: the directory is asked to store "alice"
+                .andExpect(status().isOk());
+
+        verify(registrationService).register(eq("alice"), eq(SESSION_PUBKEY), any());
+    }
+
+    /**
      * Tests that a username outside the allowed character set is rejected locally
      * rather than forwarded to the directory.
      */
