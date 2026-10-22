@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-22
+
 Spring Boot 3.4.1 → **4.1.1** and Flyway 10.10.0 → **13.10.3** (closes #31, #32), with
-maven-surefire-plugin pinned to 3.5.6 and Mockito's agent loaded explicitly (closes #35).
-Breaking for anyone embedding `bottin-spring-boot-starter`, so the next release is a minor
-at least. No database migration, and no existing migration was touched.
+maven-surefire-plugin pinned to 3.5.6 and Mockito's agent loaded explicitly (closes #35), and
+the reverse NIP-05 lookup `GET /api/v1/records/by-pubkey/{pubkey}` (#42, for
+imani-gateway-core#173). No database migration, and no existing migration was touched.
+
+A minor, not a major: bottin is pre-1.0, where SemVer lets a minor carry a breaking change, and
+every earlier breaking bottin release was a minor. The break is confined to embedders of
+`bottin-spring-boot-starter` (none in this workspace); the three applications' HTTP contracts
+are unchanged apart from the additions below. A 1.0.0 would declare the public API stable,
+which is a separate decision.
 
 ### Changed
 
@@ -63,6 +71,9 @@ at least. No database migration, and no existing migration was touched.
   `org.testcontainers.postgresql.PostgreSQLContainer`. bottin-client-ui keeps plain
   `spring-security-test`: the security test starter would put a default Spring Security
   chain on its test class path that production does not have.
+- **Dependencies (dependabot):** nostr-java 2.0.7 → 2.4.2 (#30), maven-resources-plugin
+  3.3.1 → 3.5.0 (#34); CI only: actions/checkout 5 → 7 (#28), codecov-action 5 → 7 (#29), and
+  dependabot now targets `main` (#26).
 
 ### Fixed
 
