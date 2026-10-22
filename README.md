@@ -161,7 +161,7 @@ Add the Spring Boot starter to your project to embed the registry:
 <dependency>
     <groupId>xyz.tcheeric</groupId>
     <artifactId>bottin-spring-boot-starter</artifactId>
-    <version>0.11.0</version>
+    <version>0.12.0</version>
 </dependency>
 ```
 
@@ -245,8 +245,8 @@ mvn jib:build -pl bottin-api,bottin-admin-ui
 ```
 
 Images are published to `docker.398ja.xyz`:
-- `docker.398ja.xyz/bottin-api:0.11.0` / `latest`
-- `docker.398ja.xyz/bottin-admin-ui:0.11.0` / `latest`
+- `docker.398ja.xyz/bottin-api:0.12.0` / `latest`
+- `docker.398ja.xyz/bottin-admin-ui:0.12.0` / `latest`
 
 ## License
 
