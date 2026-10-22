@@ -17,6 +17,13 @@ updates:
     registries:
       - maven-releases
       - maven-snapshots
+    ignore:
+      # 3.6.0 broke Mockito's run-time agent self-attach (bottin#35). The agent is now
+      # loaded with -javaagent, but 3.6.x has not been verified with it yet.
+      - dependency-name: "org.apache.maven.plugins:maven-surefire-plugin"
+        versions: [">= 3.6.0"]
+      - dependency-name: "org.apache.maven.plugins:maven-failsafe-plugin"
+        versions: [">= 3.6.0"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

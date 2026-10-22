@@ -2,8 +2,8 @@ package xyz.tcheeric.bottin.admin.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -48,10 +48,10 @@ class AdminDomainsControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private DomainService domainService;
 
-    @MockBean
+    @MockitoBean
     private DomainVerificationService verificationService;
 
     /**
@@ -62,7 +62,7 @@ class AdminDomainsControllerTest {
         // Act & Assert
         mockMvc.perform(get("/admin/domains"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("http://localhost/admin/login"));
+                .andExpect(redirectedUrl("/admin/login"));
     }
 
     /**

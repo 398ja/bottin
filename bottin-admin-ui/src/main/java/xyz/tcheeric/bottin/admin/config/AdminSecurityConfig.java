@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
@@ -23,9 +24,6 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
-import org.springframework.security.web.util.matcher.RequestMatcher;
-
-import java.util.LinkedHashMap;
 
 /**
  * Security configuration for the admin dashboard.
@@ -133,16 +131,13 @@ public class AdminSecurityConfig {
      * to an HTML form. The two are told apart by whether the request accepts
      * HTML.
      */
-    private DelegatingAuthenticationEntryPoint adminAuthenticationEntryPoint() {
+    private AuthenticationEntryPoint adminAuthenticationEntryPoint() {
         MediaTypeRequestMatcher browserRequest = new MediaTypeRequestMatcher(MediaType.TEXT_HTML);
         browserRequest.setUseEquals(false);
 
-        LinkedHashMap<RequestMatcher, org.springframework.security.web.AuthenticationEntryPoint> entryPoints =
-                new LinkedHashMap<>();
-        entryPoints.put(browserRequest, new LoginUrlAuthenticationEntryPoint(SIGN_IN_PATH));
-
-        DelegatingAuthenticationEntryPoint entryPoint = new DelegatingAuthenticationEntryPoint(entryPoints);
-        entryPoint.setDefaultEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
-        return entryPoint;
+        return DelegatingAuthenticationEntryPoint.builder()
+                .addEntryPointFor(new LoginUrlAuthenticationEntryPoint(SIGN_IN_PATH), browserRequest)
+                .defaultEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                .build();
     }
 }
