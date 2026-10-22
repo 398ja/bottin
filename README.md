@@ -165,8 +165,10 @@ Add the Spring Boot starter to your project to embed the registry:
 </dependency>
 ```
 
-Consumers that import `imani-bom` should omit the `<version>` element and let the
-BOM manage it.
+The starter requires a **Spring Boot 4** host (built against 4.1). From 0.12.0 it can no longer be
+embedded in a Spring Boot 3 application: Boot 4 relocated the auto-configuration packages
+the starter depends on. `imani-bom` does not manage bottin's artifacts, so declare the
+version explicitly.
 
 With the starter on the classpath and `bottin.enabled=true` (the default), it
 auto-configures bottin's **services**: database-backed NIP-05 record management,

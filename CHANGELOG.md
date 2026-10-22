@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Spring Boot 3.4.1 → **4.1.1** and Flyway 10.10.0 → **13.10.3** (closes #31, #32), with
+maven-surefire-plugin pinned to 3.5.6 and Mockito's agent loaded explicitly (closes #35).
+Breaking for anyone embedding `bottin-spring-boot-starter`, so the next release is a minor
+at least. No database migration, and no existing migration was touched.
+
+### Changed
+
+- **BREAKING (embedders): `bottin-spring-boot-starter` needs a Spring Boot 4 host.** Boot 4
+  moved the auto-configuration packages the starter is compiled against; it will not load in
+  a Boot 3 application. Nothing in this workspace embeds it (`imani-bom` does not manage
+  bottin's artifacts, and no other service depends on them), and the three bottin
+  applications are self-contained images, so no other live service has to move off Boot 3.
+- **Spring Boot 4.1.1** brings Spring Framework 7, Spring Security 7.1, Hibernate ORM 7.4,
+  Hibernate Validator 9, Jackson 3 (alongside Jackson 2), Tomcat 11, JUnit 6, Testcontainers
+  2 and springdoc-openapi 3.1. Versions the parent POM pinned for libraries the Boot BOM
+  manages (Jackson 2.17, H2 2.2, PostgreSQL 42.7.3, Lombok, JUnit 5, Mockito, AssertJ,
+  Testcontainers 1.19, Selenium, SLF4J and an old logback-classic) were removed, so what is
+  built is Boot's tested set. REST Assured, which Boot no longer manages, is pinned to 6.2.0.
+- **Modular starters.** `spring-boot-starter-web` → `spring-boot-starter-webmvc`;
+  bottin-persistence adds `spring-boot-starter-flyway`, without which Boot 4 no longer runs
+  the migrations at all (`flyway-core` alone stops being enough); bottin-verification uses
+  `spring-boot-starter-webclient` in place of the whole WebFlux stack; tests use the
+  per-technology test starters (`-webmvc-test`, `-data-jpa-test`, `-security-test`,
+  `spring-boot-resttestclient`).
+- **HTTP JSON is now Jackson 3; a Jackson 2 `ObjectMapper` is kept alongside.** Boot 4 serves
+  HTTP with Jackson 3 and no longer auto-configures a Jackson 2 mapper, but bottin's services,
+  bottin-verification and nap-spring 0.6.0 all inject
+  `com.fasterxml.jackson.databind.ObjectMapper` and the applications fail to start without
+  one, so the three applications add `spring-boot-jackson2`, which provides it. bottin-api's
+  `@Jacksonized` request DTOs only carried Jackson 2's `@JsonDeserialize`, which Jackson 3
+  ignores: every create on `/api/v1/records` and `/api/v1/domains` answered 500 until
+  `bottin-api/lombok.config` told Lombok to generate Jackson 3's as well (13 controller tests
+  fail without it). Jackson 3 still honours nap-spring's Jackson 2 `@JsonNaming`, so the
+  sign-in handshake stays `challenge_id`/`auth_url`; a booted test now pins that. Moving the
+  services to Jackson 3, and dropping `spring-boot-jackson2` (deprecated in Boot 4), is
+  follow-up work that waits on nap-spring.
+- **Flyway 13.10.3**, deliberately ahead of the 12.x line Boot 4.1 manages. Every Flyway API
+  `spring-boot-flyway` 4.1.1 calls was checked present in 13.10.3. The PostgreSQL support
+  was already the separate `flyway-database-postgresql` module, so only its version moves;
+  Flyway 13 needs Java 17+ (bottin is on 21), and bottin sets none of the configuration
+  properties removed since 10.
+- **Spring Security 7:** a login redirect is now relative (`Location: /admin/login`, not
+  `http://host/admin/login`); the admin entry point is built with
+  `DelegatingAuthenticationEntryPoint.builder()` in place of the constructor deprecated for
+  removal; the e2e `DaoAuthenticationProvider` takes its `UserDetailsService` in the
+  constructor.
+- **Tests:** `@MockBean` → `@MockitoBean`; relocated imports (`EntityScan`, `WebMvcTest`,
+  `DataJpaTest`, `AutoConfigureMockMvc`, `TestRestTemplate` and the auto-configuration
+  classes the e2e tests exclude); `@AutoConfigureTestRestTemplate` where a booted test uses
+  `TestRestTemplate`; Testcontainers 2 artifact names and
+  `org.testcontainers.postgresql.PostgreSQLContainer`. bottin-client-ui keeps plain
+  `spring-security-test`: the security test starter would put a default Spring Security
+  chain on its test class path that production does not have.
+
+### Fixed
+
+- **Mockito tests no longer depend on run-time agent self-attach (#35).** surefire and
+  failsafe are pinned to 3.5.6 (3.6.0 broke self-attach for every Mockito test), and both
+  now load the managed `mockito-core` as a `-javaagent`, which is what Mockito recommends
+  now that the JDK is phasing self-attach out. Dependabot ignores surefire/failsafe ≥ 3.6.0
+  until that combination is verified.
+
+### Added
+
+- **`FlywayUpgradeCompatibilityIT`** (`-Pit`): migrates PostgreSQL 16 with the Flyway that
+  wrote existing deployments' history (10.10.0, run from its own jars in an isolated class
+  loader), then asserts that Flyway 13 validates it, finds nothing to apply, and leaves the
+  history untouched. The V1–V5 checksums are identical under both versions.
+
+### Upgrade notes
+
+- No action for the three applications' images or configuration. A running Boot 3 and Boot 4
+  build were probed side by side against the same database (API, client UI, admin UI), and
+  the responses are the same JSON documents except that: `/actuator/health` now also lists
+  `"groups":["liveness","readiness"]` (Boot 4 enables the probes by default); the API's
+  `WWW-Authenticate` adds `charset="UTF-8"`; and admin login redirects are relative.
+  Property order inside JSON objects is not the same (Jackson 3 sorts properties
+  alphabetically by default), which a JSON client does not see but a byte-comparing one
+  would.
+- Known noise: at start-up admin-ui and client-ui log a WARN that nap-spring's
+  `@AutoConfiguration(after = JacksonAutoConfiguration)` names a class Boot 4 moved. The
+  ordering hint is dropped and NAP works (signed sign-in verified on both); the fix belongs
+  in nap-java.
+
 ## [0.11.0] - 2026-10-20
 
 A minor because `HandleNormalizer` is new public API in bottin-core. No migration.
