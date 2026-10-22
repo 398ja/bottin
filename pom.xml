@@ -66,7 +66,7 @@
 
         <!-- NAP (Nostr Authentication Protocol) -->
         <nap-java.version>0.6.0</nap-java.version>
-        <nostrdb-jni.version>0.1.2</nostrdb-jni.version>
+        <nostrdb-jni.version>0.3.0</nostrdb-jni.version>
 
         <!-- Database. Flyway is deliberately ahead of the 12.x line Spring Boot 4.1 manages:
              every Flyway API that spring-boot-flyway 4.1.1 calls was checked against 13.10.3,
