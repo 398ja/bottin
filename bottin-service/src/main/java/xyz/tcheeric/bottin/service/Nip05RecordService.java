@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import xyz.tcheeric.bottin.core.exception.Nip05RecordExistsException;
 import xyz.tcheeric.bottin.core.exception.Nip05RecordNotFoundException;
 import xyz.tcheeric.bottin.core.model.Nip05RecordData;
 import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
+import xyz.tcheeric.bottin.core.nostr.NostrPublicKeys;
 import xyz.tcheeric.bottin.persistence.entity.DomainEntity;
 import xyz.tcheeric.bottin.persistence.entity.Nip05RecordEntity;
 import xyz.tcheeric.bottin.persistence.repository.DomainRepository;
@@ -29,6 +31,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class Nip05RecordService {
+
+    private static final Pageable FIRST_ONLY = PageRequest.of(0, 1);
 
     private final Nip05RecordRepository nip05RecordRepository;
     private final DomainRepository domainRepository;
@@ -166,6 +170,24 @@ public class Nip05RecordService {
         nip05RecordRepository.delete(entity);
 
         log.info("nip05_record_deleted id={} nip05={}", id, nip05);
+    }
+
+    /**
+     * The handle a key holds, for reverse NIP-05 resolution (imani-gateway-core#173).
+     *
+     * <p>The key is canonicalised first (trimmed, lowercased, an npub decoded), as keys are stored
+     * lowercase. When the key holds several enabled handles the oldest wins, so the answer does not
+     * change when the key claims another one later. A disabled handle is never answered.
+     *
+     * @throws IllegalArgumentException when {@code pubkey} is not a public key
+     */
+    @Transactional(readOnly = true)
+    public Optional<Nip05RecordData> findByPubkey(String pubkey) {
+        String canonical = NostrPublicKeys.toCanonicalHex(pubkey)
+                .orElseThrow(() -> new IllegalArgumentException("Not a public key: expected 64 hex characters"));
+        return nip05RecordRepository.findEnabledByPubkeyOldestFirst(canonical, FIRST_ONLY).stream()
+                .findFirst()
+                .map(Nip05RecordEntity::toNip05RecordData);
     }
 
     /**

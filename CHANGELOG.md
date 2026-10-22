@@ -74,6 +74,12 @@ at least. No database migration, and no existing migration was touched.
 
 ### Added
 
+- **`GET /api/v1/records/by-pubkey/{pubkey}`**, the reverse NIP-05 lookup
+  (imani-gateway-core#173). Read-only, same `API` role as `by-nip05`. The key is canonicalised
+  (trimmed, lowercased, an `npub` decoded); a key with several enabled handles answers the
+  oldest (`created_at`, then `id`); disabled handles are never answered. 404 when the key holds
+  no enabled handle, 400 when the value is not a key. Uses the existing
+  `idx_nip05_records_pubkey` index, so no migration.
 - **`FlywayUpgradeCompatibilityIT`** (`-Pit`): migrates PostgreSQL 16 with the Flyway that
   wrote existing deployments' history (10.10.0, run from its own jars in an isolated class
   loader), then asserts that Flyway 13 validates it, finds nothing to apply, and leaves the

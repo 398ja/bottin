@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import xyz.tcheeric.bottin.core.exception.Nip05RecordNotFoundException;
 import xyz.tcheeric.bottin.core.model.Nip05RecordData;
 import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
 import xyz.tcheeric.bottin.service.Nip05RecordService;
@@ -106,6 +107,29 @@ public class Nip05RecordController {
         return nip05RecordService.findByNip05(nip05)
                 .map(data -> ResponseEntity.ok(Nip05RecordResponse.from(data)))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/by-pubkey/{pubkey}")
+    @Operation(summary = "Get the handle a key holds",
+            description = "Reverse NIP-05 lookup. Answers the oldest enabled record for the key "
+                    + "(hex, any case, or npub). Read-only, API role, like by-nip05.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Record found"),
+            @ApiResponse(responseCode = "400", description = "Not a public key"),
+            @ApiResponse(responseCode = "404", description = "The key holds no enabled handle")
+    })
+    public ResponseEntity<Nip05RecordResponse> getRecordByPubkey(
+            @Parameter(description = "Public key, 64 hex characters or npub")
+            @PathVariable("pubkey") String pubkey) {
+
+        log.debug("api_record_get_by_pubkey pubkey_prefix={}", pubkey.length() > 8 ? pubkey.substring(0, 8) : pubkey);
+
+        // A typed 404 (NIP05_RECORD_NOT_FOUND), not a bare one: a caller must be able to tell
+        // "this key has no handle" from "this bottin has no such route" (an older deployment
+        // answers the generic NOT_FOUND), and only the first is a definitive answer.
+        return nip05RecordService.findByPubkey(pubkey)
+                .map(data -> ResponseEntity.ok(Nip05RecordResponse.from(data)))
+                .orElseThrow(() -> new Nip05RecordNotFoundException("pubkey " + pubkey.strip().toLowerCase()));
     }
 
     @PostMapping

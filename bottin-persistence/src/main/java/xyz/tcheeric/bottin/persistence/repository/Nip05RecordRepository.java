@@ -90,6 +90,17 @@ public interface Nip05RecordRepository extends JpaRepository<Nip05RecordEntity, 
     List<Nip05RecordEntity> findAllByPubkey(String pubkey);
 
     /**
+     * The enabled handles a key holds, oldest first (ties broken by id), with their domains.
+     *
+     * <p>The reverse NIP-05 lookup takes the first: the handle the key claimed first, which does
+     * not change when the key later claims another. Disabled records are excluded because
+     * {@code /.well-known/nostr.json} no longer serves them.
+     */
+    @Query("SELECT r FROM Nip05RecordEntity r JOIN FETCH r.domain "
+            + "WHERE r.pubkey = :pubkey AND r.enabled = true ORDER BY r.createdAt ASC, r.id ASC")
+    List<Nip05RecordEntity> findEnabledByPubkeyOldestFirst(@Param("pubkey") String pubkey, Pageable pageable);
+
+    /**
      * Returns the distinct pubkeys of all enabled records — the set of profiles
      * the reach calculation tracks.
      */

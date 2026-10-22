@@ -10,6 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 import xyz.tcheeric.bottin.persistence.entity.DomainEntity;
 import xyz.tcheeric.bottin.persistence.entity.Nip05RecordEntity;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -337,6 +338,53 @@ class Nip05RecordRepositoryTest {
 
         // Assert
         assertThat(saved.getUsername()).isEqualTo("alice");
+    }
+
+    /**
+     * imani-gateway-core#173: a key holding two handles answers with the one it claimed first,
+     * whatever their alphabetical order, so reverse resolution is stable as handles are added.
+     */
+    @Test
+    void shouldAnswerTheOldestEnabledHandleWhenAKeyHoldsSeveral() {
+        // Arrange: "zed" is older than "alice", so alphabetical order would pick the wrong one
+        String key = "42a7dfe3aef93eafc347a60bd7f2dd8c8cf5c42e71fcecc7c5b56c4cf78408e7";
+        recordRepository.save(recordFor(key, "alice", Instant.parse("2026-10-02T00:00:00Z"), true));
+        recordRepository.save(recordFor(key, "zed", Instant.parse("2026-10-01T00:00:00Z"), true));
+
+        // Act
+        List<Nip05RecordEntity> found = recordRepository.findEnabledByPubkeyOldestFirst(key, PageRequest.of(0, 1));
+
+        // Assert
+        assertThat(found).extracting(Nip05RecordEntity::getUsername).containsExactly("zed");
+    }
+
+    /**
+     * A disabled handle is not served by nostr.json, so the reverse lookup must not name it either:
+     * it would point a caller at an identifier that no longer verifies.
+     */
+    @Test
+    void shouldSkipADisabledHandleInTheReverseLookup() {
+        // Arrange: the older handle is switched off
+        String key = "42a7dfe3aef93eafc347a60bd7f2dd8c8cf5c42e71fcecc7c5b56c4cf78408e7";
+        recordRepository.save(recordFor(key, "old", Instant.parse("2026-10-01T00:00:00Z"), false));
+        recordRepository.save(recordFor(key, "live", Instant.parse("2026-10-02T00:00:00Z"), true));
+
+        // Act
+        List<Nip05RecordEntity> found = recordRepository.findEnabledByPubkeyOldestFirst(key, PageRequest.of(0, 1));
+
+        // Assert
+        assertThat(found).extracting(Nip05RecordEntity::getUsername).containsExactly("live");
+    }
+
+    private Nip05RecordEntity recordFor(String pubkey, String username, Instant createdAt, boolean enabled) {
+        return Nip05RecordEntity.builder()
+                .domain(testDomain)
+                .username(username)
+                .pubkey(pubkey)
+                .relaysJson("[]")
+                .enabled(enabled)
+                .createdAt(createdAt)
+                .build();
     }
 
     /**
