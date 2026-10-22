@@ -147,6 +147,29 @@ class ClientSessionGuardTest {
         assertThat(signIn.getStatusCode()).isNotEqualTo(HttpStatus.FORBIDDEN);
     }
 
+    /**
+     * Tests that the sign-in challenge reaches the browser in the snake_case form
+     * {@code nap-client.js} reads ({@code challenge.challenge_id}). nap-spring declares
+     * that naming with Jackson 2's {@code @JsonNaming}, while Spring Boot 4 serves JSON with
+     * Jackson 3; this pins down that the converter actually in use still honours it, since
+     * a {@code challengeId} here would leave no one able to complete a sign-in.
+     */
+    @Test
+    void shouldIssueTheSignInChallengeInTheFormTheBrowserReads() {
+        // Arrange: a well-formed key asking to sign in
+        HttpHeaders headers = new HttpHeaders();
+
+        // Act: request a challenge
+        var challenge = rest.exchange("/api/v1/auth/init", HttpMethod.POST,
+                new HttpEntity<>(Map.of("npub", PRINCIPAL_NPUB), headers), String.class);
+
+        // Assert: issued, with the property names the client script depends on
+        assertThat(challenge.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(challenge.getBody())
+                .contains("\"challenge_id\"", "\"auth_url\"")
+                .doesNotContain("\"challengeId\"");
+    }
+
     private ResponseEntity<String> signedInPost(String path, Map<String, Object> body) {
         return rest.exchange(path, HttpMethod.POST, new HttpEntity<>(body, signedInHeaders()), String.class);
     }
