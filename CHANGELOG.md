@@ -31,18 +31,21 @@ at least. No database migration, and no existing migration was touched.
   `spring-boot-starter-webclient` in place of the whole WebFlux stack; tests use the
   per-technology test starters (`-webmvc-test`, `-data-jpa-test`, `-security-test`,
   `spring-boot-resttestclient`).
-- **HTTP JSON is now Jackson 3; a Jackson 2 `ObjectMapper` is kept alongside.** Boot 4 serves
-  HTTP with Jackson 3 and no longer auto-configures a Jackson 2 mapper, but bottin's services,
-  bottin-verification and nap-spring 0.6.0 all inject
-  `com.fasterxml.jackson.databind.ObjectMapper` and the applications fail to start without
-  one, so the three applications add `spring-boot-jackson2`, which provides it. bottin-api's
-  `@Jacksonized` request DTOs only carried Jackson 2's `@JsonDeserialize`, which Jackson 3
-  ignores: every create on `/api/v1/records` and `/api/v1/domains` answered 500 until
-  `bottin-api/lombok.config` told Lombok to generate Jackson 3's as well (13 controller tests
-  fail without it). Jackson 3 still honours nap-spring's Jackson 2 `@JsonNaming`, so the
-  sign-in handshake stays `challenge_id`/`auth_url`; a booted test now pins that. Moving the
-  services to Jackson 3, and dropping `spring-boot-jackson2` (deprecated in Boot 4), is
-  follow-up work that waits on nap-spring.
+- **HTTP JSON stays on Jackson 2, with Jackson 3 alongside.** Boot 4 serves HTTP with
+  Jackson 3 and stops auto-configuring a Jackson 2 `ObjectMapper`. All three applications
+  add `spring-boot-jackson2` and set `spring.http.converters.preferred-json-mapper=jackson2`:
+  - bottin's services, bottin-verification and nap-spring 0.6.0 inject a Jackson 2
+    `ObjectMapper`, and without one the context does not start;
+  - nap-spring's `AuthSuccessResponse` (`/api/v1/auth/complete`, `/refresh`) is named with
+    Jackson 2 `@JsonNaming(SnakeCase)`, which Jackson 3 ignores, so under the default
+    converter a sign-in answers `accessToken`/`expiresAt` instead of
+    `access_token`/`expires_at`. A booted test now performs a real NIP-98-signed sign-in and
+    asserts the wire format (broken once: it fails with the Jackson 3 converter).
+  bottin-api's `@Jacksonized` request DTOs are also generated for Jackson 3
+  (`bottin-api/lombok.config`): with Lombok's Jackson-2-only default, every create on
+  `/api/v1/records` and `/api/v1/domains` is a 500 under Jackson 3 (broken once: 13
+  controller tests fail). Moving to Jackson 3 and dropping the deprecated
+  `spring-boot-jackson2` waits on nap-spring.
 - **Flyway 13.10.3**, deliberately ahead of the 12.x line Boot 4.1 manages. Every Flyway API
   `spring-boot-flyway` 4.1.1 calls was checked present in 13.10.3. The PostgreSQL support
   was already the separate `flyway-database-postgresql` module, so only its version moves;
@@ -78,14 +81,12 @@ at least. No database migration, and no existing migration was touched.
 
 ### Upgrade notes
 
-- No action for the three applications' images or configuration. A running Boot 3 and Boot 4
-  build were probed side by side against the same database (API, client UI, admin UI), and
-  the responses are the same JSON documents except that: `/actuator/health` now also lists
-  `"groups":["liveness","readiness"]` (Boot 4 enables the probes by default); the API's
-  `WWW-Authenticate` adds `charset="UTF-8"`; and admin login redirects are relative.
-  Property order inside JSON objects is not the same (Jackson 3 sorts properties
-  alphabetically by default), which a JSON client does not see but a byte-comparing one
-  would.
+- No action for the three applications' images or configuration. A Boot 3 build and this
+  build were run side by side against the same Flyway-10-migrated PostgreSQL and probed
+  (API, client UI, admin UI, including a signed NAP sign-in and onboarding registration):
+  the responses are the same JSON documents except that `/actuator/health` now also lists
+  `"groups":["liveness","readiness"]` (Boot 4 enables the probes by default), the API's
+  `WWW-Authenticate` adds `charset="UTF-8"`, and admin login redirects are relative.
 - Known noise: at start-up admin-ui and client-ui log a WARN that nap-spring's
   `@AutoConfiguration(after = JacksonAutoConfiguration)` names a class Boot 4 moved. The
   ordering hint is dropped and NAP works (signed sign-in verified on both); the fix belongs
