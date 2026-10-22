@@ -1,6 +1,11 @@
 spring:
   main:
     allow-bean-definition-overriding: true
+  # This file shadows src/main/resources/application.yml, so the production choice of JSON
+  # mapper is repeated here; otherwise every test would run against the other one.
+  http:
+    converters:
+      preferred-json-mapper: jackson2
 
 bottin:
   default-domain: example.com

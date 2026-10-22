@@ -66,10 +66,11 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
 
-        <!-- Spring Boot 4 serves HTTP JSON with Jackson 3 and no longer auto-configures a
-             Jackson 2 ObjectMapper. bottin's services, bottin-verification and nap-spring 0.6.0
-             all inject one (com.fasterxml.jackson.databind.ObjectMapper), and the context fails
-             to start without it, so this module supplies it until they move to Jackson 3. -->
+        <!-- Jackson 2 alongside Spring Boot 4's Jackson 3: bottin's services, bottin-verification
+             and nap-spring 0.6.0 inject a Jackson 2 ObjectMapper, which Boot 4 no longer
+             auto-configures, and nap-spring's sign-in responses are named with Jackson 2
+             annotations, so the HTTP layer is kept on it too
+             (spring.http.converters.preferred-json-mapper in application.yml). -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-jackson2</artifactId>
