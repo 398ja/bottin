@@ -10,8 +10,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import xyz.tcheeric.bottin.core.exception.Nip05RecordExistsException;
+import xyz.tcheeric.bottin.core.model.Nip05RecordData;
 import xyz.tcheeric.bottin.persistence.entity.DomainEntity;
 import xyz.tcheeric.bottin.persistence.entity.Nip05RecordEntity;
 import xyz.tcheeric.bottin.persistence.repository.DomainRepository;
@@ -92,6 +94,43 @@ class Nip05RecordServiceNormalisationTest {
 
         // Act and assert
         assertThat(service.findByNip05("Alice@Domain ")).isPresent();
+    }
+
+    // imani-gateway-core#173: a reverse lookup by an upper-case or padded key finds the stored
+    // lowercase one, and answers the oldest enabled handle the repository gives first.
+    @Test
+    void shouldFindTheHandleOfACanonicalisedKey() {
+        // Arrange
+        Nip05RecordEntity alice = Nip05RecordEntity.builder()
+                .id(1L).domain(domain).username("alice").pubkey(PUBKEY).relaysJson("[]").enabled(true).build();
+        when(recordRepository.findEnabledByPubkeyOldestFirst(PUBKEY, PageRequest.of(0, 1)))
+                .thenReturn(List.of(alice));
+
+        // Act
+        Optional<Nip05RecordData> found = service.findByPubkey(" " + PUBKEY.toUpperCase() + " ");
+
+        // Assert
+        assertThat(found).map(Nip05RecordData::getNip05).contains("alice@example.com");
+    }
+
+    // A key with no enabled handle is an ordinary empty answer, not an error.
+    @Test
+    void shouldFindNothingForAKeyWithoutAHandle() {
+        // Arrange
+        when(recordRepository.findEnabledByPubkeyOldestFirst(PUBKEY, PageRequest.of(0, 1)))
+                .thenReturn(List.of());
+
+        // Act and assert
+        assertThat(service.findByPubkey(PUBKEY)).isEmpty();
+    }
+
+    // Something that is not a 64-hex key is refused before the store is asked.
+    @ParameterizedTest
+    @ValueSource(strings = {"", "abc", "zz7dfe3aef93eafc347a60bd7f2dd8c8cf5c42e71fcecc7c5b56c4cf78408e7"})
+    void shouldRefuseAValueThatIsNotAHexKey(String raw) {
+        // Act and assert
+        assertThatThrownBy(() -> service.findByPubkey(raw)).isInstanceOf(IllegalArgumentException.class);
+        verify(recordRepository, never()).findEnabledByPubkeyOldestFirst(any(), any());
     }
 
     // A domain filter with padding still matches the stored lowercase domain.

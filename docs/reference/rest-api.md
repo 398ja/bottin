@@ -94,6 +94,21 @@ Get a specific record by ID.
 Get a record by NIP-05 identifier (e.g., `alice@example.com`). Both parts are
 trimmed and lowercased, so `Alice@Example.com ` finds `alice@example.com`.
 
+### GET /api/v1/records/by-pubkey/{pubkey}
+
+Reverse lookup: the handle a public key holds. Takes 64 hex characters in any case, or an
+`npub`; keys are stored lowercase. Requires the `API` role, like every `/api/v1/records` read.
+
+- **200**: the record, same shape as `by-nip05`.
+- **404** with `errorCode: NIP05_RECORD_NOT_FOUND`: the key holds no enabled handle. A bare
+  404 without that code means the route is absent (a bottin older than this endpoint), which
+  says nothing about the key.
+- **400**: the value is not a public key.
+
+When a key holds several enabled handles the **oldest** one is answered (earliest `createdAt`,
+then lowest `id`), so the answer does not change when the key claims another handle. A disabled
+record is never answered, as `/.well-known/nostr.json` no longer serves it.
+
 ### POST /api/v1/records
 
 Create a new NIP-05 record.

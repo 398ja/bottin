@@ -269,6 +269,65 @@ class Nip05RecordControllerTest {
     }
 
     /**
+     * imani-gateway-core#173: the reverse lookup answers the handle a key holds, found by the
+     * canonical lowercase key whatever case the caller sent.
+     */
+    @Test
+    @WithMockUser(roles = "API")
+    void shouldFindTheHandleOfAKeyByPubkey() throws Exception {
+        // Arrange
+        when(nip05RecordService.findByPubkey(TEST_PUBKEY.toUpperCase()))
+                .thenReturn(Optional.of(createTestRecord(1L, "alice", "example.com")));
+
+        // Act & Assert
+        mockMvc.perform(get(API_BASE + "/by-pubkey/{pubkey}", TEST_PUBKEY.toUpperCase()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nip05", is("alice@example.com")))
+                .andExpect(jsonPath("$.pubkey", is(TEST_PUBKEY)));
+    }
+
+    /**
+     * A key that holds no enabled handle is a 404, the same answer by-nip05 gives for an unknown name.
+     */
+    @Test
+    @WithMockUser(roles = "API")
+    void shouldReturn404WhenAKeyHoldsNoHandle() throws Exception {
+        // Arrange
+        when(nip05RecordService.findByPubkey(TEST_PUBKEY)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        mockMvc.perform(get(API_BASE + "/by-pubkey/{pubkey}", TEST_PUBKEY))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode", is("NIP05_RECORD_NOT_FOUND")));
+    }
+
+    /**
+     * A value that is not a key is the caller's mistake, a 400, not a 404 that reads as "no handle".
+     */
+    @Test
+    @WithMockUser(roles = "API")
+    void shouldReturn400WhenThePubkeyIsNotAKey() throws Exception {
+        // Arrange
+        when(nip05RecordService.findByPubkey("abc")).thenThrow(new IllegalArgumentException("not a key"));
+
+        // Act & Assert
+        mockMvc.perform(get(API_BASE + "/by-pubkey/{pubkey}", "abc"))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * The reverse lookup sits behind the same API credential as the forward by-nip05 lookup: it is
+     * read-only, but it is not a public enumeration surface.
+     */
+    @Test
+    void shouldRejectAnUnauthenticatedReverseLookup() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get(API_BASE + "/by-pubkey/{pubkey}", TEST_PUBKEY))
+                .andExpect(status().isUnauthorized());
+        verify(nip05RecordService, never()).findByPubkey(any());
+    }
+
+    /**
      * Tests updating a record successfully.
      */
     @Test
