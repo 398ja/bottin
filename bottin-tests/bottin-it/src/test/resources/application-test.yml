@@ -8,7 +8,7 @@ spring:
   # management chain is excluded rather than reordering production security.
   autoconfigure:
     exclude:
-      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+      - org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration
 
   # JPA Configuration for tests
   #

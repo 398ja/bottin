@@ -68,13 +68,13 @@ import static org.assertj.core.api.Assertions.assertThat;
                 // Spring Security's sign-in page instead of the application's.
                 "spring.autoconfigure.exclude="
                         + "xyz.tcheeric.bottin.starter.BottinAutoConfiguration,"
-                        + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-                        + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
-                        + "org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration,"
-                        + "org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,"
-                        + "org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration,"
-                        + "org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration,"
-                        + "org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration"
+                        + "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,"
+                        + "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration,"
+                        + "org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration,"
+                        + "org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration,"
+                        + "org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration,"
+                        + "org.springframework.boot.security.autoconfigure.web.servlet.SecurityFilterAutoConfiguration,"
+                        + "org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration"
         })
 @DisplayName("Follow and block lists, against a real relay in a real browser")
 class ClientListRelayE2ETest {

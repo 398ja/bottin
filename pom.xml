@@ -55,8 +55,11 @@
         <maven.compiler.target>21</maven.compiler.target>
         <java.version>21</java.version>
 
-        <!-- Spring Boot -->
-        <spring-boot.version>3.4.1</spring-boot.version>
+        <!-- Spring Boot. Manages Spring Framework 7, Spring Security 7, Hibernate 7, Jackson 3
+             (and Jackson 2 alongside it), JUnit 6, Mockito, Testcontainers 2, H2, PostgreSQL,
+             Lombok and the logging stack. Versions those libraries had pinned here were
+             removed so the BOM's tested set is what is built. -->
+        <spring-boot.version>4.1.1</spring-boot.version>
 
         <!-- nostr-java (relay client for reach calculation) -->
         <nostr-java.version>2.4.2</nostr-java.version>
@@ -65,33 +68,18 @@
         <nap-java.version>0.6.0</nap-java.version>
         <nostrdb-jni.version>0.1.2</nostrdb-jni.version>
 
-        <!-- Database -->
-        <flyway.version>10.10.0</flyway.version>
-        <h2.version>2.2.224</h2.version>
-        <postgresql.version>42.7.3</postgresql.version>
-
-        <!-- JSON -->
-        <jackson.version>2.17.0</jackson.version>
-
-        <!-- Logging (managed by Spring Boot BOM) -->
-        <slf4j.version>2.0.12</slf4j.version>
-
-        <!-- Lombok -->
-        <lombok.version>1.18.32</lombok.version>
+        <!-- Database. Flyway is deliberately ahead of the 12.x line Spring Boot 4.1 manages:
+             every Flyway API that spring-boot-flyway 4.1.1 calls was checked against 13.10.3,
+             and a schema history written by 10.10.0 validates unchanged under it. -->
+        <flyway.version>13.10.3</flyway.version>
 
         <!-- Testing -->
-        <junit.version>5.10.2</junit.version>
-        <mockito.version>5.11.0</mockito.version>
-        <assertj.version>3.25.3</assertj.version>
-        <testcontainers.version>1.19.7</testcontainers.version>
-        <!-- Aligned with what org.testcontainers:selenium pulls in: declaring 4.19.1 left
-             selenium-api and the chrome driver at 4.25.0 while the devtools artifacts stayed
-             at 4.19.1, an accidental pairing that happened to work. -->
-        <selenium.version>4.25.0</selenium.version>
         <wiremock.version>3.4.2</wiremock.version>
+        <!-- Spring Boot 4 no longer manages REST Assured; 6.x is the Jakarta EE 11 line. -->
+        <rest-assured.version>6.2.0</rest-assured.version>
 
-        <!-- API Documentation -->
-        <springdoc-openapi.version>2.4.0</springdoc-openapi.version>
+        <!-- API Documentation. The 3.x line is the one built for Spring Boot 4. -->
+        <springdoc-openapi.version>3.1.1</springdoc-openapi.version>
 
         <!-- Admin UI -->
         <webjars-locator.version>0.52</webjars-locator.version>
@@ -102,8 +90,9 @@
 
         <!-- Plugin versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
+        <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
+        <maven-dependency-plugin.version>3.10.0</maven-dependency-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
@@ -111,6 +100,14 @@
         <flatten-maven-plugin.version>1.6.0</flatten-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.11</jacoco-maven-plugin.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
+
+        <!-- Mockito's inline mock maker needs an instrumentation agent. Left to itself it has
+             Byte Buddy self-attach one at run time, which the JDK is phasing out
+             (JDK-8306275) and which surefire 3.6.0 broke outright (bottin#35). The agent is
+             instead copied out of the managed mockito-core and loaded with -javaagent in every
+             surefire and failsafe fork. -->
+        <mockito.agent.directory>${project.build.directory}/mockito-agent</mockito.agent.directory>
+        <mockito.agent.argLine>-javaagent:${mockito.agent.directory}/mockito-core.jar</mockito.agent.argLine>
 
         <!-- Docker/Jib -->
         <jib-maven-plugin.version>3.4.1</jib-maven-plugin.version>
@@ -219,15 +216,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Jackson BOM -->
-            <dependency>
-                <groupId>com.fasterxml.jackson</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>${jackson.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
             <!-- Flyway -->
             <dependency>
                 <groupId>org.flywaydb</groupId>
@@ -238,20 +226,6 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-database-postgresql</artifactId>
                 <version>${flyway.version}</version>
-            </dependency>
-
-            <!-- H2 (dev/test) -->
-            <dependency>
-                <groupId>com.h2database</groupId>
-                <artifactId>h2</artifactId>
-                <version>${h2.version}</version>
-            </dependency>
-
-            <!-- PostgreSQL (production) -->
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>${postgresql.version}</version>
             </dependency>
 
             <!-- DNS Java (domain verification) -->
@@ -268,71 +242,10 @@
                 <version>${springdoc-openapi.version}</version>
             </dependency>
 
-            <!-- Lombok -->
             <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>${lombok.version}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <!-- Logging -->
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>1.4.14</version>
-            </dependency>
-
-            <!-- Testing - JUnit BOM -->
-            <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>${junit.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-core</artifactId>
-                <version>${mockito.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-junit-jupiter</artifactId>
-                <version>${mockito.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.assertj</groupId>
-                <artifactId>assertj-core</artifactId>
-                <version>${assertj.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <!-- Testcontainers -->
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>${testcontainers.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>${testcontainers.version}</version>
+                <groupId>io.rest-assured</groupId>
+                <artifactId>rest-assured</artifactId>
+                <version>${rest-assured.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -473,7 +386,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
                     <configuration>
-                        <argLine>@{argLine} -Xmx1024m</argLine>
+                        <argLine>@{argLine} -Xmx1024m ${mockito.agent.argLine}</argLine>
                         <includes>
                             <include>**/*Test.java</include>
                             <include>**/*Tests.java</include>
@@ -491,7 +404,7 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${maven-failsafe-plugin.version}</version>
                     <configuration>
-                        <argLine>@{argLine} -Xmx1024m</argLine>
+                        <argLine>@{argLine} -Xmx1024m ${mockito.agent.argLine}</argLine>
                         <includes>
                             <include>**/*IT.java</include>
                             <include>**/*IntegrationTest.java</include>
@@ -503,6 +416,32 @@
                                 <goal>integration-test</goal>
                                 <goal>verify</goal>
                             </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Mockito agent, see mockito.agent.argLine -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${maven-dependency-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>copy-mockito-agent</id>
+                            <phase>process-test-classes</phase>
+                            <goals>
+                                <goal>copy</goal>
+                            </goals>
+                            <configuration>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>org.mockito</groupId>
+                                        <artifactId>mockito-core</artifactId>
+                                        <destFileName>mockito-core.jar</destFileName>
+                                    </artifactItem>
+                                </artifactItems>
+                                <outputDirectory>${mockito.agent.directory}</outputDirectory>
+                            </configuration>
                         </execution>
                     </executions>
                 </plugin>
@@ -667,6 +606,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -1,14 +1,21 @@
 package xyz.tcheeric.bottin.client.config;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import nostr.crypto.bech32.Bech32;
+import nostr.crypto.bech32.Bech32Prefix;
+import nostr.crypto.schnorr.Schnorr;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import xyz.tcheeric.bottin.client.dto.DirectorySettings;
@@ -19,7 +26,12 @@ import xyz.tcheeric.nap.core.SessionRecord;
 import xyz.tcheeric.nap.core.SessionStore;
 import xyz.tcheeric.nap.server.AclResolver;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.Base64;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,9 +61,14 @@ import static org.mockito.Mockito.when;
  * therefore pinned by letting a real session through.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestRestTemplate
 class ClientSessionGuardTest {
 
     private static final String PRINCIPAL_PUBKEY = "a".repeat(64);
+
+    private static final int NIP98_KIND = 27235;
+
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     private static final String PRINCIPAL_NPUB = "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6";
 
@@ -143,6 +160,89 @@ class ClientSessionGuardTest {
 
         assertThat(guarded.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(signIn.getStatusCode()).isNotEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    /**
+     * Tests that the sign-in challenge reaches the browser in the snake_case form
+     * {@code nap-client.js} reads ({@code challenge.challenge_id}), since a
+     * {@code challengeId} here would leave no one able to complete a sign-in.
+     */
+    @Test
+    void shouldIssueTheSignInChallengeInTheFormTheBrowserReads() {
+        // Arrange: a well-formed key asking to sign in
+        HttpHeaders headers = new HttpHeaders();
+
+        // Act: request a challenge
+        var challenge = rest.exchange("/api/v1/auth/init", HttpMethod.POST,
+                new HttpEntity<>(Map.of("npub", PRINCIPAL_NPUB), headers), String.class);
+
+        // Assert: issued, with the property names the client script depends on
+        assertThat(challenge.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(challenge.getBody())
+                .contains("\"challenge_id\"", "\"auth_url\"")
+                .doesNotContain("\"challengeId\"");
+    }
+
+    /**
+     * Tests that a completed sign-in answers in NAP's snake_case wire format
+     * ({@code access_token}, {@code expires_at}). nap-spring returns its own
+     * {@code AuthSuccessResponse}, named with Jackson 2's {@code @JsonNaming}; Spring
+     * Boot 4's default Jackson 3 converter ignores that annotation and would answer
+     * {@code accessToken}, changing the protocol every NAP client reads. The handshake is
+     * performed for real, NIP-98 signature included, against the booted application.
+     */
+    @Test
+    void shouldAnswerACompletedSignInInNapWireFormat() throws Exception {
+        // Arrange: a key, and the challenge the server issues it
+        byte[] privateKey = Schnorr.generatePrivateKey();
+        String pubkey = HexFormat.of().formatHex(Schnorr.genPubKey(privateKey));
+        String npub = Bech32.toBech32(Bech32Prefix.NPUB, pubkey);
+        JsonNode challenge = JSON.readTree(rest.postForObject("/api/v1/auth/init",
+                Map.of("npub", npub), String.class));
+
+        // Act: sign it as nap-client.js does, and present it
+        String body = JSON.writeValueAsString(Map.of("challenge_id", challenge.get("challenge_id").asText()));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set(HttpHeaders.AUTHORIZATION, "Nostr " + signedNip98Event(challenge, body, pubkey, privateKey));
+        var completed = rest.exchange("/api/v1/auth/complete", HttpMethod.POST,
+                new HttpEntity<>(body, headers), String.class);
+
+        // Assert: signed in, and answered in the wire format clients read
+        assertThat(completed.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(completed.getBody())
+                .contains("\"access_token\"", "\"expires_at\"", "\"token_type\"")
+                .doesNotContain("\"accessToken\"", "\"expiresAt\"");
+    }
+
+    /** The NIP-98 event {@code NostrCrypto.signNip98Event} builds, base64-encoded. */
+    private static String signedNip98Event(JsonNode challenge, String body, String pubkey, byte[] privateKey)
+            throws Exception {
+        long createdAt = Instant.now().getEpochSecond();
+        List<List<String>> tags = List.of(
+                List.of("u", challenge.get("auth_url").asText()),
+                List.of("method", "POST"),
+                List.of("payload", sha256Hex(body)),
+                List.of("challenge", challenge.get("challenge").asText()),
+                List.of("challenge_id", challenge.get("challenge_id").asText()));
+        String serialized = JSON.writeValueAsString(List.of(0, pubkey, createdAt, NIP98_KIND, tags, ""));
+        byte[] id = MessageDigest.getInstance("SHA-256").digest(serialized.getBytes(StandardCharsets.UTF_8));
+        byte[] signature = Schnorr.sign(id, privateKey, new byte[32]);
+
+        Map<String, Object> event = new LinkedHashMap<>();
+        event.put("id", HexFormat.of().formatHex(id));
+        event.put("pubkey", pubkey);
+        event.put("created_at", createdAt);
+        event.put("kind", NIP98_KIND);
+        event.put("tags", tags);
+        event.put("content", "");
+        event.put("sig", HexFormat.of().formatHex(signature));
+        return Base64.getEncoder().encodeToString(JSON.writeValueAsBytes(event));
+    }
+
+    private static String sha256Hex(String value) throws Exception {
+        return HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
     }
 
     private ResponseEntity<String> signedInPost(String path, Map<String, Object> body) {

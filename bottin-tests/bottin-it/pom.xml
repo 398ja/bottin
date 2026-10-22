@@ -63,12 +63,12 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
+            <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -125,6 +125,69 @@
 
     <build>
         <plugins>
+            <!-- The Flyway production ran before the Flyway 13 upgrade, with its runtime
+                 dependencies, for FlywayUpgradeCompatibilityIT. Kept out of the test class path
+                 (it would collide with the current Flyway) and loaded in its own class loader.
+                 legacy.flyway.version records the version that wrote existing deployments'
+                 schema history; it is not meant to track releases. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-legacy-flyway</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipITTests}</skip>
+                            <outputDirectory>${legacy.flyway.dir}</outputDirectory>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.flywaydb</groupId>
+                                    <artifactId>flyway-core</artifactId>
+                                    <version>${legacy.flyway.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.flywaydb</groupId>
+                                    <artifactId>flyway-database-postgresql</artifactId>
+                                    <version>${legacy.flyway.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.fasterxml.jackson.dataformat</groupId>
+                                    <artifactId>jackson-dataformat-toml</artifactId>
+                                    <version>${legacy.flyway.jackson.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.fasterxml.jackson.core</groupId>
+                                    <artifactId>jackson-databind</artifactId>
+                                    <version>${legacy.flyway.jackson.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.fasterxml.jackson.core</groupId>
+                                    <artifactId>jackson-core</artifactId>
+                                    <version>${legacy.flyway.jackson.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.fasterxml.jackson.core</groupId>
+                                    <artifactId>jackson-annotations</artifactId>
+                                    <version>${legacy.flyway.jackson.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.code.gson</groupId>
+                                    <artifactId>gson</artifactId>
+                                    <version>2.10.1</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.postgresql</groupId>
+                                    <artifactId>postgresql</artifactId>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Skip unit tests by default - IT tests use failsafe -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -139,6 +202,9 @@
                 <configuration>
                     <skipTests>${skipITTests}</skipTests>
                     <skipITs>${skipITTests}</skipITs>
+                    <systemPropertyVariables>
+                        <legacy.flyway.dir>${legacy.flyway.dir}</legacy.flyway.dir>
+                    </systemPropertyVariables>
                 </configuration>
                 <executions>
                     <execution>
@@ -155,6 +221,11 @@
     <properties>
         <!-- Skip IT tests by default -->
         <skipITTests>true</skipITTests>
+        <!-- The Flyway that wrote existing deployments' schema history, see the
+             copy-legacy-flyway execution. -->
+        <legacy.flyway.version>10.10.0</legacy.flyway.version>
+        <legacy.flyway.jackson.version>2.15.2</legacy.flyway.jackson.version>
+        <legacy.flyway.dir>${project.build.directory}/legacy-flyway</legacy.flyway.dir>
     </properties>
 
     <profiles>

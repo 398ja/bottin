@@ -25,6 +25,16 @@ server:
 spring:
   application:
     name: bottin-client-ui
+
+  # Spring Boot 4 serves HTTP JSON with Jackson 3, which ignores Jackson 2 annotations.
+  # nap-spring 0.6.0's sign-in responses (AuthSuccessResponse from /api/v1/auth/complete and
+  # /refresh) are named with Jackson 2 @JsonNaming(SnakeCase); under Jackson 3 the NAP wire
+  # format would become accessToken/expiresAt instead of access_token/expires_at. Keep the
+  # HTTP layer on Jackson 2 (spring-boot-jackson2) until nap-spring supports Jackson 3. Kept
+  # identical in all three applications so they speak one wire format.
+  http:
+    converters:
+      preferred-json-mapper: jackson2
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
