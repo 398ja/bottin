@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import xyz.tcheeric.bottin.client.service.DirectorySettingsClient;
+import xyz.tcheeric.nap.spring.annotation.PublicEndpoint;
 import xyz.tcheeric.nap.spring.annotation.RequiresSession;
 
 import java.net.InetAddress;
@@ -31,8 +32,10 @@ public class RelayController {
      *
      * <p>Deliberately the one route here carrying no {@link RequiresSession}: it
      * describes the deployment rather than any user, and a reader who is not
-     * signed in needs it to read a profile off the relays.
+     * signed in needs it to read a profile off the relays. {@link PublicEndpoint} says so
+     * explicitly, which nap-spring 0.9 requires on a protected path prefix.
      */
+    @PublicEndpoint
     @GetMapping("/system")
     public ResponseEntity<Map<String, Object>> getSystemRelays() {
         return ResponseEntity.ok(Map.of("relays", settingsClient.current().defaultRelays()));

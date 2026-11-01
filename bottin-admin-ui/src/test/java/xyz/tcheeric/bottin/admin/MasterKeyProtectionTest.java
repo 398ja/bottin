@@ -142,8 +142,8 @@ class MasterKeyProtectionTest {
     }
 
     private Cookie sessionFor(String pubkeyHex) {
-        // The cookie carries the session id: NapSessionFilter resolves the
-        // session with getBySessionId, not by access token.
+        // The cookie carries the access token: since nap-spring 0.9 NapSessionFilter
+        // resolves the session with getByAccessToken, not by session id.
         String sessionId = UUID.randomUUID().toString();
         String accessToken = UUID.randomUUID().toString().replace("-", "");
         long now = Instant.now().getEpochSecond();
@@ -164,7 +164,7 @@ class MasterKeyProtectionTest {
                 now,
                 now + 3600));
 
-        return new Cookie(SESSION_COOKIE, sessionId);
+        return new Cookie(SESSION_COOKIE, accessToken);
     }
 
     /**

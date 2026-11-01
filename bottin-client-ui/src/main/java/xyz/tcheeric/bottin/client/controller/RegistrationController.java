@@ -14,6 +14,7 @@ import xyz.tcheeric.bottin.client.dto.RegistrationRequest;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationException;
 import xyz.tcheeric.bottin.client.service.DirectoryRegistrationService;
 import xyz.tcheeric.bottin.core.nip05.HandleNormalizer;
+import xyz.tcheeric.nap.spring.annotation.RequiresSession;
 import xyz.tcheeric.nap.spring.filter.NapSessionFilter;
 
 import java.util.Map;
@@ -32,6 +33,7 @@ public class RegistrationController {
 
     private final DirectoryRegistrationService registrationService;
 
+    @RequiresSession
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@RequestBody RegistrationRequest request) {
         String pubkey = authenticatedPubkey();
