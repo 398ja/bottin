@@ -113,7 +113,7 @@
         <jib-maven-plugin.version>3.4.1</jib-maven-plugin.version>
 
         <!-- bottin-client-ui JS test toolchain -->
-        <frontend-maven-plugin.version>1.15.1</frontend-maven-plugin.version>
+        <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
         <node.version>v20.11.1</node.version>
         <npm.version>10.2.4</npm.version>
 
