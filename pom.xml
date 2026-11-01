@@ -86,7 +86,7 @@
         <htmx.version>1.9.10</htmx.version>
 
         <!-- DNS (for domain verification) -->
-        <dnsjava.version>3.6.0</dnsjava.version>
+        <dnsjava.version>3.6.5</dnsjava.version>
 
         <!-- Plugin versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
