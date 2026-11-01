@@ -151,7 +151,7 @@ class ClientSessionGuardTest {
     @Test
     void shouldLeaveSignInReachableWhenTheResolverDeniesTheSession() {
         when(aclResolver.resolve(any(), any())).thenReturn(AclDecision.denied("suspended", false));
-        HttpHeaders headers = signedInHeaders();
+        HttpHeaders headers = signedInHeaders("d".repeat(64));
 
         var guarded = rest.exchange("/api/v1/relays", HttpMethod.POST,
                 new HttpEntity<>(Map.of("url", "wss://relay.test"), headers), String.class);
@@ -257,15 +257,23 @@ class ClientSessionGuardTest {
      * denies the resolver is answered from the previous test's "allowed".
      */
     private HttpHeaders signedInHeaders() {
+        return signedInHeaders(PRINCIPAL_PUBKEY);
+    }
+
+    /**
+     * Since nap-spring 0.9 the ACL cache is keyed by principal rather than session, so a
+     * test that denies the resolver signs in as a principal no other test has used.
+     */
+    private HttpHeaders signedInHeaders(String pubkey) {
         long now = Instant.now().getEpochSecond();
         String distinct = UUID.randomUUID().toString();
         SessionRecord record = SessionRecord.create(
                 "session-" + distinct, "challenge-" + distinct, "access-token-" + distinct,
-                PRINCIPAL_NPUB, PRINCIPAL_PUBKEY, List.of(), List.of(), now, now + 3600);
+                PRINCIPAL_NPUB, pubkey, List.of(), List.of(), now, now + 3600);
         sessionStore.createForChallenge(record);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.COOKIE, "client_session=" + record.sessionId());
+        headers.add(HttpHeaders.COOKIE, "client_session=" + record.accessToken());
         return headers;
     }
 

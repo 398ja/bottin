@@ -65,8 +65,8 @@
         <nostr-java.version>2.4.2</nostr-java.version>
 
         <!-- NAP (Nostr Authentication Protocol) -->
-        <nap-java.version>0.6.0</nap-java.version>
-        <nostrdb-jni.version>0.1.2</nostrdb-jni.version>
+        <nap-java.version>0.9.1</nap-java.version>
+        <nostrdb-jni.version>0.3.0</nostrdb-jni.version>
 
         <!-- Database. Flyway is deliberately ahead of the 12.x line Spring Boot 4.1 manages:
              every Flyway API that spring-boot-flyway 4.1.1 calls was checked against 13.10.3,
@@ -86,7 +86,7 @@
         <htmx.version>1.9.10</htmx.version>
 
         <!-- DNS (for domain verification) -->
-        <dnsjava.version>3.6.0</dnsjava.version>
+        <dnsjava.version>3.6.5</dnsjava.version>
 
         <!-- Plugin versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -98,7 +98,7 @@
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
         <flatten-maven-plugin.version>1.6.0</flatten-maven-plugin.version>
-        <jacoco-maven-plugin.version>0.8.11</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
 
         <!-- Mockito's inline mock maker needs an instrumentation agent. Left to itself it has
@@ -113,7 +113,7 @@
         <jib-maven-plugin.version>3.4.1</jib-maven-plugin.version>
 
         <!-- bottin-client-ui JS test toolchain -->
-        <frontend-maven-plugin.version>1.15.1</frontend-maven-plugin.version>
+        <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
         <node.version>v20.11.1</node.version>
         <npm.version>10.2.4</npm.version>
 
