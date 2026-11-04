@@ -76,7 +76,7 @@
         <!-- Testing -->
         <wiremock.version>3.4.2</wiremock.version>
         <!-- Spring Boot 4 no longer manages REST Assured; 6.x is the Jakarta EE 11 line. -->
-        <rest-assured.version>6.2.0</rest-assured.version>
+        <rest-assured.version>6.3.0</rest-assured.version>
 
         <!-- API Documentation. The 3.x line is the one built for Spring Boot 4. -->
         <springdoc-openapi.version>3.1.1</springdoc-openapi.version>
