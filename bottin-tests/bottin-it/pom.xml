@@ -224,7 +224,7 @@
         <!-- The Flyway that wrote existing deployments' schema history, see the
              copy-legacy-flyway execution. -->
         <legacy.flyway.version>10.10.0</legacy.flyway.version>
-        <legacy.flyway.jackson.version>2.15.2</legacy.flyway.jackson.version>
+        <legacy.flyway.jackson.version>2.22</legacy.flyway.jackson.version>
         <legacy.flyway.dir>${project.build.directory}/legacy-flyway</legacy.flyway.dir>
     </properties>
 
