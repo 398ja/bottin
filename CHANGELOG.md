@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bump nostr-java 2.4.2 → 2.4.4.
+
 ## [0.12.0] - 2026-10-22
 
 Spring Boot 3.4.1 → **4.1.1** and Flyway 10.10.0 → **13.10.3** (closes #31, #32), with

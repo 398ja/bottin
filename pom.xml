@@ -62,7 +62,7 @@
         <spring-boot.version>4.1.1</spring-boot.version>
 
         <!-- nostr-java (relay client for reach calculation) -->
-        <nostr-java.version>2.4.2</nostr-java.version>
+        <nostr-java.version>2.4.4</nostr-java.version>
 
         <!-- NAP (Nostr Authentication Protocol) -->
         <nap-java.version>0.9.1</nap-java.version>
