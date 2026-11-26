@@ -110,7 +110,7 @@
         <mockito.agent.argLine>-javaagent:${mockito.agent.directory}/mockito-core.jar</mockito.agent.argLine>
 
         <!-- Docker/Jib -->
-        <jib-maven-plugin.version>3.4.1</jib-maven-plugin.version>
+        <jib-maven-plugin.version>3.5.2</jib-maven-plugin.version>
 
         <!-- bottin-client-ui JS test toolchain -->
         <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
