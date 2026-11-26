@@ -59,7 +59,7 @@
              (and Jackson 2 alongside it), JUnit 6, Mockito, Testcontainers 2, H2, PostgreSQL,
              Lombok and the logging stack. Versions those libraries had pinned here were
              removed so the BOM's tested set is what is built. -->
-        <spring-boot.version>4.1.1</spring-boot.version>
+        <spring-boot.version>4.1.2</spring-boot.version>
 
         <!-- nostr-java (relay client for reach calculation) -->
         <nostr-java.version>2.4.4</nostr-java.version>
